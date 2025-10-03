@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "MANAGIX_FYP_2025": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7005",
+      "launchBrowser": false
+    }
+  }
+}
