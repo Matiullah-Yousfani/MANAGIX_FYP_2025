@@ -1,0 +1,12 @@
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\bin\Debug\net8.0\MANAGIX.Utility.deps.json
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\bin\Debug\net8.0\MANAGIX.Utility.dll
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\bin\Debug\net8.0\MANAGIX.Utility.pdb
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.GeneratedMSBuildEditorConfig.editorconfig
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.AssemblyInfoInputs.cache
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.AssemblyInfo.cs
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.csproj.CoreCompileInputs.cache
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.sourcelink.json
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.dll
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\refint\MANAGIX.Utility.dll
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\MANAGIX.Utility.pdb
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.Utility\obj\Debug\net8.0\ref\MANAGIX.Utility.dll
