@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="JWT" Version="8.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.23.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
@@ -21,5 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MANAGIX.DataAccess\MANAGIX.DataAccess.csproj" />
+    <ProjectReference Include="..\MANAGIX.Services\MANAGIX.Services.csproj" />
+    <ProjectReference Include="..\MANAGIX.Utility\MANAGIX.Utility.csproj" />
   </ItemGroup>
 </Project>

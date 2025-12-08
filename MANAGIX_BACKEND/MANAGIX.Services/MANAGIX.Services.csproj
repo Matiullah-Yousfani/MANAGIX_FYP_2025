@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MANAGIX.DataAccess\MANAGIX.DataAccess.csproj" />
+    <ProjectReference Include="..\MANAGIX.Utility\MANAGIX.Utility.csproj" />
+  </ItemGroup>
+
 </Project>

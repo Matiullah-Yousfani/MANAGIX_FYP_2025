@@ -2,12 +2,15 @@ D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\bin\Debug\net8.0\MANAGIX.DataA
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\bin\Debug\net8.0\MANAGIX.DataAccess.runtimeconfig.json
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\bin\Debug\net8.0\MANAGIX.DataAccess.dll
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\bin\Debug\net8.0\MANAGIX.DataAccess.pdb
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\bin\Debug\net8.0\MANAGIX.Models.dll
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\bin\Debug\net8.0\MANAGIX.Models.pdb
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.csproj.AssemblyReference.cache
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.GeneratedMSBuildEditorConfig.editorconfig
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.AssemblyInfoInputs.cache
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.AssemblyInfo.cs
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.csproj.CoreCompileInputs.cache
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.sourcelink.json
+D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX..009FDBCA.Up2Date
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.dll
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\refint\MANAGIX.DataAccess.dll
 D:\FYP-MANAGIX\MANAGIX_BACKEND\MANAGIX.DataAccess\obj\Debug\net8.0\MANAGIX.DataAccess.pdb
