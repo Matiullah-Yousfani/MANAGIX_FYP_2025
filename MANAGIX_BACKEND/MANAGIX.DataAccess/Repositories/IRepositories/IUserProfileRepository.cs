@@ -13,5 +13,8 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task AddAsync(UserProfile profile);
         void Update(UserProfile profile);
         void Remove(UserProfile profile);
+
+        Task<UserProfile> UpdateResumePathAsync(Guid userId, string resumePath);
+
     }
 }

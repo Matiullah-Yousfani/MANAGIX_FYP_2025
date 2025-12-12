@@ -23,5 +23,16 @@ namespace MANAGIX.DataAccess.Repositories
         public void Update(UserProfile profile) => _context.userProfiles.Update(profile);
 
         public void Remove(UserProfile profile) => _context.userProfiles.Remove(profile);
+
+        public async Task<UserProfile> UpdateResumePathAsync(Guid userId, string resumePath)
+        {
+            var profile = await GetByUserIdAsync(userId);
+            if (profile == null) throw new Exception("Profile not found");
+
+            profile.ResumeFilePath = resumePath;
+            _context.userProfiles.Update(profile);
+            await _context.SaveChangesAsync();
+            return profile;
+        }
     }
 }

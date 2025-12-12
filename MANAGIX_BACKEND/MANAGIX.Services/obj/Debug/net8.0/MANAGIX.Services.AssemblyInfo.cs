@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MANAGIX.Services")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+517e614bdec144b6a9f3bc3c9152c6a602e9520d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5192600689427d37c5f10b9f8e1ab6dc7e2ce78e")]
 [assembly: System.Reflection.AssemblyProductAttribute("MANAGIX.Services")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MANAGIX.Services")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
