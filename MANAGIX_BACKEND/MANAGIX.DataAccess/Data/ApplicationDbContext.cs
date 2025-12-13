@@ -25,12 +25,46 @@ namespace MANAGIX.DataAccess.Data
 
         public DbSet<UserRequest> userRequests { get; set; }
 
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<Team> Teams { get; set; }
+        public DbSet<TeamEmployee> TeamEmployees { get; set; }
+        public DbSet<ProjectTeam> ProjectTeams { get; set; }
+        public DbSet<Milestone> Milestones { get; set; }
+        public DbSet<TaskItem> Tasks { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Unique Email
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
+
+            // TeamEmployee: many-to-many
+            modelBuilder.Entity<TeamEmployee>()
+                .HasKey(te => te.Id);
+            modelBuilder.Entity<TeamEmployee>()
+              .HasIndex(te => new { te.TeamId, te.EmployeeId })
+              .IsUnique();
+
+            // ProjectTeam: one team per project for now
+            modelBuilder.Entity<ProjectTeam>()
+                .HasIndex(pt => pt.ProjectId)
+                .IsUnique();
+
+            // TaskItem optional: configure relations
+            modelBuilder.Entity<TaskItem>()
+                .HasOne<Project>()
+                .WithMany()
+                .HasForeignKey(t => t.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TaskItem>()
+                .HasOne<Milestone>()
+                .WithMany()
+                .HasForeignKey(t => t.MilestoneId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+
 
             // Many-to-Many UserRoles
             modelBuilder.Entity<UserRole>()

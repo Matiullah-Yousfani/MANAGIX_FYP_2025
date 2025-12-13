@@ -14,6 +14,13 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         IUserRequestRepository UserRequests { get; }
         IUserRoleRepository UserRoles { get; }
 
+        IProjectRepository Projects { get; }
+        ITeamRepository Teams { get; }
+        ITeamEmployeeRepository TeamEmployees { get; }
+        IProjectTeamRepository ProjectTeams { get; }
+        IMilestoneRepository Milestones { get; }
+        ITaskRepository Tasks { get; }
+
         Task<int> CompleteAsync();
     }
 }

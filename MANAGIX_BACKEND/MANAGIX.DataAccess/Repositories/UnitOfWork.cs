@@ -21,6 +21,12 @@ namespace MANAGIX.DataAccess.Repositories
             UserProfiles = new UserProfileRepository(_context);
             UserRequests = new UserRequestRepository(_context);
             UserRoles = new UserRoleRepository(_context);
+            Projects = new ProjectRepository(_context);
+            Teams = new TeamRepository(_context);
+            TeamEmployees = new TeamEmployeeRepository(_context);
+            ProjectTeams = new ProjectTeamRepository(_context);
+            Milestones = new MilestoneRepository(_context);
+            Tasks = new TaskRepository(_context);
         }
 
         public IUserRepository Users { get; }
@@ -28,6 +34,14 @@ namespace MANAGIX.DataAccess.Repositories
         public IUserProfileRepository UserProfiles { get; }
         public IUserRequestRepository UserRequests { get; }
         public IUserRoleRepository UserRoles { get; }
+
+
+        public IProjectRepository Projects { get; private set; }
+        public ITeamRepository Teams { get; private set; }
+        public ITeamEmployeeRepository TeamEmployees { get; private set; }
+        public IProjectTeamRepository ProjectTeams { get; private set; }
+        public IMilestoneRepository Milestones { get; private set; }
+        public ITaskRepository Tasks { get; private set; }
 
         public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
 
