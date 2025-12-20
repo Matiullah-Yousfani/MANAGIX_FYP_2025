@@ -11,5 +11,11 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
     {
         Task AddAsync(Milestone milestone);
         Task<List<Milestone>> GetByProjectIdAsync(Guid projectId);
+        Task<Milestone?> GetByIdAsync(Guid milestoneId); // for closing milestone
+
+        void Update(Milestone milestone); // for marking milestone closed
+
+
+
     }
 }

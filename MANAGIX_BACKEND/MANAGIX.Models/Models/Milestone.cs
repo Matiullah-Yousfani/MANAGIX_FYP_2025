@@ -25,5 +25,8 @@ namespace MANAGIX.Models.Models
         public decimal BudgetAllocated { get; set; }
 
         public string Status { get; set; } = "Pending";
+
+        public DateTime? CompletedAt { get; set; }
+
     }
 }

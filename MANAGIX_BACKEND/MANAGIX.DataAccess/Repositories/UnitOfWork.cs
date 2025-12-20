@@ -27,9 +27,13 @@ namespace MANAGIX.DataAccess.Repositories
             ProjectTeams = new ProjectTeamRepository(_context);
             Milestones = new MilestoneRepository(_context);
             Tasks = new TaskRepository(_context);
+            TaskSubmissions = new TaskSubmissionRepository(_context);
+            EmployeePerformances = new EmployeePerformanceRepository(_context);
         }
 
         public IUserRepository Users { get; }
+
+
         public IRoleRepository Roles { get; }
         public IUserProfileRepository UserProfiles { get; }
         public IUserRequestRepository UserRequests { get; }
@@ -42,6 +46,9 @@ namespace MANAGIX.DataAccess.Repositories
         public IProjectTeamRepository ProjectTeams { get; private set; }
         public IMilestoneRepository Milestones { get; private set; }
         public ITaskRepository Tasks { get; private set; }
+
+        public IEmployeePerformanceRepository EmployeePerformances { get; private set; }
+        public ITaskSubmissionRepository TaskSubmissions { get; private set; }
 
         public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
 

@@ -32,6 +32,11 @@ namespace MANAGIX.DataAccess.Data
         public DbSet<Milestone> Milestones { get; set; }
         public DbSet<TaskItem> Tasks { get; set; }
 
+        public DbSet<TaskSubmission> TaskSubmissions { get; set; }
+
+        public DbSet<EmployeePerformance> EmployeePerformances { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Unique Email
@@ -49,6 +54,11 @@ namespace MANAGIX.DataAccess.Data
             // ProjectTeam: one team per project for now
             modelBuilder.Entity<ProjectTeam>()
                 .HasIndex(pt => pt.ProjectId)
+                .IsUnique();
+
+            // EmployeePerformance → one record per employee per project
+            modelBuilder.Entity<EmployeePerformance>()
+                .HasIndex(ep => new { ep.EmployeeId, ep.ProjectId })
                 .IsUnique();
 
             // TaskItem optional: configure relations

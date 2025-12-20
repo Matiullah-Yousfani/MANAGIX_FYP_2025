@@ -27,5 +27,9 @@ namespace MANAGIX.Models.Models
         public string Status { get; set; } = "New"; // New/InProgress/Completed
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public bool IsClosed { get; set; } = false;
+        public DateTime? ClosedAt { get; set; }
     }
+
 }

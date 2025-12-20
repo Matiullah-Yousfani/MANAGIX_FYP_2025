@@ -4,6 +4,7 @@ using MANAGIX.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MANAGIX.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251220095253_AddChangesToProjectAndMilestoneTable")]
+    partial class AddChangesToProjectAndMilestoneTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,40 +24,6 @@ namespace MANAGIX.DataAccess.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("MANAGIX.Models.Models.EmployeePerformance", b =>
-                {
-                    b.Property<Guid>("PerformanceId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<double>("ApprovalRate")
-                        .HasColumnType("float");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("TasksAssigned")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TasksCompleted")
-                        .HasColumnType("int");
-
-                    b.HasKey("PerformanceId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("EmployeeId", "ProjectId")
-                        .IsUnique();
-
-                    b.ToTable("EmployeePerformances");
-                });
 
             modelBuilder.Entity("MANAGIX.Models.Models.Milestone", b =>
                 {
@@ -412,25 +381,6 @@ namespace MANAGIX.DataAccess.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("userRoles");
-                });
-
-            modelBuilder.Entity("MANAGIX.Models.Models.EmployeePerformance", b =>
-                {
-                    b.HasOne("MANAGIX.Models.Models.User", "Employee")
-                        .WithMany()
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MANAGIX.Models.Models.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("MANAGIX.Models.Models.TaskItem", b =>

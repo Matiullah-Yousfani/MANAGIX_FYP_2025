@@ -21,6 +21,9 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         IMilestoneRepository Milestones { get; }
         ITaskRepository Tasks { get; }
 
+        IEmployeePerformanceRepository EmployeePerformances { get; }
+
+        ITaskSubmissionRepository TaskSubmissions { get; }
         Task<int> CompleteAsync();
     }
 }

@@ -12,5 +12,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task AddAsync(Project project);
         Task<List<Project>> GetAllAsync();
         Task<Project?> GetByIdAsync(Guid id);
+        void Update(Project project); // needed for closing project
+
     }
 }

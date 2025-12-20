@@ -18,9 +18,15 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task AddAsync(Milestone milestone) =>
             await _context.Milestones.AddAsync(milestone);
 
+        public async Task<Milestone?> GetByIdAsync(Guid milestoneId) =>
+          await _context.Milestones.FirstOrDefaultAsync(m => m.MilestoneId == milestoneId);
+
         public async Task<List<Milestone>> GetByProjectIdAsync(Guid projectId) =>
             await _context.Milestones
                           .Where(m => m.ProjectId == projectId)
                           .ToListAsync();
+
+        public void Update(Milestone milestone) =>
+            _context.Milestones.Update(milestone);
     }
 }

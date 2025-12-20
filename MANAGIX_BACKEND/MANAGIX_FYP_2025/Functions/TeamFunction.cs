@@ -42,6 +42,56 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
+        [Function("AssignTeamToProject")]
+        public async Task<HttpResponseData> AssignTeamToProject(
+    [HttpTrigger(AuthorizationLevel.Function, "post", Route = "projects/{projectId}/assign-team")] HttpRequestData req,
+    string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Invalid ProjectId" });
+                return badResp;
+            }
+
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<AssignTeamDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (dto == null || dto.TeamId == Guid.Empty)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Invalid TeamId" });
+                return badResp;
+            }
+
+            // Optional: check if project exists
+            var project = await _unitOfWork.Projects.GetByIdAsync(pid);
+            if (project == null)
+            {
+                var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+                await notFound.WriteAsJsonAsync(new { message = "Project not found" });
+                return notFound;
+            }
+
+            // Optional: check if team exists
+            var team = await _unitOfWork.Teams.GetByIdAsync(dto.TeamId);
+            if (team == null)
+            {
+                var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+                await notFound.WriteAsJsonAsync(new { message = "Team not found" });
+                return notFound;
+            }
+
+            var projectTeam = new ProjectTeam { ProjectId = pid, TeamId = dto.TeamId };
+            await _unitOfWork.ProjectTeams.AddAsync(projectTeam);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Team assigned to project" });
+            return resp;
+        }
+
+
         [Function("AddEmployeeToTeam")]
         public async Task<HttpResponseData> AddEmployeeToTeam(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "teams/{teamId}/add-employee")] HttpRequestData req,

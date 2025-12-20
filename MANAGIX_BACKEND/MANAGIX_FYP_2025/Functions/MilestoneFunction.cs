@@ -64,6 +64,40 @@ namespace MANAGIX_FYP_2025.Functions
                 return err;
             }
         }
+        private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
+        {
+            var resp = req.CreateResponse(HttpStatusCode.BadRequest);
+            await resp.WriteAsJsonAsync(new { message });
+            return resp;
+        }
+
+        [Function("CloseMilestone")]
+        public async Task<HttpResponseData> CloseMilestone(
+    [HttpTrigger(AuthorizationLevel.Function, "post", Route = "milestones/{milestoneId}/close")] HttpRequestData req,
+    string milestoneId)
+        {
+            if (!Guid.TryParse(milestoneId, out var mid))
+                return await BadRequest(req, "Invalid MilestoneId");
+
+            string body = await new StreamReader(req.Body).ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<CloseMilestoneDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (dto == null) return await BadRequest(req, "Invalid data");
+
+            var milestone = await _unitOfWork.Milestones.GetByIdAsync(mid);
+            if (milestone == null) return await BadRequest(req, "Milestone not found");
+
+            milestone.Status = "Completed";
+            milestone.CompletedAt = DateTime.UtcNow;
+            // Optional: store comment somewhere if needed
+
+            _unitOfWork.Milestones.Update(milestone);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Milestone closed successfully" });
+            return resp;
+        }
+
 
         // GET /milestones/project/{projectId}
         [Function("GetMilestonesByProject")]
