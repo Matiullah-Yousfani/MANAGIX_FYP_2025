@@ -121,5 +121,79 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(new { message = "Employee added to team" });
             return resp;
         }
+
+        [Function("RemoveEmployeeFromTeam")]
+        public async Task<HttpResponseData> RemoveEmployeeFromTeam(
+    [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "teams/{teamId}/remove-employee")]
+    HttpRequestData req,
+    string teamId)
+        {
+            if (!Guid.TryParse(teamId, out var tid))
+                return await BadRequest(req, "Invalid TeamId");
+
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<RemoveEmployeeDto>(body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (dto == null || dto.EmployeeId == Guid.Empty)
+                return await BadRequest(req, "Invalid EmployeeId");
+
+            var teamEmployee = await _unitOfWork.TeamEmployees.GetAsync(tid, dto.EmployeeId);
+            if (teamEmployee == null)
+                return await BadRequest(req, "Employee not in team");
+
+            _unitOfWork.TeamEmployees.Remove(teamEmployee);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Employee removed from team" });
+            return resp;
+        }
+
+        [Function("GetTeamDetails")]
+        public async Task<HttpResponseData> GetTeamDetails(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "teams/{teamId}")]
+    HttpRequestData req,
+    string teamId)
+        {
+            if (!Guid.TryParse(teamId, out var tid))
+                return await BadRequest(req, "Invalid TeamId");
+
+            var team = await _unitOfWork.Teams.GetByIdAsync(tid);
+            if (team == null)
+                return await BadRequest(req, "Team not found");
+
+            var employees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(tid);
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new
+            {
+                team.TeamId,
+                team.Name,
+                team.CreatedAt,
+                Employees = employees.Select(e => e.EmployeeId)
+            });
+            return resp;
+        }
+
+        [Function("GetAllTeams")]
+        public async Task<HttpResponseData> GetAllTeams(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "teams")]
+    HttpRequestData req)
+        {
+            var teams = await _unitOfWork.Teams.GetAllAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(teams);
+            return resp;
+        }
+
+        private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
+        {
+            var resp = req.CreateResponse(HttpStatusCode.BadRequest);
+            await resp.WriteAsJsonAsync(new { message });
+            return resp;
+        }
+
     }
 }

@@ -92,6 +92,60 @@ namespace MANAGIX.Services
             await _db.SaveChangesAsync();
             return true;
         }
+        // -------- AUTH STATUS ----------
+        public async Task<AuthStatusResponseDto?> GetAuthStatusAsync(Guid userId)
+        {
+            var user = await _db.users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user != null)
+            {
+                return new AuthStatusResponseDto
+                {
+                    UserId = user.UserId,
+                    Status = "Approved",
+                    Role = user.UserRoles.FirstOrDefault()?.Role?.RoleName ?? "",
+                    RejectionReason = null
+                };
+            }
+
+            var req = await _db.userRequests.FirstOrDefaultAsync(r => r.RequestId == userId);
+            if (req == null) return null;
+
+            return new AuthStatusResponseDto
+            {
+                UserId = req.RequestId,
+                Status = req.Status,
+                Role = "",
+                RejectionReason = req.AdminComment
+            };
+        }
+
+        // -------- AUTH ME ----------
+        public async Task<AuthMeResponseDto?> GetCurrentUserAsync(Guid userId)
+        {
+            var user = await _db.users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (user == null) return null;
+
+            var role = user.UserRoles.FirstOrDefault()?.Role;
+
+            return new AuthMeResponseDto
+            {
+                UserId = user.UserId,
+                FullName = user.FullName,
+                Email = user.Email,
+                RoleId = role?.RoleId ?? Guid.Empty,
+                RoleName = role?.RoleName ?? "",
+                Status = "Approved"
+            };
+        }
+
 
         public async Task<bool> RejectAsync(Guid requestId, string comment)
         {

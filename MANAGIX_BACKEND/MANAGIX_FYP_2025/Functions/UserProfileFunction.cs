@@ -1,4 +1,5 @@
-﻿using MANAGIX.Models.DTO;
+﻿using MANAGIX.DataAccess.Repositories.IRepositories;
+using MANAGIX.Models.DTO;
 using MANAGIX.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -15,10 +16,12 @@ namespace MANAGIX_FYP_2025.Functions
     public class UserProfileFunction
     {
         private readonly IUserProfileService _service;
+        private readonly IUnitOfWork _userRepo;
 
-        public UserProfileFunction(IUserProfileService service)
+        public UserProfileFunction(IUserProfileService service,IUnitOfWork userRepo)
         {
             _service = service;
+            _userRepo = userRepo;
         }
 
         // GET /api/profile/{userId}
@@ -117,6 +120,52 @@ namespace MANAGIX_FYP_2025.Functions
                 return errResp;
             }
         }
+        // NEW: GET /api/users/{userId} - get user details
+        [Function("GetUserById")]
+        public async Task<HttpResponseData> GetUserById(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "users/{userId}")] HttpRequestData req,
+            string userId)
+        {
+            if (!Guid.TryParse(userId, out var uid))
+                return await BadRequest(req, "Invalid User ID");
 
+            var user = await _userRepo.Users.GetByIdAsync(uid);
+            if (user == null) return await NotFound(req, "User not found");
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(user);
+            return resp;
+        }
+
+        // NEW: DELETE /api/users/{userId} - delete user
+        [Function("DeleteUser")]
+        public async Task<HttpResponseData> DeleteUser(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "users/{userId}")] HttpRequestData req,
+            string userId)
+        {
+            if (!Guid.TryParse(userId, out var uid))
+                return await BadRequest(req, "Invalid User ID");
+
+            var user = await _userRepo.Users.GetByIdAsync(uid);
+            if (user == null) return await NotFound(req, "User not found");
+
+            _userRepo.Users.Remove(user);
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "User deleted successfully" });
+            return resp;
+        }
+
+        private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
+        {
+            var resp = req.CreateResponse(HttpStatusCode.BadRequest);
+            await resp.WriteAsJsonAsync(new { message });
+            return resp;
+        }
+        private async Task<HttpResponseData> NotFound(HttpRequestData req, string message)
+        {
+            var resp = req.CreateResponse(HttpStatusCode.NotFound);
+            await resp.WriteAsJsonAsync(new { message });
+            return resp;
+        }
     }
 }

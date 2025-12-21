@@ -7,6 +7,7 @@ using System;
 using System.Threading.Tasks;
 using MANAGIX.Services;
 using System.Text.Json;
+using MANAGIX.Utility;
 
 namespace MANAGIX_FYP_2025.Functions
 {
@@ -20,6 +21,65 @@ namespace MANAGIX_FYP_2025.Functions
             _authService = authService;
             _unitOfWork = unitOfWork;
         }
+
+        [Function("AuthMe")]
+        public async Task<HttpResponseData> AuthMe(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "auth/me")] HttpRequestData req)
+        {
+            try
+            {
+                var userId = req.GetUserId();
+
+                var user = await _authService.GetCurrentUserAsync(userId);
+                if (user == null)
+                {
+                    var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+                    await notFound.WriteAsJsonAsync(new { message = "User not found" });
+                    return notFound;
+                }
+
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                await resp.WriteAsJsonAsync(user);
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return err;
+            }
+        }
+
+
+
+        [Function("AuthStatus")]
+        public async Task<HttpResponseData> AuthStatus(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "auth/status")] HttpRequestData req)
+        {
+            try
+            {
+                var userId = req.GetUserId(); // your existing extension
+
+                var status = await _authService.GetAuthStatusAsync(userId);
+                if (status == null)
+                {
+                    var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+                    await notFound.WriteAsJsonAsync(new { message = "User not found" });
+                    return notFound;
+                }
+
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                await resp.WriteAsJsonAsync(status);
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return err;
+            }
+        }
+
 
         // POST /api/auth/register
         [Function("Register")]
