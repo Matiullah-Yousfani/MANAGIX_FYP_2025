@@ -10,6 +10,9 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
     public interface ITeamEmployeeRepository
     {
         Task AddAsync(TeamEmployee entity);
-        Task<List<Guid>> GetEmployeesByTeamIdAsync(Guid teamId);
+        Task<List<TeamEmployee>> GetEmployeesByTeamIdAsync(Guid teamId);
+
+        Task<TeamEmployee?> GetAsync(Guid teamId, Guid employeeId);
+        void Remove(TeamEmployee entity);
     }
 }

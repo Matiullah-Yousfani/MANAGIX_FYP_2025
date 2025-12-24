@@ -49,5 +49,15 @@ namespace MANAGIX.DataAccess.Repositories
         public void Update(TaskItem task) =>
             _context.Tasks.Update(task);
 
+        public void Remove(TaskItem task)
+        {
+            _context.Tasks.Remove(task);
+        }
+
+        public async Task<List<TaskItem>> GetByMilestoneIdAsync(Guid milestoneId)
+        {
+            return await _context.Tasks.Where(t => t.MilestoneId == milestoneId).ToListAsync();
+        }
+
     }
 }

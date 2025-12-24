@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MANAGIX.Utility")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+913d853e4e3d856d7bf4e773b8ba59ccde0113a9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+342395bc97af9b1223c22763d5c1700c8cd08d7f")]
 [assembly: System.Reflection.AssemblyProductAttribute("MANAGIX.Utility")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MANAGIX.Utility")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

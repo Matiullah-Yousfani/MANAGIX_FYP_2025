@@ -15,6 +15,9 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         void Update(Milestone milestone); // for marking milestone closed
 
+        void Remove(Milestone milestone);   // ✅ ADD
+
+
 
 
     }

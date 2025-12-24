@@ -26,5 +26,17 @@ namespace MANAGIX.DataAccess.Repositories
 
         public void Update(Project project) =>
           _context.Projects.Update(project);
+
+        public async Task<List<Project>> GetByManagerIdAsync(Guid managerId)
+        {
+            return await _context.Projects
+                .Where(p => p.CreatedBy == managerId)
+                .ToListAsync();
+        }
+
+        public void Remove(Project project)
+        {
+            _context.Projects.Remove(project);
+        }
     }
 }

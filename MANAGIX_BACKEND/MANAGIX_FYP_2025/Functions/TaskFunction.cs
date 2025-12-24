@@ -139,6 +139,98 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(new { message = $"Task {submissionStatus.ToLower()}" });
             return resp;
         }
+        // GET /tasks/{taskId} → Get task by ID
+        [Function("GetTaskById")]
+        public async Task<HttpResponseData> GetTaskById(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/{taskId}")] HttpRequestData req,
+            string taskId)
+        {
+            if (!Guid.TryParse(taskId, out var tid))
+                return await BadRequest(req, "Invalid TaskId");
+
+            var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
+            if (task == null) return await NotFound(req, "Task not found");
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(task);
+            return resp;
+        }
+
+        [Function("UpdateTask")]
+        public async Task<HttpResponseData> UpdateTask(
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "tasks/{taskId}")] HttpRequestData req,
+            string taskId)
+        {
+            if (!Guid.TryParse(taskId, out var tid))
+                return await BadRequest(req, "Invalid TaskId");
+
+            string body = await new StreamReader(req.Body).ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<TaskUpdateDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (dto == null) return await BadRequest(req, "Invalid data");
+
+            var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
+            if (task == null) return await NotFound(req, "Task not found");
+
+            task.Title = dto.Title ?? task.Title;
+            task.Description = dto.Description ?? task.Description;
+            task.Status = dto.Status ?? task.Status;
+            task.AssignedEmployeeId = dto.AssignedEmployeeId ?? task.AssignedEmployeeId;
+
+            // Optional: add deadline if you want
+            // task.Deadline = dto.Deadline ?? task.Deadline;
+
+            _unitOfWork.Tasks.Update(task);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(task);
+            return resp;
+        }
+
+
+        // DELETE /tasks/{taskId} → Delete task
+        [Function("DeleteTask")]
+        public async Task<HttpResponseData> DeleteTask(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "tasks/{taskId}")] HttpRequestData req,
+            string taskId)
+        {
+            if (!Guid.TryParse(taskId, out var tid))
+                return await BadRequest(req, "Invalid TaskId");
+
+            var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
+            if (task == null) return await NotFound(req, "Task not found");
+
+            _unitOfWork.Tasks.Remove(task);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Task deleted successfully" });
+            return resp;
+        }
+
+        // GET /tasks/milestone/{milestoneId} → Get tasks by milestone
+        [Function("GetTasksByMilestone")]
+        public async Task<HttpResponseData> GetTasksByMilestone(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/milestone/{milestoneId}")] HttpRequestData req,
+            string milestoneId)
+        {
+            if (!Guid.TryParse(milestoneId, out var mid))
+                return await BadRequest(req, "Invalid MilestoneId");
+
+            var tasks = await _unitOfWork.Tasks.GetByMilestoneIdAsync(mid);
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(tasks);
+            return resp;
+        }
+
+
+        private async Task<HttpResponseData> NotFound(HttpRequestData req, string message)
+        {
+            var resp = req.CreateResponse(HttpStatusCode.NotFound);
+            await resp.WriteAsJsonAsync(new { message });
+            return resp;
+        }
 
         private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
         {

@@ -18,10 +18,19 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task AddAsync(TeamEmployee entity) =>
             await _context.TeamEmployees.AddAsync(entity);
 
-        public async Task<List<Guid>> GetEmployeesByTeamIdAsync(Guid teamId) =>
-            await _context.TeamEmployees
-                          .Where(te => te.TeamId == teamId)
-                          .Select(te => te.EmployeeId)
-                          .ToListAsync();
+        public async Task<List<TeamEmployee>> GetEmployeesByTeamIdAsync(Guid teamId)
+        {
+            return await _context.TeamEmployees
+                .Where(te => te.TeamId == teamId)
+                .ToListAsync();
+        }
+
+
+        public void Remove(TeamEmployee entity) =>
+        _context.TeamEmployees.Remove(entity);
+
+        public async Task<TeamEmployee?> GetAsync(Guid teamId, Guid employeeId) =>
+        await _context.TeamEmployees
+            .FirstOrDefaultAsync(te => te.TeamId == teamId && te.EmployeeId == employeeId);
     }
 }

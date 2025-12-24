@@ -18,6 +18,9 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task AddAsync(Team team) =>
             await _context.Teams.AddAsync(team);
 
+        public async Task<List<Team>> GetAllAsync() =>
+        await _context.Teams.ToListAsync();
+
         public async Task<Team?> GetByIdAsync(Guid id) =>
             await _context.Teams.FirstOrDefaultAsync(t => t.TeamId == id);
     }

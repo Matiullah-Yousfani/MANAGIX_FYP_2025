@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace MANAGIX.Models.DTO
 {
-    internal class RemoveEmployeeDto
+    public class RemoveEmployeeDto
     {
+        public Guid EmployeeId { get; set; }
+
     }
 }

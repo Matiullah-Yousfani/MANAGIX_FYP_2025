@@ -54,6 +54,45 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
+        [Function("DeleteProject")]
+        public async Task<HttpResponseData> DeleteProject(
+    [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "projects/{projectId}")]
+    HttpRequestData req,
+    string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            var project = await _unitOfWork.Projects.GetByIdAsync(pid);
+            if (project == null)
+                return await BadRequest(req, "Project not found");
+
+            _unitOfWork.Projects.Remove(project);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Project deleted successfully" });
+            return resp;
+        }
+
+
+        [Function("GetProjectsByManager")]
+        public async Task<HttpResponseData> GetProjectsByManager(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "projects/manager/{managerId}")]
+    HttpRequestData req,
+    string managerId)
+        {
+            if (!Guid.TryParse(managerId, out var mid))
+                return await BadRequest(req, "Invalid ManagerId");
+
+            var projects = await _unitOfWork.Projects.GetByManagerIdAsync(mid);
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(projects);
+            return resp;
+        }
+
+
         [Function("GetProjects")]
         public async Task<HttpResponseData> GetProjects(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "projects")] HttpRequestData req)

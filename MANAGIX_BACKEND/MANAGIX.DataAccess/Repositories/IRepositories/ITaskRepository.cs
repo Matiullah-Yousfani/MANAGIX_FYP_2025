@@ -19,6 +19,8 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         Task<int> CountCompletedTasksAsync(Guid employeeId, Guid projectId);
         void Update(TaskItem task);
+        void Remove(TaskItem task); // <-- NEW: Delete task
+        Task<List<TaskItem>> GetByMilestoneIdAsync(Guid milestoneId); // <-- NEW: Get tasks by milestone
 
 
 

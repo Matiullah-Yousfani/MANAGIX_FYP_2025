@@ -64,6 +64,81 @@ namespace MANAGIX_FYP_2025.Functions
                 return err;
             }
         }
+
+        [Function("GetMilestoneById")]
+        public async Task<HttpResponseData> GetMilestoneById(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "milestones/{milestoneId}")]
+    HttpRequestData req,
+    string milestoneId)
+        {
+            if (!Guid.TryParse(milestoneId, out var mid))
+                return await BadRequest(req, "Invalid Milestone ID");
+
+            var milestone = await _unitOfWork.Milestones.GetByIdAsync(mid);
+            if (milestone == null)
+                return await BadRequest(req, "Milestone not found");
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(milestone);
+            return resp;
+        }
+
+
+        [Function("UpdateMilestone")]
+        public async Task<HttpResponseData> UpdateMilestone(
+    [HttpTrigger(AuthorizationLevel.Function, "put", Route = "milestones/{milestoneId}")]
+    HttpRequestData req,
+    string milestoneId)
+        {
+            if (!Guid.TryParse(milestoneId, out var mid))
+                return await BadRequest(req, "Invalid Milestone ID");
+
+            string body = await new StreamReader(req.Body).ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<MilestoneUpdateDto>(body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (dto == null)
+                return await BadRequest(req, "Invalid data");
+
+            var milestone = await _unitOfWork.Milestones.GetByIdAsync(mid);
+            if (milestone == null)
+                return await BadRequest(req, "Milestone not found");
+
+            milestone.Title = dto.Title;
+            milestone.Description = dto.Description;
+            milestone.Deadline = dto.Deadline;
+            milestone.BudgetAllocated = dto.BudgetAllocated;
+            milestone.Status = dto.Status;
+
+            _unitOfWork.Milestones.Update(milestone);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(milestone);
+            return resp;
+        }
+
+        [Function("DeleteMilestone")]
+        public async Task<HttpResponseData> DeleteMilestone(
+    [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "milestones/{milestoneId}")]
+    HttpRequestData req,
+    string milestoneId)
+        {
+            if (!Guid.TryParse(milestoneId, out var mid))
+                return await BadRequest(req, "Invalid Milestone ID");
+
+            var milestone = await _unitOfWork.Milestones.GetByIdAsync(mid);
+            if (milestone == null)
+                return await BadRequest(req, "Milestone not found");
+
+            _unitOfWork.Milestones.Remove(milestone);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Milestone deleted successfully" });
+            return resp;
+        }
+
         private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
         {
             var resp = req.CreateResponse(HttpStatusCode.BadRequest);

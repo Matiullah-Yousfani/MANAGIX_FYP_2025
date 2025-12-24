@@ -28,5 +28,10 @@ namespace MANAGIX.DataAccess.Repositories
 
         public void Update(Milestone milestone) =>
             _context.Milestones.Update(milestone);
+        public void Remove(Milestone milestone)
+        {
+            _context.Milestones.Remove(milestone);
+        }
+
     }
 }
