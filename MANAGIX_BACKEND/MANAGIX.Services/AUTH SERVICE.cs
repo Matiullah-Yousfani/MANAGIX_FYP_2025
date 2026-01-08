@@ -62,32 +62,46 @@ namespace MANAGIX.Services
         }
 
         // -------- ADMIN APPROVE ----------
-        public async Task<bool> ApproveAsync(Guid requestId)
+        // -------- ADMIN APPROVE / UPDATE ROLE ----------
+        public async Task<bool> ApproveAsync(Guid requestId, Guid selectedRoleId)
         {
-            var req = await _db.userRequests.FindAsync(requestId);
-            if (req == null) return false;
+            // 1. Check if the user is already an approved user (for the Update button)
+            var existingUser = await _db.users.FirstOrDefaultAsync(u => u.UserId == requestId);
 
-            req.Status = "Approved";
-
-            var user = new User
+            if (existingUser != null)
             {
-                FullName = req.FullName,
-                Email = req.Email,
-                PasswordHash = req.PasswordHash
-            };
-
-            _db.users.Add(user);
-
-            _db.userRoles.Add(new UserRole
+                // If they exist, we are just UPDATING their role column
+                existingUser.RoleId = selectedRoleId;
+            }
+            else
             {
-                UserId = user.UserId,
-                RoleId = req.RoleId
-            });
+                // 2. If they don't exist in Users, look in Pending Requests
+                var req = await _db.userRequests.FindAsync(requestId);
+                if (req == null) return false;
 
-            _db.userProfiles.Add(new UserProfile
-            {
-                UserId = user.UserId
-            });
+                req.Status = "Approved";
+
+                var user = new User
+                {
+                    UserId = req.RequestId, // Use same ID
+                    FullName = req.FullName,
+                    Email = req.Email,
+                    PasswordHash = req.PasswordHash,
+                    RoleId = selectedRoleId // Save the final role selected by Admin
+                };
+
+                _db.users.Add(user);
+
+                // Keep join table in sync (Optional, but good for compatibility)
+                _db.userRoles.Add(new UserRole
+                {
+                    UserId = user.UserId,
+                    RoleId = selectedRoleId
+                });
+
+                // Initialize empty profile
+                _db.userProfiles.Add(new UserProfile { UserId = user.UserId });
+            }
 
             await _db.SaveChangesAsync();
             return true;
@@ -106,7 +120,7 @@ namespace MANAGIX.Services
                 {
                     UserId = user.UserId,
                     Status = "Approved",
-                    Role = user.UserRoles.FirstOrDefault()?.Role?.RoleName ?? "",
+                    Role = "",
                     RejectionReason = null
                 };
             }
@@ -118,8 +132,9 @@ namespace MANAGIX.Services
             {
                 UserId = req.RequestId,
                 Status = req.Status,
-                Role = "",
-                RejectionReason = req.AdminComment
+                
+                RejectionReason = req.AdminComment,
+                Role = user.UserRoles.FirstOrDefault()?.Role?.RoleName ?? ""
             };
         }
 
@@ -140,7 +155,7 @@ namespace MANAGIX.Services
                 UserId = user.UserId,
                 FullName = user.FullName,
                 Email = user.Email,
-                RoleId = role?.RoleId ?? Guid.Empty,
+                RoleId = user.RoleId ?? Guid.Empty,
                 RoleName = role?.RoleName ?? "",
                 Status = "Approved"
             };

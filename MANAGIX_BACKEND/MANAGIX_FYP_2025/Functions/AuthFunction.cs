@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using MANAGIX.Services;
 using System.Text.Json;
 using MANAGIX.Utility;
+using System.Security.Cryptography;
 
 namespace MANAGIX_FYP_2025.Functions
 {
@@ -155,6 +156,29 @@ namespace MANAGIX_FYP_2025.Functions
             }
         }
 
+        // Add this to your Backend AuthFunction or Management section
+        [Function("GetAllUsers")]
+        public async Task<HttpResponseData> GetAllUsers(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "users")] HttpRequestData req)
+        {
+            try
+            {
+                // Change: Ensure the query includes the RoleId field
+                var users = await _unitOfWork.Users.GetAllAsync();
+
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                // This will now include the RoleId property you added to User.cs
+                await resp.WriteAsJsonAsync(users);
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = "Error fetching all users", detail = ex.Message });
+                return err;
+            }
+        }
+
         // GET /api/management/pending-users
         [Function("PendingUsers")]
         public async Task<HttpResponseData> PendingUsers(
@@ -178,10 +202,9 @@ namespace MANAGIX_FYP_2025.Functions
         // PUT /api/management/approve-user/{id}
         [Function("ApproveUser")]
         public async Task<HttpResponseData> ApproveUser(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "management/approve-user/{id}")] HttpRequestData req,
-            string id)
+            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "management/approve-user/{id}/{roleId}")] HttpRequestData req, string id , string roleId)
         {
-            if (!Guid.TryParse(id, out Guid requestId))
+            if (!Guid.TryParse(id, out Guid requestId) || !Guid.TryParse(roleId, out Guid rId))
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
                 await badResp.WriteAsJsonAsync(new { message = "Invalid request ID" });
@@ -190,7 +213,7 @@ namespace MANAGIX_FYP_2025.Functions
 
             try
             {
-                var ok = await _authService.ApproveAsync(requestId);
+                var ok = await _authService.ApproveAsync(requestId, rId);
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 await resp.WriteAsJsonAsync(new { success = ok });
                 return resp;
@@ -202,6 +225,8 @@ namespace MANAGIX_FYP_2025.Functions
                 return err;
             }
         }
+
+
 
         // PUT /api/management/reject-user/{id}
         [Function("RejectUser")]

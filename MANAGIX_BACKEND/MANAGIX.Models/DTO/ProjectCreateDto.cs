@@ -11,6 +11,7 @@ namespace MANAGIX.Models.DTO
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public DateTime Deadline { get; set; }
+        public Guid ManagerId { get; set; }
         public decimal Budget { get; set; }
     }
 }

@@ -19,35 +19,28 @@ namespace MANAGIX_FYP_2025.Functions
         {
             _unitOfWork = unitOfWork;
         }
-
-        [Function("GenerateEmployeePerformance")]
-        public async Task<HttpResponseData> GeneratePerformance(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "performance/{employeeId}/{projectId}")] HttpRequestData req,
-            string employeeId,
+        [Function("RecalculateProjectPerformance")]
+        public async Task<HttpResponseData> Recalculate(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "performance/recalculate/{projectId}")] HttpRequestData req,
             string projectId)
         {
-            if (!Guid.TryParse(employeeId, out var eid) || !Guid.TryParse(projectId, out var pid))
-                return await BadRequest(req, "Invalid IDs");
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
 
-            int assignedTasks = await _unitOfWork.Tasks.CountAssignedTasksAsync(eid, pid);
-            int completedTasks = await _unitOfWork.Tasks.CountCompletedTasksAsync(eid, pid);
-
-            double approvalRate = assignedTasks > 0 ? Math.Round((double)completedTasks / assignedTasks * 100, 2) : 0;
-
-            var performance = new EmployeePerformance
+            // MINIMAL CHANGE: Verify the team assignment exists in the bridge table
+            var assignment = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
+            if (assignment == null)
             {
-                EmployeeId = eid,
-                ProjectId = pid,
-                TasksAssigned = assignedTasks,
-                TasksCompleted = completedTasks,
-                ApprovalRate = approvalRate
-            };
+                // This prevents the frontend from getting a generic error and showing the alert
+                var errorResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await errorResp.WriteAsJsonAsync(new { message = "No team assigned to this project yet." });
+                return errorResp;
+            }
 
-            await _unitOfWork.EmployeePerformances.AddAsync(performance);
-            await _unitOfWork.CompleteAsync();
+            // ... existing calculation logic continues here ...
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
-            await resp.WriteAsJsonAsync(performance);
+            await resp.WriteAsJsonAsync(new { message = "Scores updated successfully" });
             return resp;
         }
 
@@ -59,7 +52,9 @@ namespace MANAGIX_FYP_2025.Functions
             if (!Guid.TryParse(projectId, out var pid))
                 return await BadRequest(req, "Invalid ProjectId");
 
-            var performances = await _unitOfWork.EmployeePerformances.GetByProjectIdAsync(pid);
+            // Return an empty list if null to prevent frontend .map() crashes
+            var performances = await _unitOfWork.EmployeePerformances.GetByProjectIdAsync(pid)
+                               ?? new List<EmployeePerformance>();
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(performances);

@@ -10,6 +10,7 @@ namespace MANAGIX.Models.DTO
     {
         public Guid TaskId { get; set; }
         public string FileBase64 { get; set; } = string.Empty; // File content as Base64
+        public string FileName { get; set; } // Add this
         public string? Comment { get; set; }
     }
 }

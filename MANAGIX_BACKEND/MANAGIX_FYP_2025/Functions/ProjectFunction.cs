@@ -22,7 +22,7 @@ namespace MANAGIX_FYP_2025.Functions
         public async Task<HttpResponseData> CreateProject(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "projects")] HttpRequestData req)
         {
-            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var body = await new StreamReader(req.Body).ReadToEndAsync();   
             var dto = JsonSerializer.Deserialize<ProjectCreateDto>(body, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
@@ -43,7 +43,7 @@ namespace MANAGIX_FYP_2025.Functions
                 Budget = dto.Budget,
                 Status = "New",
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = Guid.NewGuid() // Replace with actual ManagerId
+                CreatedBy = dto.ManagerId // Use the ID passed from the frontend
             };
 
             await _unitOfWork.Projects.AddAsync(project);
@@ -143,25 +143,30 @@ namespace MANAGIX_FYP_2025.Functions
             var project = await _unitOfWork.Projects.GetByIdAsync(pid);
             if (project == null) return await BadRequest(req, "Project not found");
 
+            // Fetch the team assignment from the bridge table
+            var teamAssignment = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
             var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
-            var milestones = await _unitOfWork.Milestones.GetByProjectIdAsync(pid);
+
+            // Define what "Completed" means in your business logic
+            var completedStatuses = new[] { "Done", "Completed", "Approved" };
+            int completedCount = tasks.Count(t => completedStatuses.Contains(t.Status));
 
             var dashboard = new ProjectDashboardDto
             {
                 ProjectId = pid,
+                TeamId = teamAssignment?.TeamId, // Crucial for the frontend check
                 TotalTasks = tasks.Count,
-                CompletedTasks = tasks.Count(t => t.Status == "Done"),
-                PendingTasks = tasks.Count(t => t.Status != "Done"),
-                TotalMilestones = milestones.Count,
-                CompletedMilestones = milestones.Count(m => m.Status == "Completed"),
-                ProgressPercentage = tasks.Count > 0 ? Math.Round((double)tasks.Count(t => t.Status == "Done") / tasks.Count * 100, 2) : 0
+                CompletedTasks = completedCount,
+                PendingTasks = tasks.Count - completedCount,
+                ProgressPercentage = tasks.Count > 0
+                    ? Math.Round((double)completedCount / tasks.Count * 100, 2)
+                    : 0
             };
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(dashboard);
             return resp;
         }
-
         private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
         {
             var resp = req.CreateResponse(HttpStatusCode.BadRequest);

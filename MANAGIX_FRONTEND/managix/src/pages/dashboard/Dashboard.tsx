@@ -1,53 +1,132 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import api from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('User');
+  const [userRole, setUserRole] = useState('Member');
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const userName = localStorage.getItem('userName') || 'User';
 
-  const handleLogout = () => {
-    localStorage.clear(); // Clears token and user data
-    navigate('/login');
+  useEffect(() => {
+    const storedName = localStorage.getItem('userName');
+    const storedRole = localStorage.getItem('userRole');
+    const storedId = localStorage.getItem('userId');
+
+    if (storedName) setUserName(storedName);
+    if (storedRole) setUserRole(storedRole);
+    if (storedId) setUserId(storedId);
+
+    // Initial fetch
+    fetchDashboardData(storedRole, storedId);
+  }, []);
+
+  const fetchDashboardData = async (role: string | null, id: string | null) => {
+    // Basic validation to prevent unnecessary API calls
+    if (!id || !role) {
+        setLoading(false);
+        return;
+    }
+    
+    try {
+      setLoading(true);
+      
+     // ADD THIS SECTION: Admin logic
+    if (role === 'Admin') {
+      // Call the endpoint that returns ALL projects
+      const response = await api.get('/projects'); 
+      setProjects(Array.isArray(response.data) ? response.data : []);
+    } 
+    else if (role === 'Manager') {
+      const response = await api.get(`/projects/manager/${id}`);
+      setProjects(Array.isArray(response.data) ? response.data : []);
+    }
+      else if (role === 'Employee') {
+        // This call requires the 'userId' header in your axiosInstance interceptor
+        const tasksResponse = await api.get('/tasks/assigned-to-me');
+        const tasks = tasksResponse.data || [];
+        
+        // FIX: Extract project IDs using both camelCase and PascalCase to match C# serialization
+        const projectIds: string[] = [...new Set(tasks.map((t: any) => t.projectId || t.ProjectId))].filter(Boolean) as string[];
+        
+        if (projectIds.length > 0) {
+          const projectDetails = await Promise.all(
+            projectIds.map(projId => 
+              api.get(`/projects/${projId}`)
+                .then(res => res.data)
+                .catch(err => {
+                  console.error(`Failed to fetch project ${projId}`, err);
+                  return null;
+                })
+            )
+          );
+          // Filter out any projects that failed to load
+          setProjects(projectDetails.filter(p => p !== null));
+        } else {
+          setProjects([]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  if (loading) return <div className="p-10 text-center text-xl font-semibold">Loading your projects...</div>;
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome, {userName}!</h1>
-            <p className="text-gray-600">Here is what's happening with your projects today.</p>
-          </div>
-          <button 
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition"
-          >
-            Logout
-          </button>
+    <div className="p-8">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-gray-900">Welcome, {userName}</h1>
+        <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Access Level:</span>
+            <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                {userRole}
+            </span>
         </div>
+      </header>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 className="text-sm font-medium text-gray-500 uppercase">Total Projects</h3>
-            <p className="text-3xl font-bold text-black mt-2">12</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 className="text-sm font-medium text-gray-500 uppercase">Active Tasks</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">24</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 className="text-sm font-medium text-gray-500 uppercase">Pending Approvals</h3>
-            <p className="text-3xl font-bold text-orange-500 mt-2">5</p>
-          </div>
-        </div>
-
-        {/* Content Placeholder */}
-        <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 h-64 flex items-center justify-center border-dashed border-2">
-          <p className="text-gray-400">Project list and charts will appear here.</p>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-800">Your Current Projects</h2>
       </div>
+      
+      {projects.length === 0 ? (
+        <div className="bg-gray-50 p-16 text-center rounded-2xl border-2 border-dashed border-gray-200">
+          <p className="text-gray-400 text-lg">No projects are currently linked to your account.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <div 
+              key={project.projectId || project.ProjectId}
+              onClick={() => navigate(`/projects/${project.projectId || project.ProjectId}`)}
+              className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 cursor-pointer hover:border-black hover:shadow-md transition-all duration-200 flex flex-col h-full"
+            >
+              <h3 className="text-lg font-bold mb-2 group-hover:text-blue-600 transition-colors">
+                {project.title || project.Title}
+              </h3>
+              <p className="text-gray-500 text-sm line-clamp-3 mb-6">
+                {project.description || project.Description || 'No description provided.'}
+              </p>
+              
+              <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${
+                    (project.status || project.Status) === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {project.status || project.Status || 'Active'}
+                </span>
+                <span className="text-black text-sm font-semibold group-hover:translate-x-1 transition-transform">
+                  View →
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

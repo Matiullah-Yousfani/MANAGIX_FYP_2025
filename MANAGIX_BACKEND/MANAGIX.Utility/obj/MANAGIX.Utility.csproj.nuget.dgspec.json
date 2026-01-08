@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj": {}
+    "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj": {}
   },
   "projects": {
-    "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj": {
+    "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj",
+        "projectUniqueName": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj",
         "projectName": "MANAGIX.Utility",
-        "projectPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj",
-        "packagesPath": "C:\\Users\\dell\\.nuget\\packages\\",
-        "outputPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\obj\\",
+        "projectPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj",
+        "packagesPath": "C:\\Users\\rdani\\.nuget\\packages\\",
+        "outputPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\dell\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\rdani\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -44,7 +44,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.200"
       },
       "frameworks": {
         "net8.0": {
@@ -79,7 +80,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.303/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.201/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

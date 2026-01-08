@@ -12,7 +12,9 @@ using MANAGIX.Utility;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
+// change started here
 builder.ConfigureFunctionsWebApplication();
+// change ended here
 
 // App Insights
 builder.Services
@@ -37,6 +39,9 @@ builder.Services.AddSingleton<JwtService>(sp =>
     return new JwtService(config);
 });
 
-builder.Services.AddScoped<AUTH_SERVICE>(); // renamed from AUTH_SERVICE
+builder.Services.AddScoped<AUTH_SERVICE>();
 
-builder.Build().Run();
+// change started here
+var host = builder.Build();
+host.Run();
+// change ended here

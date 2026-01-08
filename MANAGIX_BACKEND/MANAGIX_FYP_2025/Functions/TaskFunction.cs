@@ -34,49 +34,136 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(tasks);
             return resp;
         }
-
-        // ✅ POST /tasks/{taskId}/submit
         [Function("SubmitTask")]
         public async Task<HttpResponseData> SubmitTask(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/submit")] HttpRequestData req,
-            string taskId)
+      [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/submit")] HttpRequestData req,
+      string taskId)
         {
-            if (!Guid.TryParse(taskId, out var tid))
-                return await BadRequest(req, "Invalid TaskId");
-
-            var body = await new StreamReader(req.Body).ReadToEndAsync();
-            var dto = JsonSerializer.Deserialize<TaskSubmissionDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (dto == null) return await BadRequest(req, "Invalid data");
-
-            var fileBytes = Convert.FromBase64String(dto.FileBase64);
-            var filePath = Path.Combine("wwwroot/tasks", $"{tid}_{DateTime.UtcNow.Ticks}.dat");
-            Directory.CreateDirectory("wwwroot/tasks");
-            await File.WriteAllBytesAsync(filePath, fileBytes);
-
-            var submission = new TaskSubmission
+            try
             {
-                TaskId = tid,
-                SubmittedBy = Guid.Parse(req.Headers.GetValues("userId").First()),
-                FilePath = filePath,
-                Comment = dto.Comment,
-                Status = "Submitted"
-            };
+                if (!Guid.TryParse(taskId, out var tid))
+                    return await BadRequest(req, "Invalid TaskId");
 
-            await _unitOfWork.TaskSubmissions.AddAsync(submission);
+                if (!req.Headers.TryGetValues("userId", out var userHeaderValues) || !userHeaderValues.Any())
+                    return await BadRequest(req, "User ID header is missing.");
 
-            var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
-            if (task != null)
-            {
-                task.Status = "Submitted";
-                _unitOfWork.Tasks.Update(task);
+                var userIdString = userHeaderValues.First();
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                var dto = JsonSerializer.Deserialize<TaskSubmissionDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (dto == null || string.IsNullOrEmpty(dto.FileBase64))
+                    return await BadRequest(req, "Invalid data or missing file");
+
+                // 1. Setup Paths
+                var fileBytes = Convert.FromBase64String(dto.FileBase64);
+                var projectRoot = @"D:\FYP-Project\MANAGIX_FYP_2025\MANAGIX_BACKEND\MANAGIX_FYP_2025";
+                var uploadPath = Path.Combine(projectRoot, "wwwroot", "tasks");
+
+                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
+                // 2. Generate File Name with correct extension
+                var extension = Path.GetExtension(dto.FileName) ?? ".dat";
+                var fileName = $"{tid}_{DateTime.UtcNow.Ticks}{extension}";
+                var physicalPath = Path.Combine(uploadPath, fileName);
+
+                // 3. Save file to Disk
+                await File.WriteAllBytesAsync(physicalPath, fileBytes);
+
+                // 4. Create Database Record with URL instead of physical path
+                var submission = new TaskSubmission
+                {
+                    TaskId = tid,
+                    SubmittedBy = Guid.Parse(userIdString),
+                    FilePath = $"/tasks/{fileName}", // Store the URL path
+                    Comment = dto.Comment,
+                    Status = "Submitted",
+                    SubmittedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.TaskSubmissions.AddAsync(submission);
+
+                // 5. Update Task Status
+                var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
+                if (task != null)
+                {
+                    task.Status = "Submitted";
+                    _unitOfWork.Tasks.Update(task);
+                }
+
+                await _unitOfWork.CompleteAsync();
+
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                await resp.WriteAsJsonAsync(new { message = "Task submitted successfully" });
+                return resp;
             }
-
-            await _unitOfWork.CompleteAsync();
-
-            var resp = req.CreateResponse(HttpStatusCode.OK);
-            await resp.WriteAsJsonAsync(new { message = "Task submitted successfully" });
-            return resp;
+            catch (Exception ex)
+            {
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteStringAsync($"Internal Error: {ex.Message}");
+                return errorResp;
+            }
         }
+
+
+        // ✅ NEW: GET /tasks/{taskId}/submission -> Fetches the file for the Manager
+        [Function("GetTaskSubmission")]
+        public async Task<HttpResponseData> GetTaskSubmission(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/{taskId}/submission")] HttpRequestData req,
+    string taskId)
+        {
+            try
+            {
+                if (!Guid.TryParse(taskId, out var tid))
+                    return await BadRequest(req, "Invalid TaskId");
+
+                // 1. Fetch submission
+                var submission = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
+                if (submission == null)
+                    return await NotFound(req, "No submission record found.");
+
+                // 2. Build file path
+                var projectRoot = @"D:\FYP-Project\MANAGIX_FYP_2025\MANAGIX_BACKEND\MANAGIX_FYP_2025";
+                var physicalPath = Path.Combine(projectRoot, "wwwroot", submission.FilePath?.TrimStart('/') ?? "");
+
+                string? base64File = null;
+                string? fileName = null;
+
+                if (!string.IsNullOrEmpty(submission.FilePath) && File.Exists(physicalPath))
+                {
+                    var fileBytes = await File.ReadAllBytesAsync(physicalPath);
+                    base64File = Convert.ToBase64String(fileBytes);
+                    fileName = Path.GetFileName(physicalPath);
+                }
+
+                // 3. Build response
+                var responsePayload = new
+                {
+                    submissionId = submission.SubmissionId,
+                    taskId = submission.TaskId,
+                    submittedBy = submission.SubmittedBy,
+                    submittedAt = submission.SubmittedAt,
+
+                    status = submission.Status,
+                    comment = submission.Comment,
+                    qaComment = submission.QAComment,
+                    reviewedAt = submission.ReviewedAt,
+
+                    fileName,
+                    fileBase64 = base64File
+                };
+
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                await resp.WriteAsJsonAsync(responsePayload);
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteStringAsync($"Internal Error: {ex.Message}");
+                return errorResp;
+            }
+        }
+
 
         // ✅ GET /tasks/pending-review
         [Function("GetPendingSubmissions")]
@@ -208,6 +295,72 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
+        // ✅ GET /tasks/project/{projectId} -> Get all tasks for a specific project
+        [Function("GetTasksByProject")]
+        public async Task<HttpResponseData> GetTasksByProject(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/project/{projectId}")] HttpRequestData req,
+            string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            // This method should exist in your TaskRepository via UnitOfWork
+            var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(tasks);
+            return resp;
+        }
+
+        //create task
+        [Function("CreateTask")]
+        public async Task<HttpResponseData> CreateTask(
+         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks")] HttpRequestData req)
+        {
+            try
+            {
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                var dto = JsonSerializer.Deserialize<TaskCreateDto>(body, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Title))
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Task title is required." });
+                    return badResp;
+                }
+
+                // Logic: Create the new TaskItem using the ProjectId from the frontend
+                var newTask = new TaskItem
+                {
+                    TaskId = Guid.NewGuid(),
+                    ProjectId = dto.ProjectId,
+                    MilestoneId = dto.MilestoneId, // Can be null if not selected
+                    Title = dto.Title,
+                    Description = dto.Description,
+                    Status = "Pending",
+                    AssignedEmployeeId = dto.AssignedEmployeeId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.Tasks.AddAsync(newTask); // Uses your TaskRepository
+                await _unitOfWork.CompleteAsync();
+
+                var resp = req.CreateResponse(HttpStatusCode.Created);
+                await resp.WriteAsJsonAsync(newTask);
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = "Server Error", details = ex.Message });
+                return errorResp;
+            }
+        }
+
+
         // GET /tasks/milestone/{milestoneId} → Get tasks by milestone
         [Function("GetTasksByMilestone")]
         public async Task<HttpResponseData> GetTasksByMilestone(
@@ -223,6 +376,8 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(tasks);
             return resp;
         }
+
+
 
 
         private async Task<HttpResponseData> NotFound(HttpRequestData req, string message)

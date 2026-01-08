@@ -993,7 +993,10 @@
       },
       "MANAGIX.Models/1.0.0": {
         "runtime": {
-          "MANAGIX.Models.dll": {}
+          "MANAGIX.Models.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }

@@ -624,12 +624,18 @@
           "Microsoft.Extensions.Configuration.Json": "8.0.0"
         },
         "runtime": {
-          "MANAGIX.DataAccess.dll": {}
+          "MANAGIX.DataAccess.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       },
       "MANAGIX.Models/1.0.0": {
         "runtime": {
-          "MANAGIX.Models.dll": {}
+          "MANAGIX.Models.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       },
       "MANAGIX.Utility/1.0.0": {
@@ -639,7 +645,10 @@
           "System.IdentityModel.Tokens.Jwt": "8.0.0"
         },
         "runtime": {
-          "MANAGIX.Utility.dll": {}
+          "MANAGIX.Utility.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }

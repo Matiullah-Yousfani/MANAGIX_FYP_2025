@@ -27,6 +27,8 @@ namespace MANAGIX.Models.Models
         // Navigation: 1:1 with UserProfile
         public UserProfile? Profile { get; set; }
 
+        public Guid? RoleId { get; set; }
+
         // Navigation: Many-to-Many UserRoles
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }

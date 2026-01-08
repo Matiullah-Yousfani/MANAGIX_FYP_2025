@@ -8,6 +8,7 @@ namespace MANAGIX.Models.DTO
 {
     public class ProjectDashboardDto
     {
+        public Guid? TeamId { get; set; }
         public Guid ProjectId { get; set; }
         public int TotalTasks { get; set; }
         public int CompletedTasks { get; set; }

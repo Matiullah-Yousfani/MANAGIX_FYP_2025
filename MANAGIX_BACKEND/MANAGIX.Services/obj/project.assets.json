@@ -2823,23 +2823,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\dell\\.nuget\\packages\\": {},
+    "C:\\Users\\rdani\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Services\\MANAGIX.Services.csproj",
+      "projectUniqueName": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Services\\MANAGIX.Services.csproj",
       "projectName": "MANAGIX.Services",
-      "projectPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Services\\MANAGIX.Services.csproj",
-      "packagesPath": "C:\\Users\\dell\\.nuget\\packages\\",
-      "outputPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Services\\obj\\",
+      "projectPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Services\\MANAGIX.Services.csproj",
+      "packagesPath": "C:\\Users\\rdani\\.nuget\\packages\\",
+      "outputPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Services\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\dell\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\rdani\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -2855,11 +2855,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.DataAccess\\MANAGIX.DataAccess.csproj": {
-              "projectPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.DataAccess\\MANAGIX.DataAccess.csproj"
+            "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.DataAccess\\MANAGIX.DataAccess.csproj": {
+              "projectPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.DataAccess\\MANAGIX.DataAccess.csproj"
             },
-            "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj": {
-              "projectPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj"
+            "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj": {
+              "projectPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX.Utility\\MANAGIX.Utility.csproj"
             }
           }
         }
@@ -2873,7 +2873,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "9.0.200"
     },
     "frameworks": {
       "net8.0": {
@@ -2894,7 +2895,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.303/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
