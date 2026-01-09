@@ -49,4 +49,9 @@ assignTeamToProject: async (teamId: string, projectId: string) => {
     const response = await api.get(`/projects/${projectId}/dashboard`);
     return response.data;
   },
+
+  getProjectsByTeam: async (teamId: string) => {
+        const response = await api.get(`/projects/team/${teamId}`);
+        return response.data;
+    },
 };

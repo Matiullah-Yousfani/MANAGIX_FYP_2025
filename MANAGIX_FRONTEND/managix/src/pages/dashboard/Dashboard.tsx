@@ -68,6 +68,28 @@ const Dashboard = () => {
           setProjects([]);
         }
       }
+
+      else if (role === 'QA') {
+    const userId = localStorage.getItem('userId');
+    
+    // 1. Get all teams this QA belongs to
+    const myTeamsResponse = await api.get(`/teams/user/${userId}`);
+    const myTeams = myTeamsResponse.data || [];
+
+    // 2. Get the Projects associated with those teams
+    const projectPromises = myTeams.map((team: any) => 
+        api.get(`/projects/team/${team.TeamId}`)
+    );
+    
+    const projectResults = await Promise.all(projectPromises);
+    const assignedProjects = projectResults.flatMap(res => res.data);
+    
+    // 3. Remove duplicates and set state
+    const uniqueProjects = Array.from(new Map(assignedProjects.map(p => [p.ProjectId, p])).values());
+    setProjects(uniqueProjects);
+}
+
+      
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       setProjects([]);

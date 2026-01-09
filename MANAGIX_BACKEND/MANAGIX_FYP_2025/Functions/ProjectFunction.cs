@@ -54,6 +54,9 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
+
+
+
         [Function("DeleteProject")]
         public async Task<HttpResponseData> DeleteProject(
     [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "projects/{projectId}")]
