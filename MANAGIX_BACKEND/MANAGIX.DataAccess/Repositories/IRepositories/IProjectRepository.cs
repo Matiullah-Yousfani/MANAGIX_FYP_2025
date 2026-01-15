@@ -16,7 +16,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         Task<List<Project>> GetByManagerIdAsync(Guid managerId); // ✅ NEW
 
-
+        Task<IEnumerable<Project>> GetProjectsByUserIdAsync(Guid userId);
 
         void Remove(Project project); // ✅ NEW
 

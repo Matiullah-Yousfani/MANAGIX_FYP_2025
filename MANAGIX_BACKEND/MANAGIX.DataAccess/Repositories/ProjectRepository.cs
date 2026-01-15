@@ -38,5 +38,13 @@ namespace MANAGIX.DataAccess.Repositories
         {
             _context.Projects.Remove(project);
         }
+        public async Task<IEnumerable<Project>> GetProjectsByUserIdAsync(Guid userId)
+        {
+            return await _context.Projects
+                .Where(p => _context.ProjectTeams
+                    .Any(pt => pt.ProjectId == p.ProjectId &&
+                               _context.TeamEmployees.Any(te => te.TeamId == pt.TeamId && te.EmployeeId == userId)))
+                .ToListAsync();
+        }
     }
 }

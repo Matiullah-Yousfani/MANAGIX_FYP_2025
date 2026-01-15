@@ -20,5 +20,7 @@ namespace MANAGIX.DataAccess.Repositories
 
         public async Task<ProjectTeam?> GetByProjectIdAsync(Guid projectId) =>
             await _context.ProjectTeams.FirstOrDefaultAsync(pt => pt.ProjectId == projectId);
+        
+
     }
 }

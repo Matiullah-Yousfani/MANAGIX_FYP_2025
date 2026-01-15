@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +31,12 @@ namespace MANAGIX.Models.Models
 
         public bool IsClosed { get; set; } = false;
         public DateTime? ClosedAt { get; set; }
+
+        [Required]
+        public Guid ModelId { get; set; } // Foreign key ID
+
+        [ForeignKey("ModelId")]
+        public ProjectModel? ProjectModel { get; set; }
     }
 
 }

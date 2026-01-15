@@ -36,6 +36,13 @@ namespace MANAGIX.DataAccess.Data
 
         public DbSet<EmployeePerformance> EmployeePerformances { get; set; }
 
+        public DbSet<ProjectModel> ProjectModels { get; set; }
+
+        // Resume Tables
+        public DbSet<ResumeEducation> ResumeEducations { get; set; }
+        public DbSet<ResumeSkill> ResumeSkills { get; set; }
+        public DbSet<ResumeProject> ResumeProjects { get; set; }
+        public DbSet<ResumeExperience> ResumeExperiences { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -117,6 +117,9 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Property<bool>("IsClosed")
                         .HasColumnType("bit");
 
+                    b.Property<Guid>("ModelId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -127,7 +130,24 @@ namespace MANAGIX.DataAccess.Migrations
 
                     b.HasKey("ProjectId");
 
+                    b.HasIndex("ModelId");
+
                     b.ToTable("Projects");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.ProjectModel", b =>
+                {
+                    b.Property<Guid>("ModelId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ModelId");
+
+                    b.ToTable("ProjectModels");
                 });
 
             modelBuilder.Entity("MANAGIX.Models.Models.ProjectTeam", b =>
@@ -148,6 +168,108 @@ namespace MANAGIX.DataAccess.Migrations
                         .IsUnique();
 
                     b.ToTable("ProjectTeams");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.ResumeEducation", b =>
+                {
+                    b.Property<Guid>("EducationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Degree")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Institution")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Year")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("EducationId");
+
+                    b.ToTable("ResumeEducations");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.ResumeExperience", b =>
+                {
+                    b.Property<Guid>("ExperienceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Company")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Duration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ExperienceId");
+
+                    b.ToTable("ResumeExperiences");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.ResumeProject", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ProjectId");
+
+                    b.ToTable("ResumeProjects");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.ResumeSkill", b =>
+                {
+                    b.Property<Guid>("SkillId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("SkillId");
+
+                    b.ToTable("ResumeSkills");
                 });
 
             modelBuilder.Entity("MANAGIX.Models.Models.Role", b =>
@@ -308,6 +430,9 @@ namespace MANAGIX.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")
@@ -344,6 +469,9 @@ namespace MANAGIX.DataAccess.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Skills")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Summary")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("UserId")
@@ -431,6 +559,17 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.Project", b =>
+                {
+                    b.HasOne("MANAGIX.Models.Models.ProjectModel", "ProjectModel")
+                        .WithMany()
+                        .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProjectModel");
                 });
 
             modelBuilder.Entity("MANAGIX.Models.Models.TaskItem", b =>

@@ -24,6 +24,15 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         IEmployeePerformanceRepository EmployeePerformances { get; }
 
         ITaskSubmissionRepository TaskSubmissions { get; }
+
+        IProjectModelRepository ProjectModels { get; }
+
+        // Resume Repositories
+        IResumeEducationRepository ResumeEducations { get; }
+        IResumeSkillRepository ResumeSkills { get; }
+        IResumeProjectRepository ResumeProjects { get; }
+        IResumeExperienceRepository ResumeExperiences { get; }
+
         Task<int> CompleteAsync();
     }
 }

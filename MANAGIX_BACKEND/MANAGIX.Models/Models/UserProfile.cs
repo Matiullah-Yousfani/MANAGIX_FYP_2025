@@ -27,5 +27,6 @@ namespace MANAGIX.Models.Models
         public string? ResumeFilePath { get; set; }
         public string? ProfilePicture { get; set; }
         public string? Bio { get; set; }
+        public string? Summary { get; set; }
     }
 }

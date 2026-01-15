@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { projectService } from '../../api/projectService';
 import { milestoneService } from '../../api/milestoneService';
-import { FiCalendar, FiDollarSign, FiTrash2, FiPlus, FiChevronRight, FiChevronLeft, FiCheckCircle } from 'react-icons/fi';
+import { 
+  FiCalendar, 
+  FiDollarSign, 
+  FiTrash2, 
+  FiPlus, 
+  FiChevronRight, 
+  FiChevronLeft, 
+  FiCheckCircle, 
+  FiLayers 
+} from 'react-icons/fi';
 
 const CreateProject = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [projectModels, setProjectModels] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     deadline: '',
     budget: 0,
+    modelId: '', // This will hold the GUID from the dropdown
     managerId: localStorage.getItem('userId') || ''
   });
 
@@ -25,6 +36,19 @@ const CreateProject = () => {
     deadline: '',
     budgetAllocated: 0
   });
+
+  // 1. Fetch models from database on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const data = await projectService.getProjectModels();
+        setProjectModels(data);
+      } catch (err) {
+        console.error("Failed to load project models:", err);
+      }
+    };
+    fetchModels();
+  }, []);
 
   const totalAllocated = milestones.reduce((sum, m) => sum + m.budgetAllocated, 0);
   const remainingBudget = formData.budget - totalAllocated;
@@ -69,8 +93,10 @@ const CreateProject = () => {
     }
     setLoading(true);
     try {
+      // Send formData which now includes the selected modelId
       const newProject = await projectService.create(formData);
-      const projectId = newProject.projectId || newProject.ProjectId;
+      const projectId = newProject.ProjectId || newProject.projectId;
+      
       const milestonePromises = milestones.map(m => 
         milestoneService.create({
           projectId: projectId,
@@ -85,7 +111,7 @@ const CreateProject = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      alert("Failed to launch project.");
+      alert("Failed to launch project. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -104,26 +130,26 @@ const CreateProject = () => {
         {/* Stepper UI */}
         <div className="px-8 mb-8">
           <div className="flex items-center justify-between relative">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex flex-col items-center z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                  step >= s ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-gray-100 text-gray-400'
-                }`}>
-                  {step > s ? <FiCheckCircle size={16} /> : s}
-                </div>
-              </div>
-            ))}
-            <div className="absolute top-4 left-0 w-full h-[2px] bg-gray-100 -z-0">
-              <div 
-                className="h-full bg-indigo-600 transition-all duration-500" 
-                style={{ width: `${(step - 1) * 50}%` }}
-              ></div>
-            </div>
+             {[1, 2, 3].map((s) => (
+               <div key={s} className="flex flex-col items-center z-10">
+                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                   step >= s ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-gray-100 text-gray-400'
+                 }`}>
+                   {step > s ? <FiCheckCircle size={16} /> : s}
+                 </div>
+               </div>
+             ))}
+             <div className="absolute top-4 left-0 w-full h-[2px] bg-gray-100 -z-0">
+               <div 
+                 className="h-full bg-indigo-600 transition-all duration-500" 
+                 style={{ width: `${(step - 1) * 50}%` }}
+               ></div>
+             </div>
           </div>
         </div>
 
         <div className="px-8 pb-10">
-          {/* STEP 1: Details */}
+          {/* STEP 1: Details & Methodology Selection */}
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
@@ -135,6 +161,27 @@ const CreateProject = () => {
                   onChange={e => setFormData({...formData, title: e.target.value})} 
                 />
               </div>
+
+              {/* PROJECT METHODOLOGY DROPDOWN */}
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Project Methodology</label>
+                <div className="relative">
+                  <FiLayers className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                  <select 
+                    className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-gray-800 font-medium appearance-none"
+                    value={formData.modelId}
+                    onChange={e => setFormData({...formData, modelId: e.target.value})}
+                  >
+                    <option value="">Select Methodology...</option>
+                    {projectModels.map((model) => (
+                      <option key={model.ModelId} value={model.ModelId}>
+                        {model.ModelName || model.modelName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</label>
                 <textarea 
@@ -144,9 +191,10 @@ const CreateProject = () => {
                   onChange={e => setFormData({...formData, description: e.target.value})} 
                 />
               </div>
+
               <button 
                 onClick={() => setStep(2)} 
-                disabled={!formData.title} 
+                disabled={!formData.title || !formData.modelId} 
                 className="w-full bg-indigo-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all disabled:opacity-50"
               >
                 Continue <FiChevronRight />

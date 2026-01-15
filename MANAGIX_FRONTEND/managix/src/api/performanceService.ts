@@ -6,7 +6,7 @@ export const performanceService = {
     const res = await api.post(`/performance/${employeeId}/${projectId}`, {}); 
     return res.data;
   },
-
+  
  recalculateProject: async (projectId: string) => {
         const response = await api.post(`/performance/recalculate/${projectId}`);
         return response.data;

@@ -18,6 +18,7 @@ import TaskCenter from './pages/task/TaskHub';
 import Task from './pages/task/Task';
 import TaskHub from './pages/task/TaskHub';
 import KanbanBoard from './pages/task/KanbanBoard';
+import Meeting from './pages/meeting/Meeting';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
 
         {/* Shared Section: Profile & Resume (STEP 3) */}
         <Route path="/profile" element={<Layout><Profile /></Layout>} />
+        <Route path="/meeting" element={<Layout><Meeting /></Layout>} />
 
         {/* Manager Section */}
         <Route path="/create-project" element={<Layout><CreateProject /></Layout>} />

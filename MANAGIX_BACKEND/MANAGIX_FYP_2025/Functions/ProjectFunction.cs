@@ -20,18 +20,18 @@ namespace MANAGIX_FYP_2025.Functions
 
         [Function("CreateProject")]
         public async Task<HttpResponseData> CreateProject(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "projects")] HttpRequestData req)
+      [HttpTrigger(AuthorizationLevel.Function, "post", Route = "projects")] HttpRequestData req)
         {
-            var body = await new StreamReader(req.Body).ReadToEndAsync();   
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
             var dto = JsonSerializer.Deserialize<ProjectCreateDto>(body, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
-            if (dto == null || string.IsNullOrWhiteSpace(dto.Title))
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Title) || dto.ModelId == Guid.Empty)
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResp.WriteAsJsonAsync(new { message = "Invalid data" });
+                await badResp.WriteAsJsonAsync(new { message = "Invalid data: Project Title and Model are required." });
                 return badResp;
             }
 
@@ -41,9 +41,10 @@ namespace MANAGIX_FYP_2025.Functions
                 Description = dto.Description,
                 Deadline = dto.Deadline,
                 Budget = dto.Budget,
+                ModelId = dto.ModelId, // <--- MAP THE NEW COLUMN HERE
                 Status = "New",
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = dto.ManagerId // Use the ID passed from the frontend
+                CreatedBy = dto.ManagerId
             };
 
             await _unitOfWork.Projects.AddAsync(project);
@@ -53,7 +54,6 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(project);
             return resp;
         }
-
 
 
 
@@ -200,5 +200,57 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(project);
             return resp;
         }
+
+
+        [Function("UpdateProject")]
+        public async Task<HttpResponseData> UpdateProject(
+    [HttpTrigger(AuthorizationLevel.Function, "put", Route = "projects/{projectId}")] HttpRequestData req,
+    string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            var body = await new StreamReader(req.Body).ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<ProjectCreateDto>(body, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (dto == null) return await BadRequest(req, "Invalid data");
+
+            var project = await _unitOfWork.Projects.GetByIdAsync(pid);
+            if (project == null) return await BadRequest(req, "Project not found");
+
+            // Update fields
+            project.Title = dto.Title;
+            project.Description = dto.Description;
+            // Update other fields if necessary (Deadline, Budget, etc.)
+
+            _unitOfWork.Projects.Update(project);
+            await _unitOfWork.CompleteAsync();
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { message = "Project updated successfully", project });
+            return resp;
+        }
+
+
+        [Function("GetProjectsByEmployee")]
+        public async Task<HttpResponseData> GetProjectsByEmployee(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "projects/employee/{userId}")] HttpRequestData req,
+    string userId)
+        {
+            if (!Guid.TryParse(userId, out var uid))
+                return await BadRequest(req, "Invalid UserId format");
+
+            // This will now compile because it is defined in IProjectRepository
+            var projects = await _unitOfWork.Projects.GetProjectsByUserIdAsync(uid);
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(projects);
+            return resp;
+        }
+
+
     }
 }

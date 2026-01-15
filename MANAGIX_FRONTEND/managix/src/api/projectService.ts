@@ -54,4 +54,15 @@ assignTeamToProject: async (teamId: string, projectId: string) => {
         const response = await api.get(`/projects/team/${teamId}`);
         return response.data;
     },
+  
+  // Fetch all projects assigned to the user via their team membership
+getByEmployee: async (userId: string) => {
+    const response = await api.get(`/projects/employee/${userId}`);
+    return response.data;
+  },
+
+  getProjectModels: async() => {
+    const response = await api.get("/project-models")
+    return response.data;
+  },
 };
