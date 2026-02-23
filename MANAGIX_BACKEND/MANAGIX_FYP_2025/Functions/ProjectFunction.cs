@@ -56,6 +56,83 @@ namespace MANAGIX_FYP_2025.Functions
         }
 
 
+        [Function("GetAdminProjectDetailPage")]
+        public async Task<HttpResponseData> GetProjectDetailForAdminAsync(
+         [HttpTrigger(AuthorizationLevel.Function, "get", Route = "projects/admin/{projectId}")] HttpRequestData req,
+         string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            var project = await _unitOfWork.Projects.GetByIdAsync(pid);
+            if (project == null)
+                return await BadRequest(req, "Project not found");
+
+            // Milestones
+            var milestones = await _unitOfWork.Milestones.GetByProjectIdAsync(pid);
+
+            // Tasks
+            var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+
+            // Single Team
+            var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
+            Team? team = null;
+            if (projectTeam != null)
+            {
+                team = await _unitOfWork.Teams.GetByIdAsync(projectTeam.TeamId);
+            }
+
+            // Members
+            var members = new List<User>();
+            if (team != null)
+            {
+                var teamEmployees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(team.TeamId);
+                foreach (var te in teamEmployees)
+                {
+                    var user = await _unitOfWork.Users.GetByIdAsync(te.EmployeeId);
+                    if (user != null) members.Add(user);
+                }
+            }
+
+            var projectDetailDto = new ProjectDetailAdminDto
+            {
+                ProjectId = project.ProjectId,
+                Title = project.Title,
+                Description = project.Description,
+                Deadline = project.Deadline,
+                Budget = project.Budget,
+                Status = project.Status,
+                Milestones = milestones.Select(m => new MilestoneDto
+                {
+                    MilestoneId = m.MilestoneId,
+                    Title = m.Title,
+                    Deadline = m.Deadline,
+                    Status = m.Status
+                }).ToList(),
+                Tasks = tasks.Select(t => new TaskItemDto
+                {
+                    TaskId = t.TaskId,
+                    Title = t.Title,
+                    Status = t.Status,
+                    AssignedEmployeeId = t.AssignedEmployeeId
+                }).ToList(),
+                Teams = team != null ? new List<TeamDto>
+        {
+            new TeamDto { TeamId = team.TeamId, Name = team.Name }
+        } : new List<TeamDto>(),
+                Members = members.Select(u => new UserDto
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email
+                }).ToList()
+            };
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(projectDetailDto);
+            return resp;
+        }
+
 
         [Function("DeleteProject")]
         public async Task<HttpResponseData> DeleteProject(
@@ -250,6 +327,35 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(projects);
             return resp;
         }
+        [Function("GetTeamByProjectId")]
+        public async Task<HttpResponseData> GetTeamByProjectId(
+    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "projects/{projectId}/team")] HttpRequestData req,
+    string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            // Get the team assignment from the bridge table
+            var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
+
+            if (projectTeam == null)
+                return await BadRequest(req, "No team assigned to this project");
+
+            // Get the actual team details
+            var team = await _unitOfWork.Teams.GetByIdAsync(projectTeam.TeamId);
+            if (team == null)
+                return await BadRequest(req, "Team not found");
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new
+            {
+                TeamId = team.TeamId,
+                Name = team.Name
+            });
+
+            return resp;
+        }
+
 
 
     }
