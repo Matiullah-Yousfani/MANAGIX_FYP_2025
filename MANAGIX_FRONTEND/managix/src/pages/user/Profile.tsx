@@ -641,7 +641,7 @@ const Profile = () => {
                 </div>
 
                 <div className="lg:col-span-1">
-                    {(role === 'Employee' || role === 'Manager') && !showParsedForm && (
+                    {(role === 'Employee' || role === 'Manager' || role === 'QA') && !showParsedForm && (
                         <div className="bg-black text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
                             <div className="relative z-10">
                                 <div className="h-12 w-12 bg-gray-800 rounded-2xl flex items-center justify-center mb-6">

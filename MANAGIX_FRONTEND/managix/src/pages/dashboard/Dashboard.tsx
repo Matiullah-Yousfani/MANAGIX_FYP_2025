@@ -1,13 +1,11 @@
 // src/pages/Dashboard.tsx
 import React, { useEffect, useState } from 'react';
-import api from '../../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
-import { projectService } from '../../api/projectService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiBriefcase, FiCheckCircle, FiPlus, 
-  FiSearch, FiTrash2, FiEdit3, FiChevronRight, FiActivity 
-} from 'react-icons/fi';
+import { FiBriefcase, FiCheckCircle, FiPlus, FiSearch, FiTrash2, FiEdit3, FiChevronRight, FiActivity } from 'react-icons/fi';
+import api from '../../api/axiosInstance';
+import { projectService } from '../../api/projectService';
+import { adminService } from '../../api/adminService';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -16,15 +14,19 @@ const Dashboard = () => {
   const [userRole, setUserRole] = useState('Member');
   const [userId, setUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
   const navigate = useNavigate();
 
-  // --- MODAL & ACTION STATES ---
+  // Modal & Action States
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [newProject, setNewProject] = useState({ title: '', description: '' });
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  // ✅ Admin: selected project details
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -63,10 +65,12 @@ const Dashboard = () => {
     }
   };
 
-  const filteredProjects = projects.filter(p => 
+  // Filter projects by search term
+  const filteredProjects = projects.filter(p =>
     (p.title || p.Title || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Open modal to edit project
   const openEditModal = (e: React.MouseEvent, project: any) => {
     e.stopPropagation();
     const pId = project.projectId || project.ProjectId;
@@ -79,6 +83,7 @@ const Dashboard = () => {
     setShowModal(true);
   };
 
+  // Open delete confirmation
   const confirmDelete = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
     setCurrentProjectId(projectId);
@@ -111,6 +116,19 @@ const Dashboard = () => {
     }
   };
 
+  // ✅ Fetch full admin project details
+  const fetchProjectDetails = async (projectId: string) => {
+    if (userRole !== 'Admin') return;
+    try {
+      const data = await adminService.getAdminProjectDetailPage(projectId);
+      setSelectedProject(data);
+      setShowModal(true); // Show modal with full details
+      setIsEditing(false); // Disable edit by default in detail view
+    } catch (err) {
+      showToast("Failed to load project details", "error");
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
       <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -120,7 +138,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      {/* HEADER SECTION */}
+      {/* HEADER */}
       <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
@@ -129,10 +147,10 @@ const Dashboard = () => {
             </h1>
             <p className="text-gray-500 mt-1 font-medium italic">Strategic Project Overview</p>
           </div>
-          
+
           <div className="relative group w-full md:w-96">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
-            <input 
+            <input
               type="text"
               placeholder="Search active projects..."
               className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-indigo-200 transition-all font-medium"
@@ -144,7 +162,7 @@ const Dashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6">
-        {/* UPDATED METRICS GRID (Pending Task Removed) */}
+        {/* METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
             <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
@@ -155,19 +173,9 @@ const Dashboard = () => {
               <h3 className="text-3xl font-black text-gray-900">{projects.length}</h3>
             </div>
           </div>
-
-          {/* <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
-              <FiCheckCircle size={28} />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Completed Items</p>
-              <h3 className="text-3xl font-black text-gray-900">04</h3>
-            </div>
-          </div> */}
         </div>
 
-        {/* PROJECTS SECTION */}
+        {/* PROJECTS GRID */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-black text-gray-800">Operational Portfolio</h2>
           <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
@@ -188,11 +196,14 @@ const Dashboard = () => {
                 <motion.div
                   layout
                   key={pId}
-                  onClick={() => userRole === 'QA' ? navigate(`/qa/review?projectId=${pId}`) : navigate(`/projects/${pId}`)}
+                  onClick={() => {
+                    if (userRole === 'Admin') fetchProjectDetails(pId);
+                    else if (userRole === 'QA') navigate(`/qa/review?projectId=${pId}`);
+                    else navigate(`/projects/${pId}`);
+                  }}
                   className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col"
                 >
                   <FiBriefcase className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-indigo-50 transition-colors pointer-events-none" />
-
                   <div className="relative flex-1">
                     <div className="flex justify-between items-start mb-6">
                       <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${
@@ -200,7 +211,7 @@ const Dashboard = () => {
                       }`}>
                         {project.status || project.Status || 'Active'}
                       </div>
-                      
+
                       {userRole === 'Admin' && (
                         <div className="flex gap-2">
                           <button onClick={(e) => openEditModal(e, project)} className="p-2 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
@@ -216,9 +227,8 @@ const Dashboard = () => {
                     <h3 className="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-4 line-clamp-1">
                       {project.title || project.Title}
                     </h3>
-                    
                     <p className="text-gray-500 text-sm font-medium leading-relaxed mb-8 line-clamp-3">
-                      {project.description || project.Description || 'No description available for this operational asset.'}
+                      {project.description || project.Description || 'No description available.'}
                     </p>
                   </div>
 
@@ -241,7 +251,7 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* TOAST NOTIFICATION */}
+      {/* TOAST */}
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}
@@ -254,30 +264,104 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* EDIT MODAL */}
+      {/* MODAL: Edit / Details */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowModal(false)} />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl p-10">
-              <h2 className="text-3xl font-black text-gray-900 mb-8">Edit Project</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Title</label>
-                  <input className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                    required value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Description</label>
-                  <textarea className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium h-32 resize-none"
-                    value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} />
-                </div>
-                <div className="flex gap-4 pt-4">
-                  <button type="submit" className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Save Changes</button>
-                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold">Cancel</button>
-                </div>
-              </form>
+              className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]">
+              
+              {isEditing ? (
+                // Edit Form
+                <>
+                  <h2 className="text-3xl font-black text-gray-900 mb-8">Edit Project</h2>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Title</label>
+                      <input className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                        required value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Description</label>
+                      <textarea className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium h-32 resize-none"
+                        value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} />
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                      <button type="submit" className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Save Changes</button>
+                      <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold">Cancel</button>
+                    </div>
+                  </form>
+                </>
+              ) : selectedProject ? (
+                // Details View
+                <>
+                  <h2 className="text-3xl font-black text-gray-900 mb-4">{selectedProject.Title}</h2>
+                  <p className="text-gray-500 mb-4 whitespace-pre-line">{selectedProject.Description}</p>
+
+                  <div className="mb-4"><span className="font-bold">Deadline:</span> {new Date(selectedProject.Deadline).toLocaleDateString()}</div>
+                  <div className="mb-4"><span className="font-bold">Budget:</span> ${selectedProject.Budget}</div>
+                  <div className="mb-4"><span className="font-bold">Status:</span> {selectedProject.Status}</div>
+
+                  <div className="mb-4">
+                    <h3 className="font-bold text-lg mb-2">Milestones</h3>
+                    <ul className="list-disc pl-6">
+                      {selectedProject.Milestones.map((m: any) => (
+                        <li key={m.MilestoneId}>
+                          {m.Title} - {m.Status} - Deadline: {new Date(m.Deadline).toLocaleDateString()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="font-bold text-lg mb-2">Tasks</h3>
+                    <ul className="list-disc pl-6">
+                      {selectedProject.Tasks.map((t: any) => (
+                        <li key={t.TaskId}>{t.Title} - {t.Status}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="font-bold text-lg mb-2">Teams</h3>
+                    <ul className="list-disc pl-6">
+                      {selectedProject.Teams.map((team: any) => (
+                        <li key={team.TeamId}>{team.Name}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="font-bold text-lg mb-2">Members</h3>
+                    <ul className="list-disc pl-6">
+                      {selectedProject.Members.map((member: any) => (
+                        <li key={member.UserId}>{member.FullName} ({member.Email})</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button onClick={() => setShowModal(false)} className="mt-6 bg-indigo-600 text-white py-3 px-6 rounded-2xl font-bold">Close</button>
+                </>
+              ) : null}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowDeleteModal(false)} />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+              <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
+              <p className="mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
+              <div className="flex gap-4">
+                <button onClick={handleDeleteProject} className="flex-1 bg-red-600 text-white py-2 rounded-xl font-bold">Delete</button>
+                <button onClick={() => setShowDeleteModal(false)} className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">Cancel</button>
+              </div>
             </motion.div>
           </div>
         )}

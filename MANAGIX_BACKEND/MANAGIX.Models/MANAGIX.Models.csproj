@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="DTO\public class MilestoneDto.cs" />
+  </ItemGroup>
+
 </Project>

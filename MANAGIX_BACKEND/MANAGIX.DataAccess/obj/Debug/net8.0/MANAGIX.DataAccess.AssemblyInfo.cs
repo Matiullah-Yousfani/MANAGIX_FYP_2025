@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MANAGIX.DataAccess")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+54ee4afbceaad98854f5715642edbade9f51460b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a766d9b375b09889080da5883b427c7233caccd5")]
 [assembly: System.Reflection.AssemblyProductAttribute("MANAGIX.DataAccess")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MANAGIX.DataAccess")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
