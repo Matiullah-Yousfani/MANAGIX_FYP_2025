@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MANAGIX.Models")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a766d9b375b09889080da5883b427c7233caccd5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+40de28cfe630c5d9ecb78d160ff3903c3b3f92ab")]
 [assembly: System.Reflection.AssemblyProductAttribute("MANAGIX.Models")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MANAGIX.Models")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
