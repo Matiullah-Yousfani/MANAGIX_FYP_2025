@@ -27,6 +27,7 @@ builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IResumeService, ResumeService>();
+builder.Services.AddScoped<IAiAllocationService, AiAllocationService>();
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
