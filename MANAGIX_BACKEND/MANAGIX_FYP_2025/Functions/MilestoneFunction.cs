@@ -1,13 +1,13 @@
 ﻿using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
+using MANAGIX.Utility;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -37,6 +37,51 @@ namespace MANAGIX_FYP_2025.Functions
                 {
                     var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
                     await badResp.WriteAsJsonAsync(new { message = "Invalid data" });
+                    return badResp;
+                }
+
+                var project = await _unitOfWork.Projects.GetByIdAsync(dto.ProjectId);
+                if (project == null)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Project not found." });
+                    return badResp;
+                }
+
+                if (project.IsClosed)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Cannot add milestones to a closed project." });
+                    return badResp;
+                }
+
+                if (dto.BudgetAllocated < 0)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Milestone budget cannot be negative." });
+                    return badResp;
+                }
+
+                dto.Title = dto.Title.Trim();
+                var existingForProject = await _unitOfWork.Milestones.GetByProjectIdAsync(dto.ProjectId);
+                if (existingForProject.Any(m => string.Equals(m.Title, dto.Title, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                    await conflict.WriteAsJsonAsync(new { message = "A milestone with this title already exists for the project." });
+                    return conflict;
+                }
+
+                if (CalendarDate.IsBeforeUtcCalendarToday(dto.Deadline))
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Milestone deadline must be today or a future date." });
+                    return badResp;
+                }
+
+                if (CalendarDate.IsAfterCalendarDate(dto.Deadline, project.Deadline))
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Milestone deadline cannot be after the project deadline." });
                     return badResp;
                 }
 
@@ -104,9 +149,31 @@ namespace MANAGIX_FYP_2025.Functions
             if (milestone == null)
                 return await BadRequest(req, "Milestone not found");
 
-            milestone.Title = dto.Title;
+            var proj = await _unitOfWork.Projects.GetByIdAsync(milestone.ProjectId);
+            if (proj != null && proj.IsClosed)
+                return await BadRequest(req, "Cannot update milestone: project is closed.");
+
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                return await BadRequest(req, "Milestone title is required.");
+
+            if (dto.BudgetAllocated < 0)
+                return await BadRequest(req, "Milestone budget cannot be negative.");
+
+            var trimmedTitle = dto.Title.Trim();
+            var siblings = await _unitOfWork.Milestones.GetByProjectIdAsync(milestone.ProjectId);
+            if (siblings.Any(m => m.MilestoneId != mid && string.Equals(m.Title, trimmedTitle, StringComparison.OrdinalIgnoreCase)))
+                return await BadRequest(req, "Another milestone with this title already exists for the project.");
+
+            if (dto.Deadline != default && CalendarDate.IsBeforeUtcCalendarToday(dto.Deadline))
+                return await BadRequest(req, "Milestone deadline must be today or a future date.");
+
+            if (proj != null && dto.Deadline != default && CalendarDate.IsAfterCalendarDate(dto.Deadline, proj.Deadline))
+                return await BadRequest(req, "Milestone deadline cannot be after the project deadline.");
+
+            milestone.Title = trimmedTitle;
             milestone.Description = dto.Description;
-            milestone.Deadline = dto.Deadline;
+            if (dto.Deadline != default)
+                milestone.Deadline = dto.Deadline;
             milestone.BudgetAllocated = dto.BudgetAllocated;
             milestone.Status = dto.Status;
 
@@ -130,6 +197,10 @@ namespace MANAGIX_FYP_2025.Functions
             var milestone = await _unitOfWork.Milestones.GetByIdAsync(mid);
             if (milestone == null)
                 return await BadRequest(req, "Milestone not found");
+
+            var tasks = await _unitOfWork.Tasks.GetByMilestoneIdAsync(mid);
+            if (tasks != null && tasks.Count > 0)
+                return await BadRequest(req, "Cannot delete milestone: tasks exist under this milestone.");
 
             _unitOfWork.Milestones.Remove(milestone);
             await _unitOfWork.CompleteAsync();
@@ -160,6 +231,10 @@ namespace MANAGIX_FYP_2025.Functions
 
             var milestone = await _unitOfWork.Milestones.GetByIdAsync(mid);
             if (milestone == null) return await BadRequest(req, "Milestone not found");
+
+            var p = await _unitOfWork.Projects.GetByIdAsync(milestone.ProjectId);
+            if (p != null && p.IsClosed)
+                return await BadRequest(req, "Cannot close milestone: project is closed.");
 
             milestone.Status = "Completed";
             milestone.CompletedAt = DateTime.UtcNow;

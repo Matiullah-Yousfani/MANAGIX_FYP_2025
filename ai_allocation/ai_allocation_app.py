@@ -543,6 +543,7 @@ TEAM MEMBERS:
 {members_text}
 
 INSTRUCTIONS:
+0. CRITICAL: You may ONLY assign each task to a member listed under TEAM MEMBERS above. Never invent or use userIds that are not in that list.
 1. Analyze each task's title and description to understand what skills and expertise it requires.
 2. For each task, evaluate all team members and select the best match based on:
    - Skill match: Does the team member have the skills needed for this task?
@@ -568,7 +569,7 @@ Return a JSON object with the following exact structure:
 }}
 
 RULES:
-- Every task must be assigned to exactly one team member.
+- Every task must be assigned to exactly one team member from the TEAM MEMBERS list only.
 - CRITICAL: You MUST copy-paste the EXACT taskId and userId strings from the input above. They are long UUIDs like "802b9708-0a9f-4832-8ddb-4306d71ac4b4". Do NOT shorten them or replace them with "user1", "task-1" etc.
 - Do not assign all tasks to a single person. Balance the workload across the team.
 - When calculating workload, consider both existing activeTasks AND the new tasks you are assigning in this response.

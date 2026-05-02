@@ -1,6 +1,8 @@
 ﻿using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
+using MANAGIX.Services;
+using MANAGIX.Utility;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using System;
@@ -22,12 +24,38 @@ namespace MANAGIX_FYP_2025.Functions
             _unitOfWork = unitOfWork;
         }
 
+        private static Guid ResolveCallerUserId(HttpRequestData req)
+        {
+            try
+            {
+                return req.GetUserId();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                if (req.Headers.TryGetValues("userId", out var vals))
+                {
+                    var raw = vals.FirstOrDefault();
+                    if (raw != null && Guid.TryParse(raw, out var id))
+                        return id;
+                }
+
+                throw;
+            }
+        }
+
+        private static bool CanViewOrEditTask(HttpRequestData req, TaskItem task, Guid callerId)
+        {
+            if (task.AssignedEmployeeId.HasValue && task.AssignedEmployeeId.Value == callerId)
+                return true;
+            return req.JwtHasAnyRole("Admin", "Manager", "QA");
+        }
+
         // ✅ GET /tasks/assigned-to-me
         [Function("GetAssignedTasks")]
         public async Task<HttpResponseData> GetAssignedTasks(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/assigned-to-me")] HttpRequestData req)
         {
-            var employeeId = Guid.Parse(req.Headers.GetValues("userId").First());
+            var employeeId = ResolveCallerUserId(req);
             var tasks = await _unitOfWork.Tasks.GetByEmployeeIdAsync(employeeId);
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
@@ -44,36 +72,78 @@ namespace MANAGIX_FYP_2025.Functions
                 if (!Guid.TryParse(taskId, out var tid))
                     return await BadRequest(req, "Invalid TaskId");
 
-                if (!req.Headers.TryGetValues("userId", out var userHeaderValues) || !userHeaderValues.Any())
-                    return await BadRequest(req, "User ID header is missing.");
+                Guid submitterId;
+                try
+                {
+                    submitterId = ResolveCallerUserId(req);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return await BadRequest(req, "Authorization required.");
+                }
 
-                var userIdString = userHeaderValues.First();
                 var body = await new StreamReader(req.Body).ReadToEndAsync();
                 var dto = JsonSerializer.Deserialize<TaskSubmissionDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (dto == null || string.IsNullOrEmpty(dto.FileBase64))
                     return await BadRequest(req, "Invalid data or missing file");
 
-                // 1. Setup Paths
                 var fileBytes = Convert.FromBase64String(dto.FileBase64);
+                const long maxBytes = 15L * 1024 * 1024;
+                if (fileBytes.Length > maxBytes)
+                    return await BadRequest(req, "File exceeds maximum allowed size (15 MB).");
+
+                var allowedExt = new[] { ".pdf", ".doc", ".docx", ".txt", ".png", ".jpg", ".jpeg", ".zip" };
+                var ext = Path.GetExtension(dto.FileName ?? "").ToLowerInvariant();
+                if (string.IsNullOrEmpty(ext) || !allowedExt.Contains(ext))
+                    return await BadRequest(req, "File type not allowed.");
+
+                var taskForSubmit = await _unitOfWork.Tasks.GetByIdAsync(tid);
+                if (taskForSubmit == null)
+                    return await NotFound(req, "Task not found");
+
+                var project = await _unitOfWork.Projects.GetByIdAsync(taskForSubmit.ProjectId);
+                if (project == null)
+                    return await BadRequest(req, "Project not found");
+                if (project.IsClosed)
+                    return await BadRequest(req, "Cannot submit work for a closed project.");
+
+                if (!taskForSubmit.AssignedEmployeeId.HasValue)
+                    return await BadRequest(req, "Task must be assigned before submission.");
+                if (taskForSubmit.AssignedEmployeeId.Value != submitterId)
+                    return await BadRequest(req, "Only the assigned employee can submit this task.");
+
+                var normalized = TaskWorkflow.Normalize(taskForSubmit.Status);
+                if (normalized != TaskWorkflow.InProgress)
+                    return await BadRequest(req, "Task must be In Progress before submitting deliverables.");
+
+                var existingSubmission = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
+                if (existingSubmission != null)
+                {
+                    if (existingSubmission.Status == "Rejected" &&
+                        TaskWorkflow.Normalize(taskForSubmit.Status) == TaskWorkflow.InProgress)
+                    {
+                        _unitOfWork.TaskSubmissions.Remove(existingSubmission);
+                    }
+                    else
+                        return await BadRequest(req, "A submission already exists for this task.");
+                }
+
                 var projectRoot = @"D:\FYP-Project\MANAGIX_FYP_2025\MANAGIX_BACKEND\MANAGIX_FYP_2025";
                 var uploadPath = Path.Combine(projectRoot, "wwwroot", "tasks");
 
                 if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
 
-                // 2. Generate File Name with correct extension
                 var extension = Path.GetExtension(dto.FileName) ?? ".dat";
                 var fileName = $"{tid}_{DateTime.UtcNow.Ticks}{extension}";
                 var physicalPath = Path.Combine(uploadPath, fileName);
 
-                // 3. Save file to Disk
                 await File.WriteAllBytesAsync(physicalPath, fileBytes);
 
-                // 4. Create Database Record with URL instead of physical path
                 var submission = new TaskSubmission
                 {
                     TaskId = tid,
-                    SubmittedBy = Guid.Parse(userIdString),
+                    SubmittedBy = submitterId,
                     FilePath = $"/tasks/{fileName}", // Store the URL path
                     Comment = dto.Comment,
                     Status = "Submitted",
@@ -82,13 +152,8 @@ namespace MANAGIX_FYP_2025.Functions
 
                 await _unitOfWork.TaskSubmissions.AddAsync(submission);
 
-                // 5. Update Task Status
-                var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
-                if (task != null)
-                {
-                    task.Status = "Submitted";
-                    _unitOfWork.Tasks.Update(task);
-                }
+                taskForSubmit.Status = TaskWorkflow.Done;
+                _unitOfWork.Tasks.Update(taskForSubmit);
 
                 await _unitOfWork.CompleteAsync();
 
@@ -115,6 +180,9 @@ namespace MANAGIX_FYP_2025.Functions
             {
                 if (!Guid.TryParse(taskId, out var tid))
                     return await BadRequest(req, "Invalid TaskId");
+
+                if (!req.JwtHasAnyRole("QA", "Manager", "Admin"))
+                    return await BadRequest(req, "Not authorized to view submissions.");
 
                 // 1. Fetch submission
                 var submission = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
@@ -170,6 +238,13 @@ namespace MANAGIX_FYP_2025.Functions
         public async Task<HttpResponseData> GetPendingSubmissions(
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/pending-review")] HttpRequestData req)
         {
+            if (!req.JwtHasAnyRole("QA", "Admin"))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { message = "QA access only." });
+                return forbidden;
+            }
+
             var submissions = await _unitOfWork.TaskSubmissions.GetPendingSubmissionsAsync();
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
@@ -183,7 +258,7 @@ namespace MANAGIX_FYP_2025.Functions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/approve")] HttpRequestData req,
             string taskId)
         {
-            return await ReviewTask(req, taskId, "Approved", "Done");
+            return await ReviewTask(req, taskId, "Approved", TaskWorkflow.Approved);
         }
 
         // ✅ POST /tasks/{taskId}/reject
@@ -192,12 +267,19 @@ namespace MANAGIX_FYP_2025.Functions
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/reject")] HttpRequestData req,
             string taskId)
         {
-            return await ReviewTask(req, taskId, "Rejected", "InProgress");
+            return await ReviewTask(req, taskId, "Rejected", TaskWorkflow.InProgress);
         }
 
         // 🔁 Shared review logic
         private async Task<HttpResponseData> ReviewTask(HttpRequestData req, string taskId, string submissionStatus, string taskStatus)
         {
+            if (!req.JwtHasAnyRole("QA", "Admin"))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { message = "Only QA can approve or reject submissions." });
+                return forbidden;
+            }
+
             if (!Guid.TryParse(taskId, out var tid))
                 return await BadRequest(req, "Invalid TaskId");
 
@@ -205,19 +287,23 @@ namespace MANAGIX_FYP_2025.Functions
             var dto = JsonSerializer.Deserialize<QAReviewDto>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (dto == null) return await BadRequest(req, "Invalid data");
 
+            var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
+            if (task == null) return await NotFound(req, "Task not found");
+
+            if (!TaskWorkflow.IsQaReviewable(task.Status))
+                return await BadRequest(req, "QA can only review tasks that are Done (ready for review).");
+
             var submission = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
             if (submission == null) return await BadRequest(req, "Submission not found");
+            if (submission.Status != "Submitted")
+                return await BadRequest(req, "Submission has already been reviewed.");
 
             submission.Status = submissionStatus;
             submission.QAComment = dto.QAComment;
             submission.ReviewedAt = DateTime.UtcNow;
 
-            var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
-            if (task != null)
-            {
-                task.Status = taskStatus;
-                _unitOfWork.Tasks.Update(task);
-            }
+            task.Status = taskStatus;
+            _unitOfWork.Tasks.Update(task);
 
             _unitOfWork.TaskSubmissions.Update(submission);
             await _unitOfWork.CompleteAsync();
@@ -237,6 +323,23 @@ namespace MANAGIX_FYP_2025.Functions
 
             var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
             if (task == null) return await NotFound(req, "Task not found");
+
+            Guid callerId;
+            try
+            {
+                callerId = ResolveCallerUserId(req);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return await BadRequest(req, "Authorization required.");
+            }
+
+            if (!CanViewOrEditTask(req, task, callerId))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { message = "You cannot access this task." });
+                return forbidden;
+            }
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(task);
@@ -258,13 +361,69 @@ namespace MANAGIX_FYP_2025.Functions
             var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
             if (task == null) return await NotFound(req, "Task not found");
 
+            Guid callerId;
+            try
+            {
+                callerId = ResolveCallerUserId(req);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return await BadRequest(req, "Authorization required.");
+            }
+
+            if (!CanViewOrEditTask(req, task, callerId))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { message = "You cannot modify this task." });
+                return forbidden;
+            }
+
+            var project = await _unitOfWork.Projects.GetByIdAsync(task.ProjectId);
+            if (project == null)
+                return await BadRequest(req, "Project not found");
+            if (project.IsClosed)
+                return await BadRequest(req, "Cannot modify tasks on a closed project.");
+
+            var callerIsQa = req.JwtHasAnyRole("QA", "Admin");
+            var managerOrAdmin = req.JwtHasAnyRole("Manager", "Admin");
+
+            if (dto.ClearAssignee)
+            {
+                if (!managerOrAdmin)
+                    return await BadRequest(req, "Only a manager can unassign tasks.");
+            }
+            else if (dto.AssignedEmployeeId.HasValue && dto.AssignedEmployeeId.Value != Guid.Empty &&
+                     task.AssignedEmployeeId != dto.AssignedEmployeeId.Value)
+            {
+                if (!managerOrAdmin)
+                    return await BadRequest(req, "Only a manager can reassign tasks.");
+
+                var onTeam = await TeamProjectGuards.EmployeeBelongsToProjectTeamAsync(
+                    _unitOfWork, dto.AssignedEmployeeId.Value, task.ProjectId);
+                if (!onTeam)
+                    return await BadRequest(req, "Assignee must be a member of the project team.");
+
+                var workload = await _unitOfWork.Tasks.CountActiveWorkloadAsync(dto.AssignedEmployeeId.Value, tid);
+                if (workload >= TaskWorkflow.MaxActiveTasksPerEmployee)
+                    return await BadRequest(req, $"Assignee exceeds max active tasks ({TaskWorkflow.MaxActiveTasksPerEmployee}).");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Status))
+            {
+                if (!TaskWorkflow.TryValidateManualStatusChange(
+                        task.Status, dto.Status, callerIsQa, out var normalizedStatus, out var err))
+                    return await BadRequest(req, err ?? "Invalid status.");
+
+                task.Status = normalizedStatus;
+            }
+
             task.Title = dto.Title ?? task.Title;
             task.Description = dto.Description ?? task.Description;
-            task.Status = dto.Status ?? task.Status;
-            task.AssignedEmployeeId = dto.AssignedEmployeeId ?? task.AssignedEmployeeId;
 
-            // Optional: add deadline if you want
-            // task.Deadline = dto.Deadline ?? task.Deadline;
+            if (dto.ClearAssignee)
+                task.AssignedEmployeeId = null;
+            else if (dto.AssignedEmployeeId.HasValue && dto.AssignedEmployeeId.Value != Guid.Empty)
+                task.AssignedEmployeeId = dto.AssignedEmployeeId.Value;
 
             _unitOfWork.Tasks.Update(task);
             await _unitOfWork.CompleteAsync();
@@ -286,6 +445,14 @@ namespace MANAGIX_FYP_2025.Functions
 
             var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
             if (task == null) return await NotFound(req, "Task not found");
+
+            var proj = await _unitOfWork.Projects.GetByIdAsync(task.ProjectId);
+            if (proj != null && proj.IsClosed)
+                return await BadRequest(req, "Cannot delete tasks on a closed project.");
+
+            var sub = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
+            if (sub != null)
+                _unitOfWork.TaskSubmissions.Remove(sub);
 
             _unitOfWork.Tasks.Remove(task);
             await _unitOfWork.CompleteAsync();
@@ -332,16 +499,85 @@ namespace MANAGIX_FYP_2025.Functions
                     return badResp;
                 }
 
-                // Logic: Create the new TaskItem using the ProjectId from the frontend
+                if (!dto.MilestoneId.HasValue || dto.MilestoneId.Value == Guid.Empty)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "MilestoneId is required." });
+                    return badResp;
+                }
+
+                if (dto.ProjectId == Guid.Empty)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "ProjectId is required." });
+                    return badResp;
+                }
+
+                var hasAssignee = dto.AssignedEmployeeId.HasValue && dto.AssignedEmployeeId.Value != Guid.Empty;
+
+                var projectEntity = await _unitOfWork.Projects.GetByIdAsync(dto.ProjectId);
+                if (projectEntity == null)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Project not found." });
+                    return badResp;
+                }
+
+                if (projectEntity.IsClosed)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Cannot create tasks on a closed project." });
+                    return badResp;
+                }
+
+                var milestone = await _unitOfWork.Milestones.GetByIdAsync(dto.MilestoneId.Value);
+                if (milestone == null || milestone.ProjectId != dto.ProjectId)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Milestone must belong to the specified project." });
+                    return badResp;
+                }
+
+                if (hasAssignee)
+                {
+                    var assigneeOk = await TeamProjectGuards.EmployeeBelongsToProjectTeamAsync(
+                        _unitOfWork, dto.AssignedEmployeeId!.Value, dto.ProjectId);
+                    if (!assigneeOk)
+                    {
+                        var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                        await badResp.WriteAsJsonAsync(new { message = "Assignee must be on the project team." });
+                        return badResp;
+                    }
+
+                    var workload = await _unitOfWork.Tasks.CountActiveWorkloadAsync(dto.AssignedEmployeeId.Value, null);
+                    if (workload >= TaskWorkflow.MaxActiveTasksPerEmployee)
+                    {
+                        var badResp = req.CreateResponse(HttpStatusCode.Conflict);
+                        await badResp.WriteAsJsonAsync(new
+                        {
+                            message = $"Employee cannot have more than {TaskWorkflow.MaxActiveTasksPerEmployee} active tasks."
+                        });
+                        return badResp;
+                    }
+                }
+
+                var initialStatus = TaskWorkflow.Normalize(string.IsNullOrEmpty(dto.Status) ? TaskWorkflow.Todo : dto.Status);
+                if (initialStatus != TaskWorkflow.Todo)
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "New tasks must start as Todo." });
+                    return badResp;
+                }
+
                 var newTask = new TaskItem
                 {
                     TaskId = Guid.NewGuid(),
                     ProjectId = dto.ProjectId,
-                    MilestoneId = dto.MilestoneId, // Can be null if not selected
+                    MilestoneId = dto.MilestoneId,
                     Title = dto.Title,
                     Description = dto.Description,
-                    Status = "Pending",
-                    AssignedEmployeeId = dto.AssignedEmployeeId,
+                    Status = TaskWorkflow.Todo,
+                    AssignedEmployeeId = hasAssignee ? dto.AssignedEmployeeId : null,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -354,8 +590,18 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
+                var root = ex;
+                while (root.InnerException != null)
+                    root = root.InnerException;
+
+                Console.WriteLine($"[CreateTask] {ex}");
                 var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await errorResp.WriteAsJsonAsync(new { message = "Server Error", details = ex.Message });
+                await errorResp.WriteAsJsonAsync(new
+                {
+                    message = "Server error while creating task.",
+                    detail = ex.Message,
+                    inner = root.Message
+                });
                 return errorResp;
             }
         }

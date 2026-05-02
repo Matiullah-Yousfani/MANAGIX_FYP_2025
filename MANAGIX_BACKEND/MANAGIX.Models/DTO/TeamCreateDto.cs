@@ -10,5 +10,7 @@ namespace MANAGIX.Models.DTO
     {
         public string Name { get; set; } = string.Empty;
 
+        /// <summary>Manager (creator) user id.</summary>
+        public Guid CreatedBy { get; set; }
     }
 }

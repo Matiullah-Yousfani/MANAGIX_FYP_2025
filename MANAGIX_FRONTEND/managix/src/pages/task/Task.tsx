@@ -79,20 +79,27 @@ const Task = () => {
       return;
     }
 
-    const payload = {
-      ProjectId: projectId,
-      MilestoneId: milestoneId,
-      Title: title,
-      Description: description,
-      Status: status,
-      AssignedEmployeeId: assignedEmployeeId || null,
+    const createPayload = {
+      projectId,
+      milestoneId,
+      title,
+      description: description || undefined,
+      status,
+      assignedEmployeeId,
+    };
+
+    const updatePayload = {
+      title,
+      description: description || undefined,
+      status,
+      assignedEmployeeId: assignedEmployeeId || undefined,
     };
 
     try {
       if (editingId) {
-        await taskService.update(editingId, payload);
+        await taskService.update(editingId, updatePayload);
       } else {
-        await taskService.create(payload);
+        await taskService.create(createPayload);
       }
       resetForm();
       fetchTasks();

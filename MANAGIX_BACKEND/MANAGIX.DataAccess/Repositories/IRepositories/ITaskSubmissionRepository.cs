@@ -13,5 +13,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task<TaskSubmission?> GetByTaskIdAsync(Guid taskId);
         Task<List<TaskSubmission>> GetPendingSubmissionsAsync();
         void Update(TaskSubmission submission);
+        void Remove(TaskSubmission submission);
     }
 }

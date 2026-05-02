@@ -1,8 +1,18 @@
 import api from './axiosInstance';
 
+/** `ProjectCreateDto` — use camelCase for JSON. deadline as ISO string. */
+export interface ProjectCreateRequest {
+  title: string;
+  description?: string;
+  deadline: string;
+  managerId: string;
+  budget: number;
+  modelId: string;
+}
+
 export const projectService = {
-  create: async (data: any) => {
-    const response = await api.post("/projects", data);
+  create: async (data: ProjectCreateRequest) => {
+    const response = await api.post('/projects', data);
     return response.data;
   },
 
@@ -11,7 +21,7 @@ export const projectService = {
     return response.data;
   },
 
-  update: async (projectId: string, data: any) => {
+  update: async (projectId: string, data: Partial<ProjectCreateRequest>) => {
     const response = await api.put(`/projects/${projectId}`, data);
     return response.data;
   },
@@ -21,13 +31,14 @@ export const projectService = {
     return response.data;
   },
 
-  close: async (projectId: string, data: any) => {
-    const response = await api.post(`/projects/${projectId}/close`, data);
+  /** `CloseProjectDto`: optional comment */
+  close: async (projectId: string, data?: { comment?: string }) => {
+    const response = await api.post(`/projects/${projectId}/close`, data ?? {});
     return response.data;
   },
 
   getAll: async () => {
-    const response = await api.get("/projects");
+    const response = await api.get('/projects');
     return response.data;
   },
 
@@ -46,18 +57,13 @@ export const projectService = {
     return response.data;
   },
 
-  getProjectsByTeam: async (teamId: string) => {
-    const response = await api.get(`/projects/team/${teamId}`);
-    return response.data;
-  },
-
   getByEmployee: async (userId: string) => {
     const response = await api.get(`/projects/employee/${userId}`);
     return response.data;
   },
 
   getProjectModels: async () => {
-    const response = await api.get("/project-models");
+    const response = await api.get('/project-models');
     return response.data;
   },
 
@@ -66,16 +72,11 @@ export const projectService = {
     return response.data;
   },
 
-  // ✅ New method: Fetch project + its team info together
   getProjectWithTeam: async (projectId: string) => {
     const [project, team] = await Promise.all([
       api.get(`/projects/${projectId}`),
-      api.get(`/projects/${projectId}/team`)
+      api.get(`/projects/${projectId}/team`).catch(() => ({ data: null })),
     ]);
-
-    return {
-      project: project.data,
-      team: team.data
-    };
+    return { project: project.data, team: team.data };
   },
 };

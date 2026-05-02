@@ -13,7 +13,9 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task<TaskItem?> GetByIdAsync(Guid taskId);
         Task<List<TaskItem>> GetByProjectIdAsync(Guid projectId);
         Task<List<TaskItem>> GetByEmployeeIdAsync(Guid employeeId);
-        Task<List<TaskItem>> GetTasksByStatusAsync(TaskStatus status);
+        Task<List<TaskItem>> GetTasksByStatusAsync(string status);
+
+        Task<int> CountActiveWorkloadAsync(Guid employeeId, Guid? excludeTaskId = null);
 
         Task<int> CountAssignedTasksAsync(Guid employeeId, Guid projectId);
 

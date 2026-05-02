@@ -12,7 +12,7 @@ plan = {
         {'title': 'Testing', 'description': 'QA', 'deadlineOffsetDays': 90, 'budgetPercentage': 10, 'tasks': [{'title': 'Run tests', 'description': 'Unit tests'}]}
     ]
 }
-result = validate_and_normalize_plan(plan)
+result = validate_and_normalize_plan(plan, [])
 total = sum(m['budgetPercentage'] for m in result['milestones'])
 assert total == 100, f"Budget should be 100, got {total}"
 print(f"[PASS] Test 1: Normal plan -> {len(result['milestones'])} milestones, budget={total}")
@@ -24,7 +24,7 @@ plan2 = {
         {'title': 'B', 'description': '', 'deadlineOffsetDays': 20, 'budgetPercentage': 25, 'tasks': [{'title': 'T2', 'description': ''}]},
     ]
 }
-result2 = validate_and_normalize_plan(plan2)
+result2 = validate_and_normalize_plan(plan2, [])
 total2 = sum(m['budgetPercentage'] for m in result2['milestones'])
 assert abs(total2 - 100) < 0.1, f"Budget should normalize to 100, got {total2}"
 print(f"[PASS] Test 2: Budget 55 -> normalized to {total2}")
@@ -36,7 +36,7 @@ plan3 = {
         {'title': 'Early', 'description': '', 'deadlineOffsetDays': 10, 'budgetPercentage': 50, 'tasks': [{'title': 'T2', 'description': ''}]},
     ]
 }
-result3 = validate_and_normalize_plan(plan3)
+result3 = validate_and_normalize_plan(plan3, [])
 assert result3['milestones'][0]['title'] == 'Early', "Should sort by deadlineOffsetDays"
 print(f"[PASS] Test 3: Sort order -> first milestone is '{result3['milestones'][0]['title']}'")
 
@@ -46,7 +46,7 @@ plan4 = {
         {'title': 'X', 'tasks': [{'title': 'Do something'}]},
     ]
 }
-result4 = validate_and_normalize_plan(plan4)
+result4 = validate_and_normalize_plan(plan4, [])
 assert result4['milestones'][0]['deadlineOffsetDays'] == 14
 assert result4['milestones'][0]['budgetPercentage'] == 100.0
 print(f"[PASS] Test 4: Missing fields -> defaults applied correctly")
@@ -61,7 +61,7 @@ assert len(resp.milestones) == 4
 print(f"[PASS] Test 6: Pydantic response model works")
 
 # Test 7: Prompt builder
-prompt = build_prompt("My Project", "Build a web app", "90 days", 50000)
+prompt = build_prompt("My Project", "Build a web app", "90 days", 50000, [])
 assert "My Project" in prompt
 assert "50000" in prompt
 assert "milestones" in prompt

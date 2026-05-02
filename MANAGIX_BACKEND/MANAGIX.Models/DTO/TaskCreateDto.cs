@@ -10,7 +10,8 @@ namespace MANAGIX.Models.DTO
     {
         public Guid ProjectId { get; set; }
         public Guid? MilestoneId { get; set; }
-        public Guid AssignedEmployeeId { get; set; }
+        /// <summary>Optional; omit or empty for unassigned tasks.</summary>
+        public Guid? AssignedEmployeeId { get; set; }
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string Status { get; set; } = "Todo";

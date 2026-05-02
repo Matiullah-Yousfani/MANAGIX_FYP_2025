@@ -39,28 +39,34 @@ const AdminPortal = () => {
     setLoading(true);
     try {
       const roleRes = await api.get('/roles');
-      const systemRoles = roleRes.data;
+      const systemRoles = (roleRes.data || []).map((r: any) => ({
+        RoleId: r.roleId ?? r.RoleId,
+        RoleName: r.roleName ?? r.RoleName,
+      }));
       setRoles(systemRoles);
 
       const pendingList = await adminService.getPendingUsers();
-      const sanitizedPending = Array.isArray(pendingList) ? pendingList.map(u => {
-        const isInvalid = u.RoleId === "00000000-0000-0000-0000-000000000000" || !u.RoleId;
-        const defaultRole = systemRoles.find((r: any) => r.RoleName === 'Employee') || systemRoles[0];
+      const sanitizedPending = Array.isArray(pendingList) ? pendingList.map((u: any) => {
+        const rid = u.roleId ?? u.RoleId;
+        const isInvalid = rid === "00000000-0000-0000-0000-000000000000" || !rid;
+        const defaultRole = systemRoles.find((r) => r.RoleName === 'Employee') || systemRoles[0];
         return {
           ...u,
-          RequestId: u.RequestId || u.UserId || u.userId,
-          RoleId: isInvalid ? (defaultRole?.RoleId || "") : u.RoleId
+          RequestId: u.requestId ?? u.RequestId ?? u.userId ?? u.UserId,
+          FullName: u.fullName ?? u.FullName,
+          Email: u.email ?? u.Email,
+          RoleId: isInvalid ? (defaultRole?.RoleId || "") : rid,
         };
       }) : [];
       setUsers(sanitizedPending);
 
       const fullUserList = await adminService.getAllUsers();
-      const approvedOnly = Array.isArray(fullUserList) ? fullUserList.map(u => ({
+      const approvedOnly = Array.isArray(fullUserList) ? fullUserList.map((u: any) => ({
         ...u,
-        UserId: u.UserId || u.userId,
-        FullName: u.FullName || u.fullName,
-        Email: u.Email || u.email,
-        RoleId: u.RoleId || (u.UserRoles && u.UserRoles.length > 0 ? u.UserRoles[0].RoleId : null)
+        UserId: u.userId ?? u.UserId,
+        FullName: u.fullName ?? u.FullName,
+        Email: u.email ?? u.Email,
+        RoleId: u.roleId ?? u.RoleId ?? (u.userRoles?.[0]?.roleId ?? u.userRoles?.[0]?.RoleId ?? u.UserRoles?.[0]?.RoleId),
       })) : [];
       setAllApprovedUsers(approvedOnly);
     } catch (err) {
@@ -79,11 +85,41 @@ const AdminPortal = () => {
 
   const handleApprove = async (id: string, roleId: string) => {
     try {
-      await adminService.approveUser(id, "User approved by administrator", roleId);
+      await adminService.approveUser(id, roleId);
       triggerNotify("Authorization Granted Successfully");
       fetchData();
-    } catch (err) {
-      triggerNotify("Authorization failed", "error");
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string; detail?: string } } };
+      const msg =
+        ax.response?.data?.message ??
+        ax.response?.data?.detail ??
+        "Authorization failed";
+      triggerNotify(msg, "error");
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, displayName: string) => {
+    const selfId = localStorage.getItem('userId');
+    if (selfId && selfId === userId) {
+      triggerNotify('You cannot delete your own account from this panel.', 'error');
+      return;
+    }
+    if (!window.confirm(`Permanently delete ${displayName}? This cannot be undone.`)) return;
+    try {
+      const data = await adminService.deleteUser(userId);
+      if (data && data.success === false && data.message) {
+        triggerNotify(data.message, 'error');
+        return;
+      }
+      triggerNotify('User removed from directory.');
+      fetchData();
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string; detail?: string } } };
+      const msg =
+        ax.response?.data?.message ??
+        ax.response?.data?.detail ??
+        'Delete failed';
+      triggerNotify(msg, 'error');
     }
   };
 
@@ -179,16 +215,18 @@ const AdminPortal = () => {
                 <tbody className="divide-y divide-[#F3F4F6]">
                   {(activeTab === 'users' ? users : allApprovedUsers).map((u) => {
                     const id = u.RequestId || u.UserId || u.userId;
+                    const displayName = u.FullName || u.fullName || '?';
+                    const displayEmail = u.Email || u.email || '';
                     return (
                       <tr key={id} className="hover:bg-[#F9FAFB] transition-all group">
                         <td className="px-10 py-6">
                           <div className="flex items-center gap-5">
                             <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded-2xl font-black text-sm shadow-lg group-hover:scale-110 transition-transform">
-                              {u.FullName.charAt(0)}
+                              {displayName.charAt(0)}
                             </div>
                             <div>
-                              <div className="font-black text-sm uppercase tracking-tight">{u.FullName}</div>
-                              <div className="text-[10px] text-[#9CA3AF] font-bold mt-0.5 tracking-wide">{u.Email}</div>
+                              <div className="font-black text-sm uppercase tracking-tight">{displayName}</div>
+                              <div className="text-[10px] text-[#9CA3AF] font-bold mt-0.5 tracking-wide">{displayEmail}</div>
                             </div>
                           </div>
                         </td>
@@ -228,7 +266,16 @@ const AdminPortal = () => {
                                 <button onClick={() => handleReject(id)} className="bg-white border border-[#E5E7EB] text-black px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all active:scale-90">Decline</button>
                               </>
                             ) : (
-                              <button onClick={() => handleApprove(id, u.RoleId)} className="bg-black text-white px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#1A1A1A] transition-all active:scale-90 shadow-lg">Change Role</button>
+                              <>
+                                <button onClick={() => handleApprove(id, u.RoleId)} className="bg-black text-white px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#1A1A1A] transition-all active:scale-90 shadow-lg">Change Role</button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteUser(String(id), displayName)}
+                                  className="bg-white border border-[#E5E7EB] text-red-600 px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-red-50 hover:border-red-200 transition-all active:scale-90"
+                                >
+                                  Delete
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>

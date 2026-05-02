@@ -63,10 +63,10 @@ const Profile = () => {
             setEditForm({
                 fullName: localStorage.getItem('userName') || '',
                 email: localStorage.getItem('userEmail') || '',
-                bio: data.Bio || '',
-                skills: data.Skills || '',
-                phone: data.Phone || '',
-                address: data.Address || ''
+                bio: (data.bio ?? data.Bio) || '',
+                skills: (data.skills ?? data.Skills) || '',
+                phone: (data.phone ?? data.Phone) || '',
+                address: (data.address ?? data.Address) || ''
             });
 
             // Try to load resume data if exists
@@ -87,10 +87,10 @@ const Profile = () => {
         try {
             // Sends the updated Bio, Skills, Phone, Address to [PUT] /api/profile/{userId}
             await userService.updateProfile(userId, {
-                Bio: editForm.bio,
-                Skills: editForm.skills,
-                Phone: editForm.phone,
-                Address: editForm.address
+                bio: editForm.bio,
+                skills: editForm.skills,
+                phone: editForm.phone,
+                address: editForm.address,
             });
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             setIsEditing(false);
@@ -196,7 +196,12 @@ const Profile = () => {
                 ...parsedForm,
                 userId: userId
             });
-            
+
+            const cvName = parsedForm.name?.trim();
+            if (cvName) {
+                localStorage.setItem('userName', cvName);
+            }
+
             setMessage({ type: 'success', text: 'Resume profile saved successfully!' });
             setShowParsedForm(false);
             fetchProfile();

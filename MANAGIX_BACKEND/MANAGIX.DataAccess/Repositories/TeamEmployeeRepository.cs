@@ -32,5 +32,11 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task<TeamEmployee?> GetAsync(Guid teamId, Guid employeeId) =>
         await _context.TeamEmployees
             .FirstOrDefaultAsync(te => te.TeamId == teamId && te.EmployeeId == employeeId);
+
+        public async Task<bool> ExistsAsync(Guid teamId, Guid employeeId) =>
+            await _context.TeamEmployees.AnyAsync(te => te.TeamId == teamId && te.EmployeeId == employeeId);
+
+        public async Task<bool> IsEmployeeOnAnyTeamAsync(Guid employeeId) =>
+            await _context.TeamEmployees.AnyAsync(te => te.EmployeeId == employeeId);
     }
 }

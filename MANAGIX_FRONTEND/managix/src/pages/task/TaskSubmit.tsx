@@ -11,7 +11,8 @@ const TaskSubmit = () => {
   const [loading, setLoading] = useState(false);
 
   const userId = localStorage.getItem("userId");
-  const role = localStorage.getItem("roleName");
+  const role =
+    localStorage.getItem("roleName") || localStorage.getItem("userRole");
 
   // 🚫 Hard role protection
   if (role !== "Employee") {

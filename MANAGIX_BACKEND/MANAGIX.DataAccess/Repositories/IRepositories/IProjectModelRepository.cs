@@ -10,5 +10,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
     public interface IProjectModelRepository
     {
         Task<IEnumerable<ProjectModel>> GetAllAsync();
+        Task<ProjectModel?> GetByIdAsync(Guid modelId);
     }
 }

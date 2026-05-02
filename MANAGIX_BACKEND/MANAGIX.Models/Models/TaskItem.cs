@@ -17,8 +17,8 @@ namespace MANAGIX.Models.Models
 
         public Guid? MilestoneId { get; set; }
 
-        [Required]
-        public Guid AssignedEmployeeId { get; set; }
+        /// <summary>Null when the task is not yet assigned (e.g. AI-generated).</summary>
+        public Guid? AssignedEmployeeId { get; set; }
 
         [Required]
         public string Title { get; set; } = null!;

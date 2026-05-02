@@ -12,7 +12,7 @@ namespace MANAGIX.Models.DTO
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string Status { get; set; } = null!;
-        public Guid AssignedEmployeeId { get; set; }
+        public Guid? AssignedEmployeeId { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

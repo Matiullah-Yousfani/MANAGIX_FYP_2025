@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AiAllocation from '../ai/AiAllocation';
 import { teamService } from '../../api/teamService';
 import { projectService } from '../../api/projectService';
 import { milestoneService } from '../../api/milestoneService';
@@ -21,6 +22,7 @@ interface Team {
     Name: string;
     ProjectTitle?: string;
     ProjectId?: string;
+    CreatedBy?: string;
     members?: any[];
 }
 
@@ -53,8 +55,8 @@ const Teams = () => {
             ]);
 
             // GUIDs in Uppercase for standard comparison
-            const EMPLOYEE_ROLE_ID = "A08BB9EB-B222-4B4E-965F-980F88540E97".toUpperCase();
-            const QA_ROLE_ID = "B27CB81B-0693-4259-81EC-48D3918BA176".toUpperCase();
+            const EMPLOYEE_ROLE_ID = "90E6C731-B51A-44D7-ADA1-815102900862".toUpperCase();
+            const QA_ROLE_ID = "8DA96376-659A-40B2-A3D4-34165984E90F".toUpperCase();
 
             console.log("Raw API Response Users:", usersRes.data);
 
@@ -81,9 +83,22 @@ const Teams = () => {
                 projectsData = await projectService.getAll();
             }
 
-            setTeams(teamsRes || []);
-            setEmployees(assignableUsers); 
-            setProjects(projectsData || []);
+            const rawTeams = Array.isArray(teamsRes) ? teamsRes : [];
+            setTeams(rawTeams.map((t: any) => ({
+                TeamId: t.teamId ?? t.TeamId,
+                Name: t.name ?? t.Name,
+                ProjectTitle: t.projectTitle ?? t.ProjectTitle,
+                ProjectId: t.projectId ?? t.ProjectId,
+                CreatedBy: t.createdBy ?? t.CreatedBy,
+            })));
+            setEmployees(assignableUsers);
+            const projArr = Array.isArray(projectsData) ? projectsData : [];
+            setProjects(
+                projArr.map((p: any) => ({
+                    ProjectId: p.projectId ?? p.ProjectId,
+                    Title: p.title ?? p.Title,
+                }))
+            );
         } catch (error) { 
             console.error("Error loading team data:", error); 
         }
@@ -97,14 +112,20 @@ const Teams = () => {
         
         try {
             const teamResponse = await api.get(`/teams/${team.TeamId}`);
-            const freshTeamData = teamResponse.data;
+            const raw = teamResponse.data;
+            const freshTeamData = {
+                TeamId: raw.teamId ?? raw.TeamId ?? team.TeamId,
+                Name: raw.name ?? raw.Name ?? team.Name,
+                ProjectTitle: raw.projectTitle ?? raw.ProjectTitle ?? team.ProjectTitle,
+                ProjectId: raw.projectId ?? raw.ProjectId,
+            };
             setActiveTeam(freshTeamData);
 
             const members = await teamService.getTeamMembers(team.TeamId);
             setTeamMembers(members || []);
 
-            const project = projects.find(p => 
-                (freshTeamData.ProjectId && p.ProjectId === freshTeamData.ProjectId) || 
+            const project = projects.find(p =>
+                (freshTeamData.ProjectId && p.ProjectId === freshTeamData.ProjectId) ||
                 (p.Title === freshTeamData.ProjectTitle)
             );
 
@@ -127,18 +148,34 @@ const Teams = () => {
         e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this team?")) return;
         try {
-            await api.delete(`/teams/${teamId}`);
+            await teamService.deleteTeam(teamId);
             loadData();
         } catch (err) { alert("Error deleting team"); }
     };
 
+    const apiErr = (err: unknown) => {
+        const ax = err as { response?: { data?: { message?: string; detail?: string } } };
+        return ax.response?.data?.message ?? ax.response?.data?.detail ?? 'Request failed.';
+    };
+
     const handleCreateTeam = async () => {
-        if (!teamName) return;
+        const name = teamName.trim();
+        if (!name) {
+            alert('Team name is required.');
+            return;
+        }
+        const managerId = localStorage.getItem('userId');
+        if (!managerId) {
+            alert('You must be logged in to create a team.');
+            return;
+        }
         try {
-            await teamService.createTeam(teamName);
+            await teamService.createTeam({ name, createdBy: managerId });
             setTeamName("");
             loadData();
-        } catch (err) { alert("Error creating team"); }
+        } catch (err) {
+            alert(apiErr(err));
+        }
     };
 
     const handleAddMember = async () => {
@@ -148,7 +185,9 @@ const Teams = () => {
             setSelectedEmployee(""); 
             loadData();
             alert("Member added successfully");
-        } catch (err) { alert("Error adding member"); }
+        } catch (err) {
+            alert(apiErr(err));
+        }
     };
 
     const handleRemoveMember = async (employeeId: string) => {
@@ -161,7 +200,7 @@ const Teams = () => {
             setTeamMembers(updatedMembers || []);
             loadData();
         } catch (err) {
-            alert("Error removing member");
+            alert(apiErr(err));
         }
     };
 
@@ -169,19 +208,25 @@ const Teams = () => {
         try {
             await teamService.assignTeamToProject(teamId, projectId);
             await loadData();
-        } catch (err: any) { alert("Assignment Error"); }
+        } catch (err: unknown) {
+            alert(apiErr(err));
+        }
     };
 
     const getEmployeeName = (empId: string) => {
-        // Search in the filtered list
-        const emp = employees.find(e => (e.Id || e.UserId || e.id) === empId);
-        return emp ? emp.FullName : "Unassigned";
+        const emp = employees.find(
+            (e: any) =>
+                String(e.userId ?? e.UserId ?? e.Id ?? e.id) === String(empId)
+        );
+        return emp ? (emp.fullName ?? emp.FullName) : "Unassigned";
     };
 
     const filteredTeams = teams.filter(t => 
         t.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.ProjectTitle?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const portalRole = localStorage.getItem('roleName') || localStorage.getItem('userRole');
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-20">
@@ -324,6 +369,12 @@ const Teams = () => {
                     ))}
                 </div>
             </div>
+
+            {portalRole === 'Manager' && (
+                <div className="mt-12">
+                    <AiAllocation embedded />
+                </div>
+            )}
 
             {/* Workflow Modal */}
             {isPanelOpen && (

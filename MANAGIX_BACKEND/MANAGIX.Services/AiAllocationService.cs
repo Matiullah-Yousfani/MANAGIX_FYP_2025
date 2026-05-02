@@ -1,5 +1,6 @@
 using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace MANAGIX.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly HttpClient _httpClient;
-        private const string AI_SERVICE_URL = "http://localhost:8002";
+        private readonly string _aiServiceUrl;
 
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -22,9 +23,11 @@ namespace MANAGIX.Services
             PropertyNameCaseInsensitive = true
         };
 
-        public AiAllocationService(IUnitOfWork unitOfWork)
+        public AiAllocationService(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
+            // Use 127.0.0.1 by default: on Windows, "localhost" may resolve to ::1 while Python binds IPv4 only.
+            _aiServiceUrl = (configuration["AiAllocationUrl"] ?? "http://127.0.0.1:8002").TrimEnd('/');
             _httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromMinutes(2)
@@ -68,6 +71,25 @@ namespace MANAGIX.Services
             return employeeList;
         }
 
+        /// <summary>Users on the team linked to this project (for scoped AI suggestions).</summary>
+        private async Task<List<EmployeeInfoDto>> GetProjectTeamEmployeesInfoAsync(Guid projectId)
+        {
+            var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(projectId);
+            if (projectTeam == null)
+                return new List<EmployeeInfoDto>();
+
+            var teamEmployees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(projectTeam.TeamId);
+            var list = new List<EmployeeInfoDto>();
+            foreach (var te in teamEmployees)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(te.EmployeeId);
+                if (user != null)
+                    list.Add(await GetEmployeeInfoAsync(user.UserId, user.FullName));
+            }
+
+            return list;
+        }
+
         // ── Feature 1: Suggest Best Team ──
         public async Task<SuggestTeamResponseDto> SuggestBestTeamAsync(Guid projectId)
         {
@@ -93,7 +115,7 @@ namespace MANAGIX.Services
 
             try
             {
-                var response = await _httpClient.PostAsync($"{AI_SERVICE_URL}/suggest-team", content);
+                var response = await _httpClient.PostAsync($"{_aiServiceUrl}/suggest-team", content);
                 response.EnsureSuccessStatusCode();
 
                 var responseBody = await response.Content.ReadAsStringAsync();
@@ -128,14 +150,24 @@ namespace MANAGIX.Services
             }
             catch (HttpRequestException ex)
             {
-                throw new HttpRequestException($"Cannot connect to AI service at {AI_SERVICE_URL}. Error: {ex.Message}", ex);
+                throw new HttpRequestException($"Cannot connect to AI allocation service at {_aiServiceUrl}. Is it running? ({ex.Message})", ex);
             }
         }
 
         // ── Feature 2: Suggest Employees ──
-        public async Task<SuggestEmployeesResponseDto> SuggestEmployeesAsync(string projectDescription)
+        public async Task<SuggestEmployeesResponseDto> SuggestEmployeesAsync(string projectDescription, Guid? projectId = null)
         {
-            var employees = await GetAllEmployeesInfoAsync();
+            List<EmployeeInfoDto> employees;
+            if (projectId.HasValue && projectId.Value != Guid.Empty)
+            {
+                employees = await GetProjectTeamEmployeesInfoAsync(projectId.Value);
+                if (employees.Count == 0)
+                    return new SuggestEmployeesResponseDto();
+            }
+            else
+            {
+                employees = await GetAllEmployeesInfoAsync();
+            }
 
             var payload = new
             {
@@ -148,7 +180,7 @@ namespace MANAGIX.Services
 
             try
             {
-                var response = await _httpClient.PostAsync($"{AI_SERVICE_URL}/suggest-employees", content);
+                var response = await _httpClient.PostAsync($"{_aiServiceUrl}/suggest-employees", content);
                 response.EnsureSuccessStatusCode();
 
                 var responseBody = await response.Content.ReadAsStringAsync();
@@ -173,6 +205,13 @@ namespace MANAGIX.Services
                         if (employeeLookup.TryGetValue(rec.UserId, out var name))
                             rec.Name = name;
                     }
+
+                    var allowed = new HashSet<string>(
+                        employees.Select(e => e.UserId.ToString()),
+                        StringComparer.OrdinalIgnoreCase);
+                    result.RecommendedEmployees = result.RecommendedEmployees
+                        .Where(r => !string.IsNullOrWhiteSpace(r.UserId) && allowed.Contains(r.UserId))
+                        .ToList();
                 }
 
                 return result ?? new SuggestEmployeesResponseDto();
@@ -183,7 +222,7 @@ namespace MANAGIX.Services
             }
             catch (HttpRequestException ex)
             {
-                throw new HttpRequestException($"Cannot connect to AI service at {AI_SERVICE_URL}. Error: {ex.Message}", ex);
+                throw new HttpRequestException($"Cannot connect to AI allocation service at {_aiServiceUrl}. Is it running? ({ex.Message})", ex);
             }
         }
 
@@ -235,7 +274,7 @@ namespace MANAGIX.Services
 
             try
             {
-                var response = await _httpClient.PostAsync($"{AI_SERVICE_URL}/suggest-task-allocation", content);
+                var response = await _httpClient.PostAsync($"{_aiServiceUrl}/suggest-task-allocation", content);
                 response.EnsureSuccessStatusCode();
 
                 var responseBody = await response.Content.ReadAsStringAsync();
@@ -275,6 +314,25 @@ namespace MANAGIX.Services
                         if (taskLookup.TryGetValue(assignment.TaskId, out var taskTitle))
                             assignment.TaskTitle = taskTitle;
                     }
+
+                    // Hard guarantee: assignees must be on this project's team (never an outsider UUID).
+                    var allowedIds = new HashSet<Guid>(teamMembers.Select(m => m.UserId));
+                    foreach (var assignment in result.TaskAssignments)
+                    {
+                        if (!Guid.TryParse(assignment.UserId, out var uid) || !allowedIds.Contains(uid))
+                        {
+                            var pick = teamMembers.OrderBy(m => m.ActiveTasks).FirstOrDefault();
+                            if (pick != null)
+                            {
+                                assignment.UserId = pick.UserId.ToString();
+                                assignment.EmployeeName = pick.Name;
+                                var note = " Assignee limited to project team.";
+                                assignment.Reason = string.IsNullOrWhiteSpace(assignment.Reason)
+                                    ? note.Trim()
+                                    : assignment.Reason + note;
+                            }
+                        }
+                    }
                 }
 
                 return result ?? new SuggestTaskAllocationResponseDto();
@@ -285,7 +343,7 @@ namespace MANAGIX.Services
             }
             catch (HttpRequestException ex)
             {
-                throw new HttpRequestException($"Cannot connect to AI service at {AI_SERVICE_URL}. Error: {ex.Message}", ex);
+                throw new HttpRequestException($"Cannot connect to AI allocation service at {_aiServiceUrl}. Is it running? ({ex.Message})", ex);
             }
         }
     }

@@ -19,6 +19,21 @@ namespace MANAGIX.Services
 
         public async Task<ResumeSaveProfileDto> SaveResumeProfileAsync(ResumeSaveProfileDto dto)
         {
+            // Sync display name from CV/resume so lists and AI use the legal name on the document.
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(dto.UserId);
+                if (user != null)
+                {
+                    var cvName = dto.Name.Trim();
+                    if (!string.Equals(user.FullName, cvName, StringComparison.Ordinal))
+                    {
+                        user.FullName = cvName;
+                        _unitOfWork.Users.Update(user);
+                    }
+                }
+            }
+
             // Get or create user profile
             var profile = await _unitOfWork.UserProfiles.GetByUserIdAsync(dto.UserId);
             if (profile == null)
@@ -120,6 +135,8 @@ namespace MANAGIX.Services
                 throw new Exception("Profile not found");
             }
 
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+
             var educations = await _unitOfWork.ResumeEducations.GetByUserIdAsync(userId);
             var skills = await _unitOfWork.ResumeSkills.GetByUserIdAsync(userId);
             var projects = await _unitOfWork.ResumeProjects.GetByUserIdAsync(userId);
@@ -128,8 +145,8 @@ namespace MANAGIX.Services
             return new ResumeSaveProfileDto
             {
                 UserId = userId,
-                Name = null, // Will be populated from User table if needed
-                Email = null, // Will be populated from User table if needed
+                Name = user?.FullName,
+                Email = user?.Email,
                 Phone = profile.Phone,
                 Summary = profile.Summary,
                 Education = educations.Select(e => new EducationDto

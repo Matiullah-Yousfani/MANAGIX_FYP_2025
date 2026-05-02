@@ -92,8 +92,8 @@ namespace MANAGIX_FYP_2025.Functions
                     return badResp;
                 }
 
-                Console.WriteLine($"[SuggestEmployees] Description length: {dto.ProjectDescription.Length}");
-                var result = await _aiService.SuggestEmployeesAsync(dto.ProjectDescription);
+                Console.WriteLine($"[SuggestEmployees] Description length: {dto.ProjectDescription.Length}, ProjectId: {dto.ProjectId}");
+                var result = await _aiService.SuggestEmployeesAsync(dto.ProjectDescription, dto.ProjectId);
 
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 resp.Headers.Add("Content-Type", "application/json");

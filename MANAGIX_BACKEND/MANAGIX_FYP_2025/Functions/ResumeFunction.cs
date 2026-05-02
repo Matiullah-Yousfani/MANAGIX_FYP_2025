@@ -2,6 +2,7 @@ using MANAGIX.Models.DTO;
 using MANAGIX.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
 using System.Net;
@@ -16,11 +17,12 @@ namespace MANAGIX_FYP_2025.Functions
     {
         private readonly IResumeService _resumeService;
         private readonly HttpClient _httpClient;
-        private const string PYTHON_PARSER_URL = "http://localhost:8000"; // FastAPI service URL
+        private readonly string _pythonParserUrl;
 
-        public ResumeFunction(IResumeService resumeService)
+        public ResumeFunction(IResumeService resumeService, IConfiguration configuration)
         {
             _resumeService = resumeService;
+            _pythonParserUrl = (configuration["ResumeParserUrl"] ?? "http://127.0.0.1:8000").TrimEnd('/');
             _httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromMinutes(5) // 5 minutes timeout for parsing (Groq API can be slow)
@@ -50,7 +52,7 @@ namespace MANAGIX_FYP_2025.Functions
                 }
 
                 Console.WriteLine($"[ParseResume] Received file: {uploadDto.FileName}, Size: {uploadDto.FileBase64.Length} chars");
-                Console.WriteLine($"[ParseResume] Calling Python service at: {PYTHON_PARSER_URL}/parse-resume");
+                Console.WriteLine($"[ParseResume] Calling Python service at: {_pythonParserUrl}/parse-resume");
 
                 // Call Python FastAPI service to parse resume
                 var pythonRequest = new
@@ -72,15 +74,15 @@ namespace MANAGIX_FYP_2025.Functions
                 try
                 {
                     // Test connection first
-                    Console.WriteLine($"[ParseResume] Testing connection to {PYTHON_PARSER_URL}...");
-                    var testResponse = await _httpClient.GetAsync($"{PYTHON_PARSER_URL}/");
+                    Console.WriteLine($"[ParseResume] Testing connection to {_pythonParserUrl}...");
+                    var testResponse = await _httpClient.GetAsync($"{_pythonParserUrl}/");
                     if (!testResponse.IsSuccessStatusCode)
                     {
                         throw new HttpRequestException($"Python service health check failed: {testResponse.StatusCode}");
                     }
                     Console.WriteLine("[ParseResume] Python service is reachable, sending parse request...");
                    
-                    pythonResponse = await _httpClient.PostAsync($"{PYTHON_PARSER_URL}/parse-resume", jsonContent);
+                    pythonResponse = await _httpClient.PostAsync($"{_pythonParserUrl}/parse-resume", jsonContent);
                     var elapsed = (DateTime.UtcNow - startTime).TotalSeconds;
                     Console.WriteLine($"[ParseResume] Python service responded in {elapsed} seconds with status: {pythonResponse.StatusCode}");
                 }
@@ -90,7 +92,7 @@ namespace MANAGIX_FYP_2025.Functions
                     var errorResp = req.CreateResponse(HttpStatusCode.GatewayTimeout);
                     await errorResp.WriteAsJsonAsync(new {
                         message = "Python service timeout - parsing took too long (max 5 minutes). The Groq API might be slow.",
-                        detail = "Make sure FastAPI is running on http://localhost:8000 and your GROQ_API_KEY is valid."
+                        detail = $"Make sure FastAPI is running on {_pythonParserUrl} and your GROQ_API_KEY is valid."
                     });
                     return errorResp;
                 }
@@ -100,7 +102,7 @@ namespace MANAGIX_FYP_2025.Functions
                     var errorResp = req.CreateResponse(HttpStatusCode.BadGateway);
                     await errorResp.WriteAsJsonAsync(new {
                         message = "Cannot connect to Python service",
-                        detail = $"Make sure FastAPI is running on {PYTHON_PARSER_URL}. Start it with: cd resume_parser && python fastapi_app.py. Error: {ex.Message}"
+                        detail = $"Make sure FastAPI is running on {_pythonParserUrl}. Start: scripts\\start-ai-services.ps1. Error: {ex.Message}"
                     });
                     return errorResp;
                 }
@@ -109,7 +111,10 @@ namespace MANAGIX_FYP_2025.Functions
                 {
                     var errorMsg = await pythonResponse.Content.ReadAsStringAsync();
                     Console.WriteLine($"[ParseResume] Python service returned error: {pythonResponse.StatusCode} - {errorMsg}");
-                    var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                    var status = pythonResponse.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity
+                        ? HttpStatusCode.BadRequest
+                        : HttpStatusCode.InternalServerError;
+                    var errorResp = req.CreateResponse(status);
                     await errorResp.WriteAsJsonAsync(new { message = "Resume parsing failed", error = errorMsg });
                     return errorResp;
                 }

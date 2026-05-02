@@ -12,7 +12,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
   const role = localStorage.getItem('userRole');
   const userId = localStorage.getItem('userId');
 
-  const EMPLOYEE_ROLE_ID = "A08BB9EB-B222-4B4E-965F-980F88540E97".toUpperCase();
+  const EMPLOYEE_ROLE_ID = "90E6C731-B51A-44D7-ADA1-815102900862".toUpperCase();
 
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);

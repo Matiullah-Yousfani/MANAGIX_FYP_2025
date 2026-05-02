@@ -45,13 +45,13 @@ export interface ResumeSaveProfileDto {
 export const resumeService = {
   parseResume: async (fileName: string, fileBase64: string): Promise<ResumeParsedDataDto> => {
     const response = await api.post('/resume/parse', {
-      FileName: fileName,  // Match C# DTO property name
-      FileBase64: fileBase64  // Match C# DTO property name
+      fileName,
+      fileBase64,
     });
     return response.data;
   },
 
-  saveResumeProfile: async (data: ResumeSaveProfileDto): Promise<any> => {
+  saveResumeProfile: async (data: ResumeSaveProfileDto): Promise<unknown> => {
     const response = await api.post('/resume/save', data);
     return response.data;
   },
@@ -59,5 +59,5 @@ export const resumeService = {
   getResumeProfile: async (userId: string): Promise<ResumeSaveProfileDto> => {
     const response = await api.get(`/resume/${userId}`);
     return response.data;
-  }
+  },
 };

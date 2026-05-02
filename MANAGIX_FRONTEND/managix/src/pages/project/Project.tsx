@@ -54,8 +54,14 @@ const Projects = () => {
       await projectService.close(projectId, { comment: "Closed by Manager" });
       fetchProjects();
       addToast("Project marked as completed", "success");
-    } catch (err) {
-      addToast("Failed to close project", "error");
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string; detail?: string } } };
+      addToast(
+        ax.response?.data?.message ??
+          ax.response?.data?.detail ??
+          'Failed to close project',
+        'error',
+      );
     }
   };
 
@@ -99,16 +105,20 @@ const Projects = () => {
     e.preventDefault();
     try {
       if (isEditing && currentProjectId) {
-        await projectService.update(currentProjectId, newProject);
+        await projectService.update(currentProjectId, {
+          title: newProject.title,
+          description: newProject.description,
+        });
         addToast("Project updated successfully", "success");
+        closeModal();
+        fetchProjects();
       } else {
-        await projectService.create({ managerId: userId, ...newProject });
-        addToast("New project launched", "success");
+        addToast("Use Create Project to add budget, model, deadlines, and milestones.", "error");
+        navigate("/create-project");
+        closeModal();
       }
-      closeModal();
-      fetchProjects();
     } catch (err) {
-      addToast(`Error ${isEditing ? 'updating' : 'creating'} project`, "error");
+      addToast(`Error ${isEditing ? "updating" : "creating"} project`, "error");
     }
   };
 

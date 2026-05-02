@@ -46,5 +46,14 @@ namespace MANAGIX.DataAccess.Repositories
                                _context.TeamEmployees.Any(te => te.TeamId == pt.TeamId && te.EmployeeId == userId)))
                 .ToListAsync();
         }
+
+        public async Task<bool> ExistsByManagerAndTitleAsync(Guid managerId, string title, Guid? excludeProjectId)
+        {
+            var normalized = title.Trim().ToLowerInvariant();
+            return await _context.Projects.AnyAsync(p =>
+                p.CreatedBy == managerId &&
+                p.Title.ToLower() == normalized &&
+                (!excludeProjectId.HasValue || p.ProjectId != excludeProjectId.Value));
+        }
     }
 }

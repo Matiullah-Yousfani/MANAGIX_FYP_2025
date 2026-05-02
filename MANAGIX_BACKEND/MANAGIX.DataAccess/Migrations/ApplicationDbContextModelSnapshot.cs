@@ -296,7 +296,7 @@ namespace MANAGIX.DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AssignedEmployeeId")
+                    b.Property<Guid?>("AssignedEmployeeId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")

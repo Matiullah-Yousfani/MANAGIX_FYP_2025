@@ -11,7 +11,6 @@ using System.Net;
 using System.IO;
 using System.Text.Json;
 using MANAGIX.Models.DTO;
-using Azure;
 using Microsoft.EntityFrameworkCore;
 
 namespace MANAGIX_FYP_2025.Functions
@@ -35,7 +34,44 @@ namespace MANAGIX_FYP_2025.Functions
                 return badResp;
             }
 
-            var team = new Team { Name = dto.Name, CreatedBy = Guid.NewGuid(), CreatedAt = DateTime.UtcNow };
+            dto.Name = dto.Name.Trim();
+
+            if (dto.CreatedBy == Guid.Empty)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "CreatedBy (manager id) is required." });
+                return badResp;
+            }
+
+            var creator = await _unitOfWork.Users.GetByIdAsync(dto.CreatedBy);
+            if (creator == null)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Creating user not found." });
+                return badResp;
+            }
+
+            var creatorOk = creator.UserRoles?.Any(ur =>
+                ur.Role != null &&
+                (string.Equals(ur.Role.RoleName, "Manager", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(ur.Role.RoleName, "Admin", StringComparison.OrdinalIgnoreCase))) == true;
+            if (!creatorOk)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Teams can only be created by a Manager or Admin." });
+                return badResp;
+            }
+
+            var allTeams = await _unitOfWork.Teams.GetAllAsync();
+            if (allTeams.Any(t => t.CreatedBy == dto.CreatedBy &&
+                                   string.Equals(t.Name, dto.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                await conflict.WriteAsJsonAsync(new { message = "You already have a team with this name." });
+                return conflict;
+            }
+
+            var team = new Team { Name = dto.Name, CreatedBy = dto.CreatedBy, CreatedAt = DateTime.UtcNow };
             await _unitOfWork.Teams.AddAsync(team);
             await _unitOfWork.CompleteAsync();
 
@@ -76,12 +112,27 @@ namespace MANAGIX_FYP_2025.Functions
                 return notFound;
             }
 
+            if (project.IsClosed)
+            {
+                var closed = req.CreateResponse(HttpStatusCode.BadRequest);
+                await closed.WriteAsJsonAsync(new { message = "Cannot assign a team to a closed project." });
+                return closed;
+            }
+
             var team = await _unitOfWork.Teams.GetByIdAsync(dto.TeamId);
             if (team == null)
             {
                 var notFound = req.CreateResponse(HttpStatusCode.NotFound);
                 await notFound.WriteAsJsonAsync(new { message = "Team not found" });
                 return notFound;
+            }
+
+            var teamAlreadyBound = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(dto.TeamId);
+            if (teamAlreadyBound != null && teamAlreadyBound.ProjectId != pid)
+            {
+                var conflictTeam = req.CreateResponse(HttpStatusCode.Conflict);
+                await conflictTeam.WriteAsJsonAsync(new { message = "Team is already assigned to another project." });
+                return conflictTeam;
             }
 
             // Logical duplicate check
@@ -156,6 +207,40 @@ namespace MANAGIX_FYP_2025.Functions
                 return badResp;
             }
 
+            var employeeUser = await _unitOfWork.Users.GetByIdAsync(dto.EmployeeId);
+            if (employeeUser == null)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Employee user not found." });
+                return badResp;
+            }
+
+            if (await _unitOfWork.TeamEmployees.ExistsAsync(tid, dto.EmployeeId))
+            {
+                var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                await conflict.WriteAsJsonAsync(new { message = "Employee is already on this team." });
+                return conflict;
+            }
+
+            var teamAssignmentForThisTeam = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
+            if (teamAssignmentForThisTeam != null)
+            {
+                var assignedToProject = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(teamAssignmentForThisTeam.ProjectId);
+                if (assignedToProject != null && assignedToProject.TeamId != tid)
+                {
+                    var memberOfAssigned = await _unitOfWork.TeamEmployees.ExistsAsync(assignedToProject.TeamId, dto.EmployeeId);
+                    if (memberOfAssigned)
+                    {
+                        var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                        await conflict.WriteAsJsonAsync(new
+                        {
+                            message = "Employee already belongs to another team on this project."
+                        });
+                        return conflict;
+                    }
+                }
+            }
+
             var teamEmployee = new TeamEmployee { TeamId = tid, EmployeeId = dto.EmployeeId };
             await _unitOfWork.TeamEmployees.AddAsync(teamEmployee);
             await _unitOfWork.CompleteAsync();
@@ -184,6 +269,21 @@ namespace MANAGIX_FYP_2025.Functions
             var teamEmployee = await _unitOfWork.TeamEmployees.GetAsync(tid, dto.EmployeeId);
             if (teamEmployee == null)
                 return await BadRequest(req, "Employee not in team");
+
+            var pt = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
+            if (pt != null)
+            {
+                var projectTasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pt.ProjectId);
+                if (projectTasks.Any(t => t.AssignedEmployeeId == dto.EmployeeId))
+                {
+                    var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                    await conflict.WriteAsJsonAsync(new
+                    {
+                        message = "Cannot remove employee: they have tasks assigned on this project."
+                    });
+                    return conflict;
+                }
+            }
 
             _unitOfWork.TeamEmployees.Remove(teamEmployee);
             await _unitOfWork.CompleteAsync();
@@ -254,18 +354,16 @@ namespace MANAGIX_FYP_2025.Functions
         {
             var teams = await _unitOfWork.Teams.GetAllAsync();
             var allProjects = await _unitOfWork.Projects.GetAllAsync();
+            var assignments = await _unitOfWork.ProjectTeams.GetAllAssignmentsAsync();
 
-            /* --- MINIMAL CHANGE START: Resolve Project Titles for each team --- */
             var resultList = new List<object>();
 
             foreach (var t in teams)
             {
-                // Use the existing GetByProjectIdAsync check logic to find assignments
-                // We look for any project where this team is assigned
-                var projectForTeam = allProjects.FirstOrDefault(p => {
-                    var assignment = _unitOfWork.ProjectTeams.GetByProjectIdAsync(p.ProjectId).Result;
-                    return assignment?.TeamId == t.TeamId;
-                });
+                var assignment = assignments.FirstOrDefault(a => a.TeamId == t.TeamId);
+                var projectForTeam = assignment != null
+                    ? allProjects.FirstOrDefault(p => p.ProjectId == assignment.ProjectId)
+                    : null;
 
                 resultList.Add(new
                 {
@@ -276,11 +374,44 @@ namespace MANAGIX_FYP_2025.Functions
                     ProjectTitle = projectForTeam?.Title ?? "N/A - Unassigned"
                 });
             }
-            /* --- MINIMAL CHANGE END --- */
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(resultList);
             return resp;
+        }
+
+        [Function("DeleteTeam")]
+        public async Task<HttpResponseData> DeleteTeam(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "teams/{teamId}")] HttpRequestData req,
+            string teamId)
+        {
+            if (!Guid.TryParse(teamId, out var tid))
+                return await BadRequest(req, "Invalid TeamId");
+
+            var team = await _unitOfWork.Teams.GetByIdAsync(tid);
+            if (team == null)
+                return await BadRequest(req, "Team not found");
+
+            var assigned = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
+            if (assigned != null)
+            {
+                var resp = req.CreateResponse(HttpStatusCode.Conflict);
+                await resp.WriteAsJsonAsync(new { message = "Cannot delete team: it is assigned to a project." });
+                return resp;
+            }
+
+            var mappings = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(tid);
+            foreach (var m in mappings)
+            {
+                _unitOfWork.TeamEmployees.Remove(m);
+            }
+
+            _unitOfWork.Teams.Remove(team);
+            await _unitOfWork.CompleteAsync();
+
+            var ok = req.CreateResponse(HttpStatusCode.OK);
+            await ok.WriteAsJsonAsync(new { message = "Team deleted successfully" });
+            return ok;
         }
         private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
         {

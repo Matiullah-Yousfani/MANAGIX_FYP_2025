@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+import sys
 import base64
 import tempfile
 import pdfplumber
@@ -20,6 +21,48 @@ import re
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+class _SafeTextStream:
+    """Avoid UnicodeEncodeError on Windows when debug prints include PDF/LLM text (arrows, symbols)."""
+
+    __slots__ = ("_stream",)
+
+    def __init__(self, stream):
+        object.__setattr__(self, "_stream", stream)
+
+    def write(self, s: str) -> int:
+        try:
+            return self._stream.write(s)
+        except UnicodeEncodeError:
+            return self._stream.write(
+                s.encode("ascii", errors="backslashreplace").decode("ascii")
+            )
+
+    def flush(self):
+        return self._stream.flush()
+
+    def isatty(self):
+        return self._stream.isatty()
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+# Windows consoles often default to cp1252; combine reconfigure + safe wrapper so uvicorn/API never dies on print().
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    try:
+        sys.stdout = _SafeTextStream(sys.stdout)
+        sys.stderr = _SafeTextStream(sys.stderr)
+    except Exception:
+        pass
 
 app = FastAPI(title="Resume Parser API", version="1.0.0")
 
@@ -600,7 +643,7 @@ async def parse_resume(request: ResumeUploadRequest):
                         seen.add(skill_lower)
                         unique_skills.append(skill.strip())
             parsed_json["skills"] = unique_skills
-            print(f"[DEBUG] Flattened skills: {original_skills_count} skill groups → {len(parsed_json['skills'])} individual skills")
+            print(f"[DEBUG] Flattened skills: {original_skills_count} skill groups -> {len(parsed_json['skills'])} individual skills")
         
         # Remove extra fields that Groq might return but we don't need (LinkedIn, GitHub, etc.)
         # Keep only the fields we expect

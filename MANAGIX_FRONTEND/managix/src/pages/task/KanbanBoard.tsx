@@ -3,21 +3,29 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import api from "../../api/axiosInstance";
 import { taskService } from "../../api/taskService";
 import { milestoneService } from "../../api/milestoneService";
+import { projectService } from "../../api/projectService";
+import { teamService } from "../../api/teamService";
+import { aiService, type TaskAssignment } from "../../api/aiService";
 
 // --- Constants ---
 const KANBAN_COLUMNS = ["Todo", "InProgress", "Done"];
+/** Maps backend task.status → Kanban column id */
 const STATUS_MAP: Record<string, string> = {
+  Todo: "Todo",
   Pending: "Todo",
   InProgress: "InProgress",
   Done: "Done",
   Submitted: "Done",
+  Approved: "Done",
 };
 
 // --- Sub-Component: Task Card ---
 const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; onClick: () => void; role: string | null }) => {
+  const roleNorm = (role || "").toLowerCase();
   const [submission, setSubmission] = useState<any>(null);
-  const isDone = STATUS_MAP[task.Status] === "Done";
-  const canDrag = role === "Employee" && !isDone;
+  const st = task.Status || task.status;
+  const isDone = STATUS_MAP[st] === "Done";
+  const canDrag = roleNorm === "employee" && !isDone && st !== "Approved";
 
   useEffect(() => {
     if (isDone) {
@@ -28,7 +36,7 @@ const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; on
   }, [task.TaskId, task.taskId, isDone]);
 
   const getStatusDisplay = () => {
-    if (!isDone) return task.Status === "Pending" ? "Todo" : task.Status;
+    if (!isDone) return st === "Pending" ? "Todo" : st;
     if (!submission) return "Submitted";
     if (submission.status === "Submitted") return "Under Review";
     return submission.status;
@@ -90,15 +98,37 @@ const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; on
 };
 
 // --- Sub-Component: Task Detail Modal ---
-const TaskModal = ({ task, onClose, onRefresh }: { task: any, onClose: () => void, onRefresh: () => void }) => {
-  const isReadOnly = STATUS_MAP[task.Status] === "Done";
+const TaskModal = ({
+  task,
+  projectId,
+  onClose,
+  onRefresh,
+}: {
+  task: any;
+  projectId: string;
+  onClose: () => void;
+  onRefresh: () => void;
+}) => {
+  const taskStatus = task.Status || task.status;
+  const isReadOnly = STATUS_MAP[taskStatus] === "Done";
   const [submission, setSubmission] = useState<any>(null);
-  const [status, setStatus] = useState(task.Status === "Pending" ? "Todo" : task.Status);
+  const [status, setStatus] = useState(
+    taskStatus === "Pending" || taskStatus === "Todo" ? "Todo" : taskStatus === "InProgress" ? "InProgress" : "Todo"
+  );
   const [file, setFile] = useState<File | null>(null);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+  const [assigneeId, setAssigneeId] = useState("");
+  const [aiPick, setAiPick] = useState<TaskAssignment | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
-  const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
+  const roleRaw = localStorage.getItem("roleName") || localStorage.getItem("userRole") || "";
+  const roleNorm = roleRaw.toLowerCase();
+  const isEmployee = roleNorm === "employee";
+  const isManagerOrAdmin = roleNorm === "manager" || roleNorm === "admin";
 
   useEffect(() => {
     if (isReadOnly) {
@@ -106,35 +136,151 @@ const TaskModal = ({ task, onClose, onRefresh }: { task: any, onClose: () => voi
     }
   }, [task.TaskId, task.taskId, isReadOnly]);
 
+  useEffect(() => {
+    const id = task.AssignedEmployeeId ?? task.assignedEmployeeId;
+    setAssigneeId(id ? String(id) : "");
+    setAiPick(null);
+  }, [task.TaskId, task.taskId, task.AssignedEmployeeId, task.assignedEmployeeId]);
+
+  useEffect(() => {
+    if (!isManagerOrAdmin || !projectId) return;
+    let cancelled = false;
+    (async () => {
+      setMembersLoading(true);
+      setMembersError(null);
+      try {
+        const team = await projectService.getTeamByProjectId(projectId);
+        const tid = team?.TeamId ?? team?.teamId;
+        if (!tid) {
+          if (!cancelled) {
+            setMembers([]);
+            setMembersError("No team linked to this project. Assign a team on Team Setup first.");
+          }
+          return;
+        }
+        const mem = await teamService.getTeamMembers(String(tid));
+        if (!cancelled) setMembers(Array.isArray(mem) ? mem : []);
+      } catch {
+        if (!cancelled) {
+          setMembers([]);
+          setMembersError("Could not load this project’s team. Check Team Setup.");
+        }
+      } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isManagerOrAdmin, projectId, task.TaskId, task.taskId]);
+
+  const handleAiSuggest = async () => {
+    if (!projectId) {
+      alert("Select a project in the board header first.");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await aiService.suggestTaskAllocation(projectId);
+      const tid = String(task.TaskId || task.taskId || "");
+      const norm = (g: string) => g.replace(/-/g, "").toLowerCase();
+      const rows = res.taskAssignments || [];
+      const match =
+        rows.find((a) => norm(String(a.taskId)) === norm(tid)) ||
+        rows.find((a) => String(a.taskId) === tid);
+      if (!match) {
+        alert(
+          "No AI row for this task yet. Run task suggestions from Team Setup (AI assistant), and add employee CVs/skills for better matches."
+        );
+        return;
+      }
+      setAssigneeId(match.userId);
+      setAiPick(match);
+    } catch (e: any) {
+      alert(
+        e?.response?.data?.detail ||
+          e?.response?.data?.message ||
+          e?.message ||
+          "AI suggestion failed. Start the service on port 8002 and restart the Functions host."
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleManagerSaveAssignment = async () => {
+    try {
+      setLoading(true);
+      const taskId = task.TaskId || task.taskId;
+      const titleStr = task.Title || task.title;
+      const descStr = task.Description || task.description;
+      if (!assigneeId) {
+        await taskService.update(String(taskId), {
+          title: titleStr,
+          description: descStr,
+          clearAssignee: true,
+        });
+      } else {
+        await taskService.update(String(taskId), {
+          title: titleStr,
+          description: descStr,
+          assignedEmployeeId: assigneeId,
+        });
+      }
+      onRefresh();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || e?.message || "Could not update assignee.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const memberLabel = (m: any) => m.FullName || m.fullName || m.Email || m.email || "Member";
+
   const handleSave = async () => {
-    if (role !== "Employee") {
+    if (!isEmployee) {
       onClose();
       return;
     }
 
     try {
       setLoading(true);
-      const backendStatus = status === "Todo" ? "Pending" : status;
       const taskId = task.TaskId || task.taskId;
-      
-      await api.put(`/tasks/${taskId}`, { 
-          ...task, 
-          Status: backendStatus,
-          Title: task.Title || task.title,
-          Description: task.Description || task.description
-      });
+      const prior = task.Status || task.status || "";
+      const titleStr = task.Title || task.title;
+      const descStr = task.Description || task.description;
 
       if (status === "Done" && file) {
+        if (prior === "Todo" || prior === "Pending") {
+          await taskService.update(taskId, {
+            title: titleStr,
+            description: descStr,
+            status: "InProgress",
+          });
+        }
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = async () => {
-            const base64 = reader.result!.toString().split(",")[1];
-            await api.post(`/tasks/${taskId}/submit`, {
-                TaskId: taskId, FileBase64: base64, FileName: file.name, Comment: comment
-            }, { headers: { userId: localStorage.getItem("userId") } });
-            onRefresh();
+          const base64 = reader.result!.toString().split(",")[1];
+          await taskService.submit(taskId, {
+            fileBase64: base64,
+            fileName: file.name,
+            comment: comment || undefined,
+          });
+          onRefresh();
         };
       } else {
+        if (status === "Done") {
+          alert("Attach a deliverable file to move this task to Done.");
+          setLoading(false);
+          return;
+        }
+        const backendStatus = status === "Todo" ? "Todo" : "InProgress";
+        await taskService.update(taskId, {
+          title: titleStr,
+          description: descStr,
+          status: backendStatus,
+        });
         onRefresh();
       }
     } catch (err) { console.error(err); } finally { setLoading(false); }
@@ -166,7 +312,7 @@ const TaskModal = ({ task, onClose, onRefresh }: { task: any, onClose: () => voi
           </div>
         ) : (
           <div className="space-y-8">
-            {role === "Employee" ? (
+            {isEmployee ? (
               <>
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Update Progress</label>
@@ -192,11 +338,94 @@ const TaskModal = ({ task, onClose, onRefresh }: { task: any, onClose: () => voi
                     </button>
                 </div>
               </>
+            ) : isManagerOrAdmin ? (
+              <div className="space-y-6">
+                <p className="text-gray-500 font-medium leading-relaxed">
+                  {task.Description || task.description || "No description provided."}
+                </p>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">
+                    Assign to team member
+                  </label>
+                  {membersError && (
+                    <p className="text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-3 border border-amber-100">
+                      {membersError}
+                    </p>
+                  )}
+                  <select
+                    value={assigneeId}
+                    onChange={(e) => {
+                      setAssigneeId(e.target.value);
+                      setAiPick(null);
+                    }}
+                    disabled={membersLoading || (!!membersError && members.length === 0)}
+                    className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none disabled:opacity-50"
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((m) => {
+                      const id = String(m.Id ?? m.UserId ?? m.userId ?? m.id ?? "");
+                      return (
+                        <option key={id} value={id}>
+                          {memberLabel(m)}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {membersLoading && (
+                    <p className="text-xs text-gray-400 font-medium px-1">Loading team roster…</p>
+                  )}
+                </div>
+
+                {aiPick && (
+                  <div className="p-6 bg-violet-50 rounded-[2rem] border border-violet-100 space-y-2">
+                    <p className="text-[10px] font-black text-violet-700 uppercase tracking-widest">AI suggestion (review & save)</p>
+                    <p className="text-sm font-semibold text-gray-800">{aiPick.employeeName}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">{aiPick.reason}</p>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleAiSuggest}
+                    disabled={aiLoading || !projectId}
+                    className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-sm bg-white border-2 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-40 transition-all"
+                  >
+                    {aiLoading ? "Suggesting…" : "AI suggest assignee"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleManagerSaveAssignment}
+                    disabled={loading || membersLoading}
+                    className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm disabled:opacity-40 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all"
+                  >
+                    {loading ? "Saving…" : "Save assignment"}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-4 text-gray-400 font-black uppercase tracking-widest text-sm hover:text-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             ) : (
               <div className="space-y-6">
-                 <p className="text-gray-500 font-medium leading-relaxed">{task.Description || "No description provided."}</p>
-                 <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Administrator View Only</div>
-                 <button onClick={onClose} className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest">Close View</button>
+                <p className="text-gray-500 font-medium leading-relaxed">
+                  {task.Description || task.description || "No description provided."}
+                </p>
+                <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  View only for your role
+                </div>
+                <button
+                  onClick={onClose}
+                  className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest"
+                >
+                  Close
+                </button>
               </div>
             )}
           </div>
@@ -280,12 +509,28 @@ const KanbanBoard = () => {
 
   const onDragEnd = async (result: any) => {
     const { destination, draggableId } = result;
-    if (role !== "Employee") return; 
+    const r = (role || "").toLowerCase();
+    if (r !== "employee") return; 
     if (!destination) return;
 
-    const backendStatus = destination.droppableId === "Todo" ? "Pending" : destination.droppableId;
-    setTasks(prev => prev.map(t => String(t.TaskId || t.taskId) === draggableId ? { ...t, Status: backendStatus } : t));
-    await taskService.update(draggableId, { Status: backendStatus });
+    const backendStatus =
+      destination.droppableId === "Todo"
+        ? "Todo"
+        : destination.droppableId === "InProgress"
+          ? "InProgress"
+          : "Done";
+    setTasks((prev) =>
+      prev.map((t) =>
+        String(t.TaskId || t.taskId) === draggableId
+          ? { ...t, Status: backendStatus, status: backendStatus }
+          : t
+      )
+    );
+    try {
+      await taskService.update(draggableId, { status: backendStatus });
+    } catch {
+      refreshTasks();
+    }
   };
 
   return (
@@ -387,10 +632,14 @@ const KanbanBoard = () => {
       </main>
 
       {selectedTask && (
-        <TaskModal 
-          task={selectedTask} 
-          onClose={() => setSelectedTask(null)} 
-          onRefresh={() => { setSelectedTask(null); refreshTasks(); }} 
+        <TaskModal
+          task={selectedTask}
+          projectId={selectedProjectId}
+          onClose={() => setSelectedTask(null)}
+          onRefresh={() => {
+            setSelectedTask(null);
+            refreshTasks();
+          }}
         />
       )}
     </div>

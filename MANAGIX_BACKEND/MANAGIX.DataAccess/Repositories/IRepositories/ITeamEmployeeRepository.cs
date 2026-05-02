@@ -14,5 +14,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         Task<TeamEmployee?> GetAsync(Guid teamId, Guid employeeId);
         void Remove(TeamEmployee entity);
+        Task<bool> ExistsAsync(Guid teamId, Guid employeeId);
+        Task<bool> IsEmployeeOnAnyTeamAsync(Guid employeeId);
     }
 }

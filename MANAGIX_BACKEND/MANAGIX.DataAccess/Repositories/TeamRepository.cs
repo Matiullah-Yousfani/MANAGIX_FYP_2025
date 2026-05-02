@@ -23,5 +23,7 @@ namespace MANAGIX.DataAccess.Repositories
 
         public async Task<Team?> GetByIdAsync(Guid id) =>
             await _context.Teams.FirstOrDefaultAsync(t => t.TeamId == id);
+
+        public void Remove(Team team) => _context.Teams.Remove(team);
     }
 }

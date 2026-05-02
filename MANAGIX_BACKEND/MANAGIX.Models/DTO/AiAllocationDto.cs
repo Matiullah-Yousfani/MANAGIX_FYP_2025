@@ -43,6 +43,8 @@ namespace MANAGIX.Models.DTO
     public class SuggestEmployeesRequestDto
     {
         public string ProjectDescription { get; set; } = string.Empty;
+        /// <summary>When set, only members of the team assigned to this project are considered.</summary>
+        public Guid? ProjectId { get; set; }
     }
 
     public class EmployeeRecommendationDto

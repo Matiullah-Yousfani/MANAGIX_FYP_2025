@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+/** Match `Host.LocalHttpPort` in backend `local.settings.json` (default here is 7005). */
+const baseURL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
+  'http://localhost:7005/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:7005/api', // Ensure this matches your port
+  baseURL,
 });
 
 api.interceptors.request.use((config) => {

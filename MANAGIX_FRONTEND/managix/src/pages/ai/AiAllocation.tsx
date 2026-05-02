@@ -96,7 +96,7 @@ function ScoreBar({ score }: { score: number }) {
 
 // ---------- Confidence Badge ----------
 function ConfidenceBadge({ confidence }: { confidence: number }) {
-  const pct = Math.round(confidence * 100);
+  const pct = confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence);
   const color =
     pct >= 80
       ? 'bg-green-100 text-green-700'
@@ -133,10 +133,12 @@ function LoadingOverlay() {
   );
 }
 
+export type AiAllocationProps = { embedded?: boolean };
+
 // ======================================================================
-// Main Component
+// Main Component (full page or embedded in Team Setup)
 // ======================================================================
-const AiAllocation = () => {
+const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('team');
@@ -176,6 +178,15 @@ const AiAllocation = () => {
     setToast({ message, type });
   }, []);
 
+  const apiErrDetail = (err: unknown, fallback: string) => {
+    const ax = err as {
+      response?: { data?: { detail?: string; message?: string } };
+      message?: string;
+    };
+    const d = ax?.response?.data?.detail || ax?.response?.data?.message || ax?.message;
+    return d && String(d).trim() ? String(d) : fallback;
+  };
+
   // Clear results when switching projects or tabs
   useEffect(() => {
     setTeamSuggestions([]);
@@ -188,10 +199,17 @@ const AiAllocation = () => {
     if (!selectedProject) return;
     setLoading(true);
     try {
-      const res = await aiService.suggestTeam(selectedProject.ProjectId);
+      const pid = selectedProject.ProjectId || selectedProject.projectId;
+      const res = await aiService.suggestTeam(pid);
       setTeamSuggestions(res.team || []);
-    } catch {
-      showToast('AI service unavailable. Please ensure the AI service is running.', 'error');
+    } catch (err) {
+      showToast(
+        apiErrDetail(
+          err,
+          'AI service unavailable. Start allocation on port 8002 (scripts/start-ai-services.ps1) and restart the API.'
+        ),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -202,13 +220,20 @@ const AiAllocation = () => {
     setLoading(true);
     try {
       const description = selectedProject.Description || selectedProject.Title || '';
-      const res = await aiService.suggestEmployees(description);
+      const pid = selectedProject.ProjectId || selectedProject.projectId;
+      const res = await aiService.suggestEmployees(description, pid);
       const sorted = (res.recommendedEmployees || []).sort(
         (a, b) => b.matchScore - a.matchScore
       );
       setEmployeeRecommendations(sorted);
-    } catch {
-      showToast('AI service unavailable. Please ensure the AI service is running.', 'error');
+    } catch (err) {
+      showToast(
+        apiErrDetail(
+          err,
+          'AI service unavailable. Start allocation on port 8002 (scripts/start-ai-services.ps1) and restart the API.'
+        ),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -218,10 +243,17 @@ const AiAllocation = () => {
     if (!selectedProject) return;
     setLoading(true);
     try {
-      const res = await aiService.suggestTaskAllocation(selectedProject.ProjectId);
+      const pid = selectedProject.ProjectId || selectedProject.projectId;
+      const res = await aiService.suggestTaskAllocation(pid);
       setTaskAssignments(res.taskAssignments || []);
-    } catch {
-      showToast('AI service unavailable. Please ensure the AI service is running.', 'error');
+    } catch (err) {
+      showToast(
+        apiErrDetail(
+          err,
+          'AI service unavailable. Start allocation on port 8002 (scripts/start-ai-services.ps1) and restart the API.'
+        ),
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -229,13 +261,17 @@ const AiAllocation = () => {
 
   const handleApplyTeam = async () => {
     if (!selectedProject || teamSuggestions.length === 0) return;
+    const userId = localStorage.getItem('userId') || '';
+    if (!userId) {
+      showToast('You must be logged in as a manager.', 'error');
+      return;
+    }
     setApplying(true);
     try {
-      const userId = localStorage.getItem('userId') || '';
       const teamName = `${selectedProject.Title} Team`;
 
       // 1. Create a new team
-      const teamRes = await teamService.createTeam(teamName);
+      const teamRes = await teamService.createTeam({ name: teamName, createdBy: userId });
       const teamId = teamRes.TeamId || teamRes.teamId || teamRes.id;
 
       // 2. Add each suggested employee
@@ -244,7 +280,8 @@ const AiAllocation = () => {
       }
 
       // 3. Assign team to project
-      await teamService.assignTeamToProject(teamId, selectedProject.ProjectId);
+      const pid = selectedProject.ProjectId || selectedProject.projectId;
+      await teamService.assignTeamToProject(teamId, pid);
 
       showToast('Team created and assigned to project successfully!', 'success');
     } catch {
@@ -260,7 +297,7 @@ const AiAllocation = () => {
     try {
       for (const assignment of taskAssignments) {
         await taskService.update(assignment.taskId, {
-          AssignedEmployeeId: assignment.userId,
+          assignedEmployeeId: assignment.userId,
         });
       }
       showToast('All task assignments applied successfully!', 'success');
@@ -273,7 +310,9 @@ const AiAllocation = () => {
 
   // ---------- Render Helpers ----------
   const renderProjectSelector = () => (
-    <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+    <div
+      className={`bg-white rounded-2xl shadow-sm p-6 ${embedded ? 'mb-0 border border-gray-100' : 'mb-6'}`}
+    >
       <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
         Select Project
       </label>
@@ -289,7 +328,9 @@ const AiAllocation = () => {
             className="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 text-left transition-colors"
           >
             <span className={`font-semibold ${selectedProject ? 'text-gray-900' : 'text-gray-400'}`}>
-              {selectedProject ? selectedProject.Title : 'Choose a project...'}
+              {selectedProject
+                ? selectedProject.Title || selectedProject.title
+                : 'Choose a project...'}
             </span>
             <ChevronDown
               size={18}
@@ -311,27 +352,32 @@ const AiAllocation = () => {
                     No projects found
                   </div>
                 ) : (
-                  projects.map((p: any) => (
-                    <button
-                      key={p.ProjectId}
-                      onClick={() => {
-                        setSelectedProject(p);
-                        setDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-5 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${
-                        selectedProject?.ProjectId === p.ProjectId
-                          ? 'bg-gray-50 font-bold'
-                          : ''
-                      }`}
-                    >
-                      <p className="font-semibold text-gray-900 text-sm">{p.Title}</p>
-                      {p.Description && (
-                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
-                          {p.Description}
+                  projects.map((p: any) => {
+                    const pid = p.ProjectId || p.projectId;
+                    const selId =
+                      selectedProject?.ProjectId || selectedProject?.projectId;
+                    return (
+                      <button
+                        key={pid}
+                        onClick={() => {
+                          setSelectedProject(p);
+                          setDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-5 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${
+                          selId === pid ? 'bg-gray-50 font-bold' : ''
+                        }`}
+                      >
+                        <p className="font-semibold text-gray-900 text-sm">
+                          {p.Title || p.title}
                         </p>
-                      )}
-                    </button>
-                  ))
+                        {(p.Description || p.description) && (
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                            {p.Description || p.description}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })
                 )}
               </motion.div>
             )}
@@ -345,10 +391,12 @@ const AiAllocation = () => {
           animate={{ opacity: 1, height: 'auto' }}
           className="mt-4 bg-gray-50 rounded-xl p-4"
         >
-          <p className="text-sm font-bold text-gray-800">{selectedProject.Title}</p>
-          {selectedProject.Description && (
+          <p className="text-sm font-bold text-gray-800">
+            {selectedProject.Title || selectedProject.title}
+          </p>
+          {(selectedProject.Description || selectedProject.description) && (
             <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-              {selectedProject.Description}
+              {selectedProject.Description || selectedProject.description}
             </p>
           )}
         </motion.div>
@@ -567,40 +615,8 @@ const AiAllocation = () => {
     </div>
   );
 
-  // ---------- Main Render ----------
-  return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <ToastNotification toast={toast} onClose={() => setToast(null)} />
-        )}
-      </AnimatePresence>
-
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Brain size={22} className="text-white" />
-            </div>
-            <h1 className="text-3xl font-black text-gray-900">
-              AI Resource Allocation
-            </h1>
-            <Sparkles size={20} className="text-yellow-500" />
-          </div>
-          <p className="text-gray-500 font-medium ml-[52px]">
-            Intelligent team formation and task assignment powered by AI
-          </p>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6">
-        {/* Project Selector */}
-        {renderProjectSelector()}
-
-        {/* Tabs + Content */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+  const tabsCard = (
+        <div className={`bg-white rounded-2xl shadow-sm overflow-hidden ${embedded ? 'border border-gray-100' : ''}`}>
           {/* Tab Bar */}
           <div className="flex border-b border-gray-100">
             {TABS.map((tab) => (
@@ -655,6 +671,68 @@ const AiAllocation = () => {
             )}
           </div>
         </div>
+  );
+
+  // ---------- Main Render ----------
+  const toastWrap = (
+    <AnimatePresence>
+      {toast && <ToastNotification toast={toast} onClose={() => setToast(null)} />}
+    </AnimatePresence>
+  );
+
+  if (embedded) {
+    return (
+      <div className="relative">
+        {toastWrap}
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-indigo-50/80">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                <Brain size={22} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2 flex-wrap">
+                  AI assistant
+                  <Sparkles size={18} className="text-yellow-500" />
+                </h2>
+                <p className="text-sm text-gray-600 mt-1 max-w-3xl leading-relaxed">
+                  Suggest teams, rank employees from résumés/skills, and propose task owners. Assign a project team
+                  first; richer employee profiles (CV upload in Profile) improve recommendations.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 md:p-8 space-y-6 bg-[#F8FAFC]/50">
+            {renderProjectSelector()}
+            {tabsCard}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {toastWrap}
+
+      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <Brain size={22} className="text-white" />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900">AI Resource Allocation</h1>
+            <Sparkles size={20} className="text-yellow-500" />
+          </div>
+          <p className="text-gray-500 font-medium ml-[52px]">
+            Intelligent team formation and task assignment powered by AI
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6">
+        {renderProjectSelector()}
+        {tabsCard}
       </div>
     </div>
   );

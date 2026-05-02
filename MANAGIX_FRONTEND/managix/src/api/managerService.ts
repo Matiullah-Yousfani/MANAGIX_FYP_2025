@@ -1,14 +1,12 @@
-import api from './axiosInstance';
+import { projectService, ProjectCreateRequest } from './projectService';
 
+/** Thin aliases for manager flows — same routes as `projectService`. */
 export const managerService = {
-  createProject: async (projectData: any) => {
-    const res = await api.post('/projects', projectData);
-    return res.data;
+  createProject: async (projectData: ProjectCreateRequest) => {
+    return projectService.create(projectData);
   },
-  
-  // This helps 'snow' see their specific projects
+
   getManagerProjects: async (managerId: string) => {
-    const res = await api.get(`/projects/manager/${managerId}`);
-    return res.data;
-  }
+    return projectService.getByManager(managerId);
+  },
 };

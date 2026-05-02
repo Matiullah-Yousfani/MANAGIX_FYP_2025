@@ -11,5 +11,8 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
     {
         Task AddAsync(ProjectTeam entity);
         Task<ProjectTeam?> GetByProjectIdAsync(Guid projectId);
+        Task<ProjectTeam?> GetByTeamIdAsync(Guid teamId);
+        void Remove(ProjectTeam entity);
+        Task<List<ProjectTeam>> GetAllAssignmentsAsync();
     }
 }

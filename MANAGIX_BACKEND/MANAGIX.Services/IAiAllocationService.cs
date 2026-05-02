@@ -7,7 +7,7 @@ namespace MANAGIX.Services
     public interface IAiAllocationService
     {
         Task<SuggestTeamResponseDto> SuggestBestTeamAsync(Guid projectId);
-        Task<SuggestEmployeesResponseDto> SuggestEmployeesAsync(string projectDescription);
+        Task<SuggestEmployeesResponseDto> SuggestEmployeesAsync(string projectDescription, Guid? projectId = null);
         Task<SuggestTaskAllocationResponseDto> SuggestTaskAllocationAsync(Guid projectId);
     }
 }

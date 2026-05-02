@@ -1,29 +1,37 @@
 import api from './axiosInstance';
 
+/** `RoleCreateDto` */
+export interface RoleCreateRequest {
+  roleName: string;
+  description?: string;
+}
+
+/** `UpdateUserRoleDto` — PUT `/roles/{userId}` body */
+export interface UpdateUserRoleRequest {
+  roleId: string;
+}
+
 export const roleService = {
   getRoles: async () => {
     const response = await api.get('/roles');
     return response.data;
   },
 
-  createRole: async (roleName: string) => {
-    // Backend expects { RoleName: "..." }
-    const response = await api.post('/roles', { roleName });
+  createRole: async (payload: RoleCreateRequest) => {
+    const response = await api.post('/roles', payload);
     return response.data;
   },
 
-updateRole: async (id: string, roleName: string) => {
-    // MATCHING YOUR BACKEND: /api/roles/{id}
-    const response = await api.put(`/roles/${id}`, { 
-      roleId: id,       // Keeping this in body too just in case your DTO needs it
-      roleName: roleName 
-    });
+  /** Backend: `PUT /roles/{id}` where `id` is the **user** id to update. */
+  updateUserRole: async (userId: string, roleId: string) => {
+    const response = await api.put(`/roles/${userId}`, {
+      roleId,
+    } satisfies UpdateUserRoleRequest);
     return response.data;
   },
 
-  deleteRole: async (id: string) => {
-    // Backend route is "/roles/{id}" - This is correct.
-    const response = await api.delete(`/roles/${id}`);
+  deleteRole: async (roleId: string) => {
+    const response = await api.delete(`/roles/${roleId}`);
     return response.data;
-  }
+  },
 };

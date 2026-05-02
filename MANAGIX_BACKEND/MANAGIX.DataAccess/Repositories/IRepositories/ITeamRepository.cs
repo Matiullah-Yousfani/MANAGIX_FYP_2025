@@ -14,5 +14,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         Task<List<Team>> GetAllAsync();
 
+        void Remove(Team team);
     }
 }

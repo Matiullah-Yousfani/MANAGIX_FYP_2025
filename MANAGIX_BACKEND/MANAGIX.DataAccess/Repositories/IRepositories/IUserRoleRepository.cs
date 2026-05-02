@@ -12,5 +12,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task<UserRole?> GetByIdAsync(Guid id);
         Task AddAsync(UserRole userRole);
         void Remove(UserRole userRole);
+        Task<List<UserRole>> GetByUserIdAsync(Guid userId);
     }
 }

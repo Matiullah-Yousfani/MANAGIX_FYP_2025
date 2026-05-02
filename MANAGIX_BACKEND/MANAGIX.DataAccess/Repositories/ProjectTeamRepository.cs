@@ -20,7 +20,14 @@ namespace MANAGIX.DataAccess.Repositories
 
         public async Task<ProjectTeam?> GetByProjectIdAsync(Guid projectId) =>
             await _context.ProjectTeams.FirstOrDefaultAsync(pt => pt.ProjectId == projectId);
-        
 
+        public async Task<ProjectTeam?> GetByTeamIdAsync(Guid teamId) =>
+            await _context.ProjectTeams.FirstOrDefaultAsync(pt => pt.TeamId == teamId);
+
+        public void Remove(ProjectTeam entity) =>
+            _context.ProjectTeams.Remove(entity);
+
+        public async Task<List<ProjectTeam>> GetAllAssignmentsAsync() =>
+            await _context.ProjectTeams.ToListAsync();
     }
 }

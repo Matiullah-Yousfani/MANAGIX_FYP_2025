@@ -95,7 +95,7 @@ namespace MANAGIX_FYP_2025.Functions
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+                if (dto == null || string.IsNullOrWhiteSpace(dto.FullName) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
                 {
                     var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
                     await badResp.WriteAsJsonAsync(new { message = "Invalid data" });
@@ -103,6 +103,19 @@ namespace MANAGIX_FYP_2025.Functions
                 }
 
                 var message = await _authService.RegisterAsync(dto);
+                var validationTone = message.Contains("required", StringComparison.OrdinalIgnoreCase)
+                    || message.Contains("at least", StringComparison.OrdinalIgnoreCase)
+                    || message.Contains("Invalid role", StringComparison.OrdinalIgnoreCase);
+                var duplicateOrPending = message.Contains("Email already", StringComparison.OrdinalIgnoreCase)
+                    || message.Contains("already registered", StringComparison.OrdinalIgnoreCase);
+                if (validationTone || duplicateOrPending)
+                {
+                    var status = duplicateOrPending ? HttpStatusCode.Conflict : HttpStatusCode.BadRequest;
+                    var bad = req.CreateResponse(status);
+                    await bad.WriteAsJsonAsync(new { message });
+                    return bad;
+                }
+
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 await resp.WriteAsJsonAsync(new { message });
                 return resp;
@@ -118,11 +131,12 @@ namespace MANAGIX_FYP_2025.Functions
         // POST /api/auth/login
         [Function("Login")]
         public async Task<HttpResponseData> Login(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)
+     [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)
         {
             try
             {
                 string body = await new StreamReader(req.Body).ReadToEndAsync();
+
                 var dto = JsonSerializer.Deserialize<LoginRequestDto>(body, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -135,18 +149,20 @@ namespace MANAGIX_FYP_2025.Functions
                     return badResp;
                 }
 
-                var token = await _authService.LoginAsync(dto);
+                var result = await _authService.LoginAsync(dto);
 
-                if (token == null)
+                // ❌ Login failed
+                if (!result.Success)
                 {
-                    var unauthResp = req.CreateResponse(HttpStatusCode.Unauthorized);
-                    await unauthResp.WriteAsJsonAsync(new { message = "Invalid credentials" });
-                    return unauthResp;
+                    var resp = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await resp.WriteAsJsonAsync(new { message = result.Message });
+                    return resp;
                 }
 
-                var resp = req.CreateResponse(HttpStatusCode.OK);
-                await resp.WriteAsJsonAsync(new { token });
-                return resp;
+                // ✅ Login success
+                var okResp = req.CreateResponse(HttpStatusCode.OK);
+                await okResp.WriteAsJsonAsync(new { token = result.Token });
+                return okResp;
             }
             catch (Exception ex)
             {
@@ -218,6 +234,12 @@ namespace MANAGIX_FYP_2025.Functions
                 await resp.WriteAsJsonAsync(new { success = ok });
                 return resp;
             }
+            catch (InvalidOperationException ex)
+            {
+                var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                await conflict.WriteAsJsonAsync(new { message = ex.Message });
+                return conflict;
+            }
             catch (Exception ex)
             {
                 var err = req.CreateResponse(HttpStatusCode.InternalServerError);
@@ -254,6 +276,34 @@ namespace MANAGIX_FYP_2025.Functions
                 var ok = await _authService.RejectAsync(requestId, comment);
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 await resp.WriteAsJsonAsync(new { success = ok });
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return err;
+            }
+        }
+
+        [Function("AdminDeleteUser")]
+        public async Task<HttpResponseData> AdminDeleteUser(
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "management/users/{userId}")] HttpRequestData req,
+            string userId)
+        {
+            if (!Guid.TryParse(userId, out var uid))
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Invalid user ID." });
+                return badResp;
+            }
+
+            try
+            {
+                var (ok, message) = await _authService.TryDeleteUserAsync(uid);
+                var status = ok ? HttpStatusCode.OK : HttpStatusCode.Conflict;
+                var resp = req.CreateResponse(status);
+                await resp.WriteAsJsonAsync(new { success = ok, message });
                 return resp;
             }
             catch (Exception ex)

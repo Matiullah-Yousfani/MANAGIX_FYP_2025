@@ -18,5 +18,8 @@ namespace MANAGIX.DataAccess.Repository
         {
             return await _db.ProjectModels.ToListAsync();
         }
+
+        public async Task<ProjectModel?> GetByIdAsync(Guid modelId) =>
+            await _db.ProjectModels.FirstOrDefaultAsync(m => m.ModelId == modelId);
     }
 }

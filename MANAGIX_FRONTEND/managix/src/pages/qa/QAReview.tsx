@@ -38,8 +38,9 @@ const QAReview = () => {
       const allSubmissions = Array.isArray(res.data) ? res.data : [];
       
       if (filterProjectId) {
-        const filtered = allSubmissions.filter((sub: any) => 
-            (sub.Task?.projectId || sub.Task?.ProjectId)?.toString() === filterProjectId.toString()
+        const filtered = allSubmissions.filter((sub: any) =>
+          (sub.task?.projectId ?? sub.Task?.projectId ?? sub.Task?.ProjectId)?.toString() ===
+          filterProjectId.toString()
         );
         setTasks(filtered);
       } else {
@@ -56,7 +57,11 @@ const QAReview = () => {
     if (!decisionModal) return;
     try {
       const { taskId, type } = decisionModal;
-      await api.post(`/tasks/${taskId}/${type}`, { comment });
+      if (type === "approve") {
+        await api.post(`/tasks/${taskId}/approve`, { qaComment: comment });
+      } else {
+        await api.post(`/tasks/${taskId}/reject`, { qaComment: comment });
+      }
       addToast(`Task successfully ${type}ed`, 'success');
       setDecisionModal(null);
       setComment('');
@@ -119,15 +124,18 @@ const QAReview = () => {
               <p className="font-black uppercase tracking-widest text-[10px] text-gray-400">Queue is currently clear</p>
             </div>
           ) : (
-            tasks.map(submission => {
-              const task = submission.Task;
-              const taskId = task?.TaskId || task?.taskId;
-              const employeeName = submission.Employee?.FullName || "Team Member";
+            tasks.map((submission) => {
+              const task = submission.task ?? submission.Task;
+              const taskId = task?.taskId ?? task?.TaskId;
+              const employeeName =
+                submission.employee?.fullName ??
+                submission.Employee?.FullName ??
+                "Team Member";
 
               return (
                 <motion.div 
                   layout
-                  key={submission.SubmissionId} 
+                  key={submission.submissionId ?? submission.SubmissionId} 
                   className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 transition-all hover:shadow-xl group relative overflow-hidden"
                 >
                   <div className="flex-1 relative z-10">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from "../../api/axiosInstance";
+import { taskService } from "../../api/taskService";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus, FiUser, FiFlag, FiType, FiAlignLeft, FiXCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
 
@@ -29,20 +29,20 @@ const CreateTaskModal = ({
   const submit = async () => {
     if (isSubmitting) return;
 
-    if (!form.title || !form.assignedEmployeeId) {
-      addToast("Please fill in the title and assign an employee.", "error");
+    if (!form.title || !form.assignedEmployeeId || !form.milestoneId) {
+      addToast("Please select a milestone, title, and assignee.", "error");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await api.post("/tasks", {
+      await taskService.create({
         projectId,
-        milestoneId: form.milestoneId || null,
+        milestoneId: form.milestoneId,
         assignedEmployeeId: form.assignedEmployeeId,
         title: form.title,
-        description: form.description,
+        description: form.description || undefined,
       });
 
       // Find employee name for the toast
@@ -134,7 +134,7 @@ const CreateTaskModal = ({
                   value={form.milestoneId}
                   onChange={(e) => setForm({ ...form, milestoneId: e.target.value })}
                 >
-                  <option value="">General Task</option>
+                  <option value="">Select milestone…</option>
                   {milestones.map((m: any) => (
                     <option key={m.MilestoneId || m.milestoneId} value={m.MilestoneId || m.milestoneId}>
                       {m.Title || m.title}

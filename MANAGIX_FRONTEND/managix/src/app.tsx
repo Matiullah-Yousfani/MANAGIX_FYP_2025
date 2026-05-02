@@ -19,7 +19,6 @@ import Task from './pages/task/Task';
 import TaskHub from './pages/task/TaskHub';
 import KanbanBoard from './pages/task/KanbanBoard';
 import Meeting from './pages/meeting/Meeting';
-import AiAllocation from './pages/ai/AiAllocation';
 
 function App() {
   return (
@@ -47,7 +46,7 @@ function App() {
         <Route path="/create-project" element={<Layout><CreateProject /></Layout>} />
         <Route path="/projects" element={<Layout><Project /></Layout>} />
         <Route path="/milestones" element={<Layout><Milestone /></Layout>} />
-        <Route path="/ai-allocation" element={<Layout><AiAllocation /></Layout>} />
+        <Route path="/ai-allocation" element={<Navigate to="/teams" replace />} />
 
         {/* Step 5 Placeholder - We will replace this in the next step */}
         <Route path="/teams" element={<Layout><Teams /></Layout>} />

@@ -17,5 +17,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         );
 
         Task<List<EmployeePerformance>> GetByProjectIdAsync(Guid projectId);
+
+        void Remove(EmployeePerformance performance);
     }
 }

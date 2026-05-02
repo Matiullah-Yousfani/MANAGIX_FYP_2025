@@ -31,7 +31,7 @@ const PerformanceDashboard = () => {
     try {
       // 1. Fetch Project Details to get the Title (Scenario Alignment)
       const project = await projectService.getById(projectId!);
-      setProjectTitle(project.Title || "Project Performance");
+      setProjectTitle(project.title ?? project.Title ?? "Project Performance");
 
       // 2. Load existing performance data
       await loadPerformanceRecords();
@@ -47,12 +47,12 @@ const PerformanceDashboard = () => {
       const data = await performanceService.getProjectPerformance(projectId!);
       
       // Map backend PascalCase to frontend camelCase
-      const mappedData = (Array.isArray(data) ? data : []).map(emp => ({
-        employeeId: emp.EmployeeId,
-        projectId: emp.ProjectId,
-        tasksAssigned: emp.TasksAssigned,
-        tasksCompleted: emp.TasksCompleted,
-        approvalRate: emp.ApprovalRate
+      const mappedData = (Array.isArray(data) ? data : []).map((emp: any) => ({
+        employeeId: emp.employeeId ?? emp.EmployeeId,
+        projectId: emp.projectId ?? emp.ProjectId,
+        tasksAssigned: emp.tasksAssigned ?? emp.TasksAssigned,
+        tasksCompleted: emp.tasksCompleted ?? emp.TasksCompleted,
+        approvalRate: emp.approvalRate ?? emp.ApprovalRate,
       }));
 
       setPerformanceData(mappedData);

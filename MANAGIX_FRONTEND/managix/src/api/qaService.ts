@@ -6,13 +6,13 @@ export const qaService = {
     return res.data;
   },
 
-  approveTask: async (taskId: string) => {
-    const res = await api.post(`/tasks/${taskId}/approve`);
+  approveTask: async (taskId: string, qaComment: string = "") => {
+    const res = await api.post(`/tasks/${taskId}/approve`, { qaComment });
     return res.data;
   },
 
-  rejectTask: async (taskId: string, comment: string) => {
-    const res = await api.post(`/tasks/${taskId}/reject`, { comment });
+  rejectTask: async (taskId: string, qaComment: string) => {
+    const res = await api.post(`/tasks/${taskId}/reject`, { qaComment });
     return res.data;
-  }
+  },
 };

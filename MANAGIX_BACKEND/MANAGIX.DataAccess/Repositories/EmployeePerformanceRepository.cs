@@ -26,5 +26,8 @@ namespace MANAGIX.DataAccess.Repositories
             await _context.EmployeePerformances
                           .Where(p => p.ProjectId == projectId)
                           .ToListAsync();
+
+        public void Remove(EmployeePerformance performance) =>
+            _context.EmployeePerformances.Remove(performance);
     }
 }

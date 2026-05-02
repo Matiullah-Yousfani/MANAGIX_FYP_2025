@@ -31,10 +31,24 @@ namespace MANAGIX.DataAccess.Repositories
                           .Where(t => t.AssignedEmployeeId == employeeId)
                           .ToListAsync();
 
-        public async Task<List<TaskItem>> GetTasksByStatusAsync(TaskStatus status) =>
+        public async Task<List<TaskItem>> GetTasksByStatusAsync(string status) =>
             await _context.Tasks
-                          .Where(t => t.Status == status.ToString())
+                          .Where(t => t.Status == status)
                           .ToListAsync();
+
+        public async Task<int> CountActiveWorkloadAsync(Guid employeeId, Guid? excludeTaskId = null)
+        {
+            var q = _context.Tasks.Where(t =>
+                t.AssignedEmployeeId == employeeId &&
+                (t.Status == "Todo" ||
+                 t.Status == "InProgress" ||
+                 t.Status == "Pending"));
+
+            if (excludeTaskId.HasValue)
+                q = q.Where(t => t.TaskId != excludeTaskId.Value);
+
+            return await q.CountAsync();
+        }
 
         public async Task<int> CountAssignedTasksAsync(Guid employeeId, Guid projectId) =>
             await _context.Tasks

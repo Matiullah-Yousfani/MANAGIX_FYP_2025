@@ -1,42 +1,52 @@
 import api from './axiosInstance';
 
-// Matches your C# backend: Login returns only { token }
-interface LoginResponse {
-  token: string;
+/** Backend login returns `{ token }` on success. */
+export interface LoginResponse {
+  token?: string;
+  message?: string;
 }
 
-// User object returned by AuthMe
-export interface UserDetails {
-  userId?: string;
+export interface RegisterRequest {
   fullName: string;
   email: string;
-  roleName: string; // C# backend
+  password: string;
+  /** Guid string */
+  roleId: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+}
+
+/** Matches `AuthMeResponseDto` (System.Text.Json camelCase). */
+export interface AuthMeResponse {
+  userId: string;
+  fullName: string;
+  email: string;
+  roleId: string;
+  roleName: string;
+  status: string;
 }
 
 export const authService = {
-  // 1. Login: Returns token
   login: async (credentials: { email: string; password: string }): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/auth/login', credentials);
     return response.data;
   },
 
-  // 2. GetMe: Uses token in Authorization header
-  getMe: async (): Promise<UserDetails> => {
-    // Get token from localStorage
+  getMe: async (): Promise<AuthMeResponse> => {
     const token = localStorage.getItem('token');
-    if (!token) throw new Error('Token not found');
-
-    const response = await api.get<UserDetails>('/auth/me', {
-      headers: {
-        Authorization: `Bearer ${token}` // required for backend to read UserId claim
-      }
+    if (!token) {
+      throw new Error('Token not found');
+    }
+    const response = await api.get<AuthMeResponse>('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;
   },
 
-  // 3. Register
-  register: async (data: any) => {
-    const response = await api.post('/auth/register', data);
+  register: async (data: RegisterRequest): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/auth/register', data);
     return response.data;
-  }
+  },
 };

@@ -61,43 +61,61 @@ namespace MANAGIX_FYP_2025.Functions
             }
         }
 
-        // PUT /api/roles/{id}
         [Function("UpdateRole")]
         public async Task<HttpResponseData> UpdateRole(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "roles/{id}")] HttpRequestData req,
-            string id)
+     [HttpTrigger(AuthorizationLevel.Function, "put", Route = "roles/{id}")]
+    HttpRequestData req, string id)
         {
-            if (!Guid.TryParse(id, out Guid roleId))
+            // ✅ Validate User ID
+            if (!Guid.TryParse(id, out Guid userId))
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResp.WriteAsJsonAsync(new { message = "Invalid ID" });
+                await badResp.WriteAsJsonAsync(new { message = "Invalid User ID" });
                 return badResp;
             }
 
             try
             {
+                // ✅ Read request body
                 string body = await new StreamReader(req.Body).ReadToEndAsync();
-                var dto = JsonSerializer.Deserialize<RoleCreateDto>(body, new JsonSerializerOptions
+
+                var dto = JsonSerializer.Deserialize<UpdateUserRoleDto>(body, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
-                if (dto == null || string.IsNullOrWhiteSpace(dto.RoleName))
+                // ✅ Validate DTO
+                if (dto == null || dto.RoleId == Guid.Empty)
                 {
                     var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                    await badResp.WriteAsJsonAsync(new { message = "RoleName is required" });
+                    await badResp.WriteAsJsonAsync(new { message = "Valid RoleId is required" });
                     return badResp;
                 }
 
-                var updated = await _roleService.UpdateRoleAsync(roleId, dto);
-                var response = req.CreateResponse(updated ? HttpStatusCode.OK : HttpStatusCode.NotFound);
-                return response;
+                // ✅ Call service
+                var updated = await _roleService.UpdateRoleAsync(userId, dto.RoleId);
+
+                if (!updated)
+                {
+                    var notFoundResp = req.CreateResponse(HttpStatusCode.NotFound);
+                    await notFoundResp.WriteAsJsonAsync(new { message = "User not found" });
+                    return notFoundResp;
+                }
+
+                // ✅ Success response
+                var okResp = req.CreateResponse(HttpStatusCode.OK);
+                await okResp.WriteAsJsonAsync(new { message = "Role updated successfully" });
+                return okResp;
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
-                return err;
+                // ✅ Business rule errors (from service)
+                var conflictResp = req.CreateResponse(HttpStatusCode.Conflict);
+                await conflictResp.WriteAsJsonAsync(new
+                {
+                    message = ex.Message
+                });
+                return conflictResp;
             }
         }
 

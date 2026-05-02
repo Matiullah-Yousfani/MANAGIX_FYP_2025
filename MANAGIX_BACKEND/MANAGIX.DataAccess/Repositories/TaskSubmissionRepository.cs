@@ -21,12 +21,15 @@ namespace MANAGIX.DataAccess.Repositories
             await _context.TaskSubmissions
                 .Include(s => s.Task)
                 .Include(s => s.Employee)
-                .Where(s => s.Status == "Submitted")
+                .Where(s => s.Status == "Submitted" && s.Task != null &&
+                            (s.Task.Status == "Done" || s.Task.Status == "Submitted"))
                 .ToListAsync();
 
         public async Task<TaskSubmission?> GetByTaskIdAsync(Guid taskId) =>
             await _context.TaskSubmissions.FirstOrDefaultAsync(s => s.TaskId == taskId);
 
         public void Update(TaskSubmission submission) => _context.TaskSubmissions.Update(submission);
+
+        public void Remove(TaskSubmission submission) => _context.TaskSubmissions.Remove(submission);
     }
 }

@@ -22,5 +22,7 @@ namespace MANAGIX.DataAccess.Repositories
 
         public void Remove(UserRole userRole) => _context.userRoles.Remove(userRole);
 
+        public async Task<List<UserRole>> GetByUserIdAsync(Guid userId) =>
+            await _context.userRoles.Where(ur => ur.UserId == userId).ToListAsync();
     }
 }

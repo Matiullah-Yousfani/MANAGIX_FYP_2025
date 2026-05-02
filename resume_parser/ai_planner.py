@@ -9,7 +9,7 @@ No database operations - just AI planning and returning structured JSON.
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import os
 import requests
 import json
@@ -52,16 +52,38 @@ class ProjectPlanRequest(BaseModel):
     projectDescription: str
     deadline: str
     budget: float
+    methodologyOptions: List[str] = []
 
 class ProjectPlanResponse(BaseModel):
     """AI-generated project plan"""
+    suggestedMethodology: str = ""
+    methodologyRationale: str = ""
     milestones: List[MilestoneItem] = []
 
 # ===================== Prompt Builder =====================
 
-def build_prompt(project_name: str, project_description: str, deadline: str, budget: float) -> str:
+def build_prompt(
+    project_name: str,
+    project_description: str,
+    deadline: str,
+    budget: float,
+    methodology_options: List[str],
+) -> str:
     """Build the prompt that instructs Groq to generate a project plan."""
-    
+
+    meth_section = ""
+    if methodology_options:
+        meth_json = json.dumps(methodology_options)
+        meth_section = f"""
+Software development methodologies available (JSON array of exact names you must copy from):
+{meth_json}
+
+You MUST include top-level keys "suggestedMethodology" and "methodologyRationale".
+- suggestedMethodology: set to EXACTLY one string from the list above (character-for-character match to one entry).
+- methodologyRationale: 1-3 sentences on why that methodology fits this project.
+If the list is empty, omit suggestedMethodology and methodologyRationale or set them to empty strings.
+"""
+
     return f"""You are a software project planning assistant.
 Based on the following project information, generate a structured project plan.
 
@@ -76,7 +98,7 @@ Project Deadline:
 
 Project Budget:
 {budget}
-
+{meth_section}
 Break the project into logical milestones.
 For each milestone provide:
 - title
@@ -96,6 +118,8 @@ Rules:
 
 Return ONLY valid JSON in this exact structure. Do not include any text, explanation, or markdown outside the JSON:
 {{
+  "suggestedMethodology": "Exact name from methodology list or empty string",
+  "methodologyRationale": "Short explanation or empty string",
   "milestones": [
     {{
       "title": "Milestone Name",
@@ -235,7 +259,7 @@ def extract_json_from_response(response_text: str) -> dict:
 
 # ===================== Validation =====================
 
-def validate_and_normalize_plan(plan: dict) -> dict:
+def validate_and_normalize_plan(plan: dict, methodology_options: Optional[List[str]] = None) -> dict:
     """
     Validate the AI-generated plan and normalize it:
     - Ensure milestones exist
@@ -243,9 +267,33 @@ def validate_and_normalize_plan(plan: dict) -> dict:
     - Ensure milestones are sorted by deadlineOffsetDays
     - Ensure all required fields have values
     """
+    if methodology_options is None:
+        methodology_options = []
+
+    if "suggestedMethodology" not in plan or not str(plan.get("suggestedMethodology", "")).strip():
+        plan["suggestedMethodology"] = methodology_options[0] if methodology_options else ""
+    if "methodologyRationale" not in plan or plan["methodologyRationale"] is None:
+        plan["methodologyRationale"] = ""
+
+    if methodology_options and plan.get("suggestedMethodology"):
+        sm = str(plan["suggestedMethodology"]).strip()
+        if not any(sm == m or sm.lower() == m.lower() for m in methodology_options):
+            # pick best simple fuzzy: first option containing suggested text or vice versa
+            found = None
+            for m in methodology_options:
+                if sm.lower() in m.lower() or m.lower() in sm.lower():
+                    found = m
+                    break
+            plan["suggestedMethodology"] = found or methodology_options[0]
+        else:
+            for m in methodology_options:
+                if sm.lower() == m.lower():
+                    plan["suggestedMethodology"] = m
+                    break
+
     if "milestones" not in plan or not isinstance(plan["milestones"], list):
         raise ValueError("AI response missing 'milestones' array")
-    
+
     milestones = plan["milestones"]
     
     if len(milestones) == 0:
@@ -313,14 +361,20 @@ def validate_and_normalize_plan(plan: dict) -> dict:
 
 # ===================== Groq API Call =====================
 
-def call_groq_for_plan(project_name: str, project_description: str, deadline: str, budget: float) -> dict:
+def call_groq_for_plan(
+    project_name: str,
+    project_description: str,
+    deadline: str,
+    budget: float,
+    methodology_options: List[str],
+) -> dict:
     """Send project details to Groq LLM and get back a structured project plan."""
     
     if not GROQ_API_KEY:
         print("[ERROR] GROQ_API_KEY not set in environment")
         raise ValueError("GROQ_API_KEY not set in environment. Please set it in the .env file.")
     
-    prompt = build_prompt(project_name, project_description, deadline, budget)
+    prompt = build_prompt(project_name, project_description, deadline, budget, methodology_options)
     
     print(f"[DEBUG] Sending project plan request to Groq API for: {project_name}")
     
@@ -377,7 +431,7 @@ def call_groq_for_plan(project_name: str, project_description: str, deadline: st
             raise ValueError("Groq returned empty or invalid JSON")
         
         # Validate and normalize the plan
-        plan_json = validate_and_normalize_plan(plan_json)
+        plan_json = validate_and_normalize_plan(plan_json, methodology_options)
         
         print(f"[DEBUG] Successfully generated plan with {len(plan_json.get('milestones', []))} milestones")
         return plan_json
@@ -432,11 +486,13 @@ async def generate_plan(request: ProjectPlanRequest):
             raise HTTPException(status_code=400, detail="Project budget must be greater than 0")
         
         # Call Groq to generate the plan
+        opts = request.methodologyOptions if request.methodologyOptions else []
         plan_json = call_groq_for_plan(
             project_name=request.projectName.strip(),
             project_description=request.projectDescription.strip(),
             deadline=request.deadline.strip(),
-            budget=request.budget
+            budget=request.budget,
+            methodology_options=opts,
         )
         
         # Convert to Pydantic model for validation and serialization

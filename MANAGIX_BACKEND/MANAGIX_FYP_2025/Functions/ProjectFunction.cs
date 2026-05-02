@@ -1,6 +1,7 @@
 ﻿using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
+using MANAGIX.Utility;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System;
@@ -33,6 +34,63 @@ namespace MANAGIX_FYP_2025.Functions
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
                 await badResp.WriteAsJsonAsync(new { message = "Invalid data: Project Title and Model are required." });
                 return badResp;
+            }
+
+            dto.Title = dto.Title.Trim();
+
+            if (dto.ManagerId == Guid.Empty)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "ManagerId is required." });
+                return badResp;
+            }
+
+            if (dto.Budget < 0)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Budget cannot be negative." });
+                return badResp;
+            }
+
+            var modelEntity = await _unitOfWork.ProjectModels.GetByIdAsync(dto.ModelId);
+            if (modelEntity == null)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Invalid project model (ModelId not found)." });
+                return badResp;
+            }
+
+            var managerUser = await _unitOfWork.Users.GetByIdAsync(dto.ManagerId);
+            if (managerUser == null)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Manager user not found." });
+                return badResp;
+            }
+
+            var canOwnProject = managerUser.UserRoles?.Any(ur =>
+                ur.Role != null &&
+                (string.Equals(ur.Role.RoleName, "Manager", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(ur.Role.RoleName, "Admin", StringComparison.OrdinalIgnoreCase))) == true;
+            if (!canOwnProject)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Project owner must be a Manager or Admin." });
+                return badResp;
+            }
+
+            if (CalendarDate.IsBeforeUtcCalendarToday(dto.Deadline))
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = "Project deadline must be today or a future date." });
+                return badResp;
+            }
+
+            if (await _unitOfWork.Projects.ExistsByManagerAndTitleAsync(dto.ManagerId, dto.Title, null))
+            {
+                var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                await conflict.WriteAsJsonAsync(new { message = "A project with this title already exists for this manager." });
+                return conflict;
             }
 
             var project = new Project
@@ -147,6 +205,27 @@ namespace MANAGIX_FYP_2025.Functions
             if (project == null)
                 return await BadRequest(req, "Project not found");
 
+            var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+            foreach (var t in tasks)
+            {
+                var sub = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(t.TaskId);
+                if (sub != null)
+                    _unitOfWork.TaskSubmissions.Remove(sub);
+                _unitOfWork.Tasks.Remove(t);
+            }
+
+            var milestones = await _unitOfWork.Milestones.GetByProjectIdAsync(pid);
+            foreach (var m in milestones)
+                _unitOfWork.Milestones.Remove(m);
+
+            var perfs = await _unitOfWork.EmployeePerformances.GetByProjectIdAsync(pid);
+            foreach (var p in perfs)
+                _unitOfWork.EmployeePerformances.Remove(p);
+
+            var pt = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
+            if (pt != null)
+                _unitOfWork.ProjectTeams.Remove(pt);
+
             _unitOfWork.Projects.Remove(project);
             await _unitOfWork.CompleteAsync();
 
@@ -199,6 +278,18 @@ namespace MANAGIX_FYP_2025.Functions
             var project = await _unitOfWork.Projects.GetByIdAsync(pid);
             if (project == null) return await BadRequest(req, "Project not found");
 
+            if (project.IsClosed)
+                return await BadRequest(req, "Project is already closed.");
+
+            var projectTasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+            var hasActiveWork = projectTasks.Any(t =>
+            {
+                var n = TaskWorkflow.Normalize(t.Status);
+                return n == TaskWorkflow.Todo || n == TaskWorkflow.InProgress;
+            });
+            if (hasActiveWork)
+                return await BadRequest(req, "Cannot close project while tasks are still Todo or InProgress.");
+
             project.IsClosed = true;
             project.ClosedAt = DateTime.UtcNow;
             project.Status = "Completed";
@@ -227,9 +318,9 @@ namespace MANAGIX_FYP_2025.Functions
             var teamAssignment = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
             var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
 
-            // Define what "Completed" means in your business logic
-            var completedStatuses = new[] { "Done", "Completed", "Approved" };
-            int completedCount = tasks.Count(t => completedStatuses.Contains(t.Status));
+            int completedCount = tasks.Count(t =>
+                TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Approved ||
+                t.Status == "Completed");
 
             var dashboard = new ProjectDashboardDto
             {
@@ -298,10 +389,29 @@ namespace MANAGIX_FYP_2025.Functions
             var project = await _unitOfWork.Projects.GetByIdAsync(pid);
             if (project == null) return await BadRequest(req, "Project not found");
 
-            // Update fields
+            if (project.IsClosed)
+                return await BadRequest(req, "Project is closed and cannot be updated.");
+
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                return await BadRequest(req, "Project title is required.");
+
+            if (dto.Budget < 0)
+                return await BadRequest(req, "Budget cannot be negative.");
+
+            dto.Title = dto.Title.Trim();
+
+            if (dto.Deadline != default && CalendarDate.IsBeforeUtcCalendarToday(dto.Deadline))
+                return await BadRequest(req, "Deadline must be today or a future date.");
+
+            if (!string.IsNullOrWhiteSpace(dto.Title) &&
+                await _unitOfWork.Projects.ExistsByManagerAndTitleAsync(project.CreatedBy, dto.Title, pid))
+                return await BadRequest(req, "Another project with this title already exists for this manager.");
+
             project.Title = dto.Title;
             project.Description = dto.Description;
-            // Update other fields if necessary (Deadline, Budget, etc.)
+            if (dto.Deadline != default)
+                project.Deadline = dto.Deadline;
+            project.Budget = dto.Budget;
 
             _unitOfWork.Projects.Update(project);
             await _unitOfWork.CompleteAsync();

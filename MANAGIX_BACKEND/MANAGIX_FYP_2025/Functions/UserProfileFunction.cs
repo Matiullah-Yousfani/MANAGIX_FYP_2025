@@ -17,11 +17,13 @@ namespace MANAGIX_FYP_2025.Functions
     {
         private readonly IUserProfileService _service;
         private readonly IUnitOfWork _userRepo;
+        private readonly AUTH_SERVICE _authService;
 
-        public UserProfileFunction(IUserProfileService service,IUnitOfWork userRepo)
+        public UserProfileFunction(IUserProfileService service, IUnitOfWork userRepo, AUTH_SERVICE authService)
         {
             _service = service;
             _userRepo = userRepo;
+            _authService = authService;
         }
 
         // GET /api/profile/{userId}
@@ -137,21 +139,22 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
-        // NEW: DELETE /api/users/{userId} - delete user
-        [Function("DeleteUser")]
-        public async Task<HttpResponseData> DeleteUser(
+        // DELETE /api/users/{userId} — same validation/cleanup as DELETE /api/management/users/{userId}
+        [Function("DeleteUserById")]
+        public async Task<HttpResponseData> DeleteUserById(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "users/{userId}")] HttpRequestData req,
             string userId)
         {
             if (!Guid.TryParse(userId, out var uid))
                 return await BadRequest(req, "Invalid User ID");
 
-            var user = await _userRepo.Users.GetByIdAsync(uid);
-            if (user == null) return await NotFound(req, "User not found");
+            var (ok, message) = await _authService.TryDeleteUserAsync(uid);
+            if (!ok && message == "User not found.")
+                return await NotFound(req, message);
 
-            _userRepo.Users.Remove(user);
-            var resp = req.CreateResponse(HttpStatusCode.OK);
-            await resp.WriteAsJsonAsync(new { message = "User deleted successfully" });
+            var status = ok ? HttpStatusCode.OK : HttpStatusCode.Conflict;
+            var resp = req.CreateResponse(status);
+            await resp.WriteAsJsonAsync(new { success = ok, message });
             return resp;
         }
 
