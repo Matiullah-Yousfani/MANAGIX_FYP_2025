@@ -17,5 +17,15 @@ namespace MANAGIX.Models.Models
 
         [Required]
         public Guid EmployeeId { get; set; } // UserId
+
+        // PHASE 0: Single-active-project enforcement.
+        // ProjectId is denormalized here so we can put a filtered unique index on (EmployeeId) WHERE IsActive=1.
+        // Nullable to allow ad-hoc team membership not yet linked to a project.
+        public Guid? ProjectId { get; set; }
+
+        // When false, this membership is historical and does NOT count against the single-active-project rule.
+        public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -29,5 +29,18 @@ namespace MANAGIX.DataAccess.Repositories
 
         public void Remove(EmployeePerformance performance) =>
             _context.EmployeePerformances.Remove(performance);
+
+        // PHASE 1: Cross-project average approval rate.
+        // No history → 0.5 (neutral) so new joiners aren't penalised.
+        public async Task<double> GetAverageApprovalRateAsync(Guid employeeId)
+        {
+            var rates = await _context.EmployeePerformances
+                .Where(p => p.EmployeeId == employeeId)
+                .Select(p => p.ApprovalRate)
+                .ToListAsync();
+
+            if (rates.Count == 0) return 0.5;
+            return rates.Average();
+        }
     }
 }

@@ -19,6 +19,10 @@ import Task from './pages/task/Task';
 import TaskHub from './pages/task/TaskHub';
 import KanbanBoard from './pages/task/KanbanBoard';
 import Meeting from './pages/meeting/Meeting';
+// PHASE 3: Workload panel.
+import WorkloadPanel from './pages/workload/WorkloadPanel';
+// PHASE 5: Admin monitoring panel.
+import MonitoringPanel from './pages/admin/MonitoringPanel';
 
 function App() {
   return (
@@ -56,9 +60,13 @@ function App() {
         <Route path="/qa/review" element={<Layout><QAReview /></Layout>} />
         
        <Route path="/task-hub" element={<Layout><KanbanBoard /></Layout>} />
-       <Route 
-              path="/projects/:projectId/milestones/:milestoneId/tasks" 
-              element={<Task />} 
+       {/* PHASE 3: Workload panel — accessible to managers and admins. */}
+       <Route path="/workload" element={<Layout><WorkloadPanel /></Layout>} />
+       {/* PHASE 5: Admin monitoring — gated client-side inside the component. */}
+       <Route path="/admin/monitoring" element={<Layout><MonitoringPanel /></Layout>} />
+       <Route
+              path="/projects/:projectId/milestones/:milestoneId/tasks"
+              element={<Task />}
             />
 
 

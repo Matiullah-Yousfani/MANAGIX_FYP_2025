@@ -29,6 +29,11 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IAiAllocationService, AiAllocationService>();
 builder.Services.AddScoped<IAiProjectPlannerService, AiProjectPlannerService>();
+// PHASE 3 / 4 / 5: Workload, meetings, notifications, monitoring services.
+builder.Services.AddScoped<IWorkloadService, WorkloadService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddScoped<IMonitoringService, MonitoringService>();
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

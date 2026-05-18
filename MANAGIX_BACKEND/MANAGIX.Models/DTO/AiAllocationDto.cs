@@ -11,6 +11,11 @@ namespace MANAGIX.Models.DTO
         public List<string> Skills { get; set; } = new();
         public List<ExperienceInfoDto> Experience { get; set; } = new();
         public int ActiveTasks { get; set; }
+
+        // PHASE 1: workload signals sent to the LLM AND used by the deterministic post-pass.
+        public decimal CurrentLoadHours { get; set; }
+        public decimal WeeklyCapacityHours { get; set; } = 40m;
+        public double RecentApprovalRate { get; set; } = 0.5;
     }
 
     public class ExperienceInfoDto
@@ -45,6 +50,10 @@ namespace MANAGIX.Models.DTO
         public string ProjectDescription { get; set; } = string.Empty;
         /// <summary>When set, only members of the team assigned to this project are considered.</summary>
         public Guid? ProjectId { get; set; }
+
+        // PHASE 1: When false (default), employees already on a different active project are filtered out.
+        // The manager can set this to true (with confirmation) for the rare cross-staffing case.
+        public bool IncludeAlreadyAssigned { get; set; } = false;
     }
 
     public class EmployeeRecommendationDto
@@ -74,6 +83,14 @@ namespace MANAGIX.Models.DTO
         public string EmployeeName { get; set; } = string.Empty;
         public string Reason { get; set; } = string.Empty;
         public int Confidence { get; set; }
+
+        // PHASE 1: when the deterministic post-pass overrides the LLM, we surface the score breakdown
+        // so the manager can see *why* this person was chosen. Omitted when LLM was kept as-is.
+        public double? ScoreSkill { get; set; }
+        public double? ScoreCapacity { get; set; }
+        public double? ScoreApproval { get; set; }
+        public double? ScoreTotal { get; set; }
+        public bool OverrodeLlm { get; set; }
     }
 
     public class SuggestTaskAllocationResponseDto

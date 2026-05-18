@@ -38,6 +38,12 @@ namespace MANAGIX.DataAccess.Repositories
             ResumeSkills = new ResumeSkillRepository(_context);
             ResumeProjects = new ResumeProjectRepository(_context);
             ResumeExperiences = new ResumeExperienceRepository(_context);
+
+            // PHASE 4 / PHASE 5: New domain repos.
+            Meetings = new MeetingRepository(_context);
+            MeetingParticipants = new MeetingParticipantRepository(_context);
+            Notifications = new NotificationRepository(_context);
+            MonitoringSnapshots = new MonitoringSnapshotRepository(_context);
         }
 
         public IUserRepository Users { get; }
@@ -64,6 +70,12 @@ namespace MANAGIX.DataAccess.Repositories
         public IResumeSkillRepository ResumeSkills { get; private set; }
         public IResumeProjectRepository ResumeProjects { get; private set; }
         public IResumeExperienceRepository ResumeExperiences { get; private set; }
+
+        // PHASE 4 / PHASE 5: Meetings, notifications, monitoring.
+        public IMeetingRepository Meetings { get; private set; }
+        public IMeetingParticipantRepository MeetingParticipants { get; private set; }
+        public INotificationRepository Notifications { get; private set; }
+        public IMonitoringSnapshotRepository MonitoringSnapshots { get; private set; }
 
         public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
 

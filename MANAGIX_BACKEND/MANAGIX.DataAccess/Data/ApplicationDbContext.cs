@@ -44,6 +44,12 @@ namespace MANAGIX.DataAccess.Data
         public DbSet<ResumeProject> ResumeProjects { get; set; }
         public DbSet<ResumeExperience> ResumeExperiences { get; set; }
 
+        // PHASE 0 / PHASE 4-5: New domain tables for meetings, notifications, monitoring.
+        public DbSet<Meeting> Meetings { get; set; }
+        public DbSet<MeetingParticipant> MeetingParticipants { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<MonitoringSnapshot> MonitoringSnapshots { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Unique Email
@@ -99,6 +105,32 @@ namespace MANAGIX.DataAccess.Data
                 .HasOne(u => u.Profile)
                 .WithOne(p => p.User)
                 .HasForeignKey<UserProfile>(p => p.UserId);
+
+            // PHASE 0: Single-active-project enforcement.
+            // Filtered unique index — at most one TeamEmployee row per EmployeeId where IsActive = 1.
+            // SQL Server supports filtered indexes natively; EF Core projects this via HasFilter(...).
+            modelBuilder.Entity<TeamEmployee>()
+                .HasIndex(te => te.EmployeeId)
+                .HasFilter("[IsActive] = 1")
+                .IsUnique()
+                .HasDatabaseName("IX_TeamEmployee_Employee_ActiveProject");
+
+            // PHASE 0: TaskItem.RequiredSkillsJson stays as nvarchar(max) — no special config needed.
+
+            // PHASE 0 / PHASE 4: MeetingParticipant — one row per (Meeting, User).
+            modelBuilder.Entity<MeetingParticipant>()
+                .HasIndex(mp => new { mp.MeetingId, mp.UserId })
+                .IsUnique();
+
+            // PHASE 0 / PHASE 4: Notification fast unread query → composite covering index.
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => new { n.UserId, n.IsRead, n.CreatedAt })
+                .HasDatabaseName("IX_Notification_User_Read_Time");
+
+            // PHASE 0 / PHASE 5: Monitoring trend charts read by (ProjectId, CapturedAt).
+            modelBuilder.Entity<MonitoringSnapshot>()
+                .HasIndex(ms => new { ms.ProjectId, ms.CapturedAt })
+                .HasDatabaseName("IX_MonitoringSnapshot_Project_Time");
         }
 
     }

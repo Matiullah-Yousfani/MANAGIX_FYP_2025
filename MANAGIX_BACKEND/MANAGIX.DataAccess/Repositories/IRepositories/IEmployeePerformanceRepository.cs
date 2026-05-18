@@ -18,6 +18,10 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         Task<List<EmployeePerformance>> GetByProjectIdAsync(Guid projectId);
 
+        // PHASE 1: Average approval rate across all projects — used to weight AI suggestions.
+        // Returns 0.5 (neutral) when there is no history.
+        Task<double> GetAverageApprovalRateAsync(Guid employeeId);
+
         void Remove(EmployeePerformance performance);
     }
 }

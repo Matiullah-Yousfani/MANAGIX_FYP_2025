@@ -73,5 +73,21 @@ namespace MANAGIX.DataAccess.Repositories
             return await _context.Tasks.Where(t => t.MilestoneId == milestoneId).ToListAsync();
         }
 
+        // PHASE 0 / PHASE 3: Active = not Done. EstimatedHours may be null on legacy rows; treated as 0.
+        public async Task<decimal> SumActiveEstimatedHoursAsync(Guid employeeId)
+        {
+            var hours = await _context.Tasks
+                .Where(t => t.AssignedEmployeeId == employeeId && t.Status != "Done")
+                .Select(t => t.EstimatedHours)
+                .ToListAsync();
+
+            return hours.Sum(h => h ?? 0m);
+        }
+
+        // PHASE 5: Active project-scope tasks for monitoring.
+        public async Task<List<TaskItem>> GetActiveTasksByProjectAsync(Guid projectId) =>
+            await _context.Tasks
+                .Where(t => t.ProjectId == projectId && t.Status != "Done")
+                .ToListAsync();
     }
 }

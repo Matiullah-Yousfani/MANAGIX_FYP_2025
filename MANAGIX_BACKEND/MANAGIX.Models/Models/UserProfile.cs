@@ -28,5 +28,9 @@ namespace MANAGIX.Models.Models
         public string? ProfilePicture { get; set; }
         public string? Bio { get; set; }
         public string? Summary { get; set; }
+
+        // PHASE 0: Workload capacity. Default 40h/week — tunable per user (e.g. part-time, intern).
+        // WorkloadService divides sum-of-EstimatedHours of active tasks by this to compute utilization %.
+        public decimal WeeklyCapacityHours { get; set; } = 40m;
     }
 }

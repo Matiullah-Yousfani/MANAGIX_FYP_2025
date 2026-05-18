@@ -24,7 +24,11 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         void Remove(TaskItem task); // <-- NEW: Delete task
         Task<List<TaskItem>> GetByMilestoneIdAsync(Guid milestoneId); // <-- NEW: Get tasks by milestone
 
+        // PHASE 0 / PHASE 3: Sum of EstimatedHours for the employee's active tasks across all projects.
+        // Drives WorkloadService and the deterministic scoring rebalance.
+        Task<decimal> SumActiveEstimatedHoursAsync(Guid employeeId);
 
-
+        // PHASE 5: Project-wide active workload — used by MonitoringSnapshot.
+        Task<List<TaskItem>> GetActiveTasksByProjectAsync(Guid projectId);
     }
 }

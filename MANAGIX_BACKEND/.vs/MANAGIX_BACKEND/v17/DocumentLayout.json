@@ -1,7 +1,12 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\FYP-MANAGIX\\MANAGIX_BACKEND\\",
-  "Documents": [],
+  "WorkspaceRootPath": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX_FYP_2025\\Functions\\MeetingFunction.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:MANAGIX_FYP_2025\\Functions\\MeetingFunction.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +14,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -17,7 +22,24 @@
             },
             {
               "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MeetingFunction.cs",
+              "DocumentMoniker": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX_FYP_2025\\Functions\\MeetingFunction.cs",
+              "RelativeDocumentMoniker": "MANAGIX_FYP_2025\\Functions\\MeetingFunction.cs",
+              "ToolTip": "D:\\FYP-Project\\MANAGIX_FYP_2025\\MANAGIX_BACKEND\\MANAGIX_FYP_2025\\Functions\\MeetingFunction.cs",
+              "RelativeToolTip": "MANAGIX_FYP_2025\\Functions\\MeetingFunction.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-09T11:20:51.432Z",
+              "EditorCaption": ""
             }
           ]
         }

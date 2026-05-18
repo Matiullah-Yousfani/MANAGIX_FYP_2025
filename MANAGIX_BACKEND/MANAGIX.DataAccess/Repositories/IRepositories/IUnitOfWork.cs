@@ -33,6 +33,12 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         IResumeProjectRepository ResumeProjects { get; }
         IResumeExperienceRepository ResumeExperiences { get; }
 
+        // PHASE 4 / PHASE 5: New domain repos.
+        IMeetingRepository Meetings { get; }
+        IMeetingParticipantRepository MeetingParticipants { get; }
+        INotificationRepository Notifications { get; }
+        IMonitoringSnapshotRepository MonitoringSnapshots { get; }
+
         Task<int> CompleteAsync();
     }
 }

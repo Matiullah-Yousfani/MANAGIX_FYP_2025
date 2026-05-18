@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Video, PhoneOff, Download, Loader, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+// PHASE 4: AI task extraction modal — opens after transcript is ready.
+import MeetingTaskExtractor from '../../components/MeetingTaskExtractor';
 
 declare global {
   interface Window {
@@ -19,6 +21,8 @@ const Meeting = () => {
   const [meetingRoomName, setMeetingRoomName] = useState<string>('');
   const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
+  // PHASE 4: controls the AI task-extraction modal visibility.
+  const [showExtractor, setShowExtractor] = useState(false);
   
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -728,13 +732,23 @@ const Meeting = () => {
                     {transcript}
                   </pre>
                 </div>
-                <div className="flex justify-center">
+                <div className="flex justify-center gap-3 flex-wrap">
                   <button
                     onClick={handleDownloadTranscript}
                     className="flex items-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                   >
                     <Download size={20} />
                     Download Transcript (.txt)
+                  </button>
+                  {/* PHASE 4: Trigger the AI extractor modal.
+                      The modal handles project picking, /meetings + /complete + /extract-tasks calls,
+                      and per-suggestion confirmation before any TaskItem row is created. */}
+                  <button
+                    onClick={() => setShowExtractor(true)}
+                    className="flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                  >
+                    <CheckCircle size={20} />
+                    Generate Tasks with AI
                   </button>
                 </div>
               </>
@@ -762,6 +776,14 @@ const Meeting = () => {
           </p>
         </div>
       </div>
+      {/* PHASE 4: AI task extraction modal mounted at the page root so it overlays everything. */}
+      <MeetingTaskExtractor
+        open={showExtractor}
+        onClose={() => setShowExtractor(false)}
+        transcript={transcript ?? ''}
+        meetingTitle={`Meeting ${meetingRoomName}`}
+        jitsiRoomName={meetingRoomName}
+      />
     </div>
   );
 };

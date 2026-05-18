@@ -517,6 +517,150 @@ async def generate_plan(request: ProjectPlanRequest):
         raise HTTPException(status_code=500, detail=f"Failed to generate project plan: {str(e)}")
 
 
+# ===================== PHASE 4: Meeting Task Extraction =====================
+# Receives a meeting transcript + team-context payload from MANAGIX.Services.MeetingService
+# (C# wrapper) and returns a list of structured task suggestions. The C# layer never
+# auto-creates tasks — it always shows them in the modal for manager confirmation first.
+
+class TeamMemberRef(BaseModel):
+    userId: str = ""
+    name: str = ""
+    skills: List[str] = []
+
+class ExtractTasksRequest(BaseModel):
+    transcript: str = ""
+    meetingTitle: Optional[str] = None
+    projectId: Optional[str] = None
+    teamMembers: List[TeamMemberRef] = []
+
+class ExtractedTask(BaseModel):
+    title: str = ""
+    description: Optional[str] = None
+    suggestedAssigneeUserId: Optional[str] = None
+    suggestedAssigneeName: Optional[str] = None
+    estimatedHours: Optional[float] = None
+    priority: Optional[str] = "Medium"
+    requiredSkills: List[str] = []
+
+class ExtractTasksResponse(BaseModel):
+    tasks: List[ExtractedTask] = []
+
+
+def _build_extract_prompt(req: ExtractTasksRequest) -> str:
+    """Compose the LLM prompt — explicit JSON schema, team-bound assignees."""
+    member_lines = []
+    for m in req.teamMembers[:25]:
+        skills = ", ".join(m.skills[:8]) if m.skills else "(no listed skills)"
+        member_lines.append(f"- {m.name} (id={m.userId}) — skills: {skills}")
+    members_block = "\n".join(member_lines) if member_lines else "(no project team provided)"
+
+    return f"""You are a project-management assistant. Read the meeting transcript and extract concrete action items.
+
+For EACH action item, return:
+  • title: short imperative (max 80 chars)
+  • description: 1-2 sentences of context
+  • suggestedAssigneeUserId: the userId of the BEST team member to handle this task (must come from the list below; null if no clear match)
+  • suggestedAssigneeName: matching name
+  • estimatedHours: rough effort 1-40 (number)
+  • priority: "Low" | "Medium" | "High" | "Critical"
+  • requiredSkills: short list of skill tags relevant to the work
+
+Team members you may assign tasks to (use ONLY these userIds):
+{members_block}
+
+Meeting title: {req.meetingTitle or "(untitled)"}
+
+Transcript:
+\"\"\"
+{req.transcript[:8000]}
+\"\"\"
+
+Respond with ONLY a JSON object of the form: {{"tasks": [...]}} — no commentary, no markdown.
+"""
+
+
+def _call_groq_extract(req: ExtractTasksRequest) -> dict:
+    """Call Groq with the extraction prompt and parse the JSON response."""
+    if not GROQ_API_KEY:
+        # Degrade gracefully when no key — return empty list rather than 500.
+        print("[WARN] GROQ_API_KEY missing; returning empty extraction.")
+        return {"tasks": []}
+
+    prompt = _build_extract_prompt(req)
+    body = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {"role": "system", "content": "You output strict JSON for project task extraction."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"},
+    }
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    resp = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        json=body, headers=headers, timeout=60,
+    )
+    resp.raise_for_status()
+    raw = resp.json()["choices"][0]["message"]["content"]
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        # Try to recover from minor formatting noise.
+        match = re.search(r"\{[\s\S]*\}", raw)
+        data = json.loads(match.group(0)) if match else {"tasks": []}
+
+    return data
+
+
+@app.post("/extract-tasks", response_model=ExtractTasksResponse)
+async def extract_tasks_from_meeting(request: ExtractTasksRequest):
+    """PHASE 4: Action-item extraction from a meeting transcript."""
+    try:
+        if not request.transcript or not request.transcript.strip():
+            return ExtractTasksResponse(tasks=[])
+
+        data = _call_groq_extract(request)
+        raw_tasks = data.get("tasks", []) if isinstance(data, dict) else []
+
+        # Validate / sanitize before returning to the C# layer.
+        clean: list[ExtractedTask] = []
+        valid_ids = {m.userId for m in request.teamMembers if m.userId}
+        for t in raw_tasks[:25]:
+            if not isinstance(t, dict):
+                continue
+            title = (t.get("title") or "").strip()
+            if not title:
+                continue
+            assignee_id = t.get("suggestedAssigneeUserId")
+            if assignee_id and assignee_id not in valid_ids:
+                # LLM hallucinated an id — drop it; keep the name as a hint.
+                assignee_id = None
+            clean.append(ExtractedTask(
+                title=title[:160],
+                description=(t.get("description") or "")[:1000] or None,
+                suggestedAssigneeUserId=assignee_id,
+                suggestedAssigneeName=(t.get("suggestedAssigneeName") or None),
+                estimatedHours=t.get("estimatedHours"),
+                priority=(t.get("priority") or "Medium")[:16],
+                requiredSkills=[s for s in (t.get("requiredSkills") or []) if isinstance(s, str)][:10],
+            ))
+
+        return ExtractTasksResponse(tasks=clean)
+    except requests.HTTPError as e:
+        print(f"[ERROR] Groq HTTP error: {e}")
+        raise HTTPException(status_code=502, detail=f"Groq error: {e}")
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] extract_tasks failed: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ===================== Run Server =====================
 
 if __name__ == "__main__":

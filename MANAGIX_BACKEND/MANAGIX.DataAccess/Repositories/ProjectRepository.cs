@@ -18,11 +18,17 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task AddAsync(Project project) =>
             await _context.Projects.AddAsync(project);
 
+        // PHASE 2: Include ProjectModel so the response carries Methodology — the frontend
+        // dashboard dispatcher reads this to pick the right view (Agile/Scrum/Kanban/Waterfall).
         public async Task<List<Project>> GetAllAsync() =>
-            await _context.Projects.ToListAsync();
+            await _context.Projects
+                .Include(p => p.ProjectModel)
+                .ToListAsync();
 
         public async Task<Project?> GetByIdAsync(Guid id) =>
-            await _context.Projects.FirstOrDefaultAsync(p => p.ProjectId == id);
+            await _context.Projects
+                .Include(p => p.ProjectModel)
+                .FirstOrDefaultAsync(p => p.ProjectId == id);
 
         public void Update(Project project) =>
           _context.Projects.Update(project);
@@ -30,6 +36,7 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task<List<Project>> GetByManagerIdAsync(Guid managerId)
         {
             return await _context.Projects
+                .Include(p => p.ProjectModel) // PHASE 2
                 .Where(p => p.CreatedBy == managerId)
                 .ToListAsync();
         }
@@ -41,6 +48,7 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task<IEnumerable<Project>> GetProjectsByUserIdAsync(Guid userId)
         {
             return await _context.Projects
+                .Include(p => p.ProjectModel) // PHASE 2
                 .Where(p => _context.ProjectTeams
                     .Any(pt => pt.ProjectId == p.ProjectId &&
                                _context.TeamEmployees.Any(te => te.TeamId == pt.TeamId && te.EmployeeId == userId)))

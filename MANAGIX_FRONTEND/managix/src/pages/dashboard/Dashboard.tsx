@@ -6,6 +6,8 @@ import { FiBriefcase, FiCheckCircle, FiPlus, FiSearch, FiTrash2, FiEdit3, FiChev
 import api from '../../api/axiosInstance';
 import { projectService } from '../../api/projectService';
 import { adminService } from '../../api/adminService';
+// PHASE 2: methodology-aware dashboard dispatcher.
+import MethodologyDashboard, { type ProjectAggregates } from '../../components/dashboard/MethodologyDashboard';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -27,6 +29,14 @@ const Dashboard = () => {
 
   // ✅ Admin: selected project details
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
+
+  // PHASE 2: per-project task/milestone aggregates. Lazy-fetched after the project list arrives.
+  // Keyed by projectId. Fed into the methodology dispatcher so each variant view has its KPIs.
+  const [aggregates, setAggregates] = useState<Record<string, ProjectAggregates>>({});
+
+  // PHASE 2: archive toggle — by default the dashboard hides closed/completed projects so it
+  // matches the Monitoring panel's "operational health" definition. Flip this to surface them.
+  const [showClosed, setShowClosed] = useState(false);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -58,6 +68,38 @@ const Dashboard = () => {
         projectData = await projectService.getByEmployee(id);
       }
       setProjects(Array.isArray(projectData) ? projectData : []);
+
+      // PHASE 2: kick off aggregate fetches in parallel — non-blocking.
+      // Uses the existing `/projects/{id}/dashboard` endpoint (ProjectDashboardDto) so we
+      // don't add a new backend route. Failures are silently ignored per project.
+      const list = Array.isArray(projectData) ? projectData : [];
+      Promise.all(list.map(async (p: any) => {
+        const id = p.projectId || p.ProjectId;
+        if (!id) return null;
+        try {
+          const dash = await projectService.getProjectDashboard(id);
+          // ProjectDashboardDto: totalTasks, completedTasks, pendingTasks, totalMilestones, completedMilestones
+          // Compute inProgress = total - completed - pending so the kanban "In Progress" column is non-zero.
+          const inProgress = Math.max(0, (dash?.totalTasks ?? 0) - (dash?.completedTasks ?? 0) - (dash?.pendingTasks ?? 0));
+          return {
+            id,
+            agg: {
+              totalTasks: dash?.totalTasks ?? 0,
+              completedTasks: dash?.completedTasks ?? 0,
+              pendingTasks: dash?.pendingTasks ?? 0,
+              inProgressTasks: inProgress,
+            } as ProjectAggregates,
+          };
+        } catch {
+          return null;
+        }
+      })).then((results) => {
+        const map: Record<string, ProjectAggregates> = {};
+        for (const r of results) {
+          if (r) map[r.id] = r.agg;
+        }
+        setAggregates(map);
+      });
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -65,10 +107,25 @@ const Dashboard = () => {
     }
   };
 
-  // Filter projects by search term
-  const filteredProjects = projects.filter(p =>
-    (p.title || p.Title || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // PHASE 2: filter by both search AND archive toggle. Default view hides closed projects.
+  // A closed project has either IsClosed = true OR Status = "Completed" / "Closed" — handle both
+  // for tolerance against historical rows that only set one.
+  const filteredProjects = projects.filter(p => {
+    const matchesSearch = (p.title || p.Title || "").toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    if (showClosed) return true;
+    const isClosed = (p.isClosed === true) || (p.IsClosed === true);
+    const status = String(p.status ?? p.Status ?? "").toLowerCase();
+    const closedByStatus = status === "closed" || status === "completed";
+    return !(isClosed || closedByStatus);
+  });
+
+  // Tally for the toggle label.
+  const closedCount = projects.filter(p => {
+    const isClosed = (p.isClosed === true) || (p.IsClosed === true);
+    const status = String(p.status ?? p.Status ?? "").toLowerCase();
+    return isClosed || status === "closed" || status === "completed";
+  }).length;
 
   // Open modal to edit project
   const openEditModal = (e: React.MouseEvent, project: any) => {
@@ -176,11 +233,33 @@ const Dashboard = () => {
         </div>
 
         {/* PROJECTS GRID */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-black text-gray-800">Operational Portfolio</h2>
-          <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
-            {filteredProjects.length} Instances
-          </span>
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+          <h2 className="text-2xl font-black text-gray-800">
+            {showClosed ? 'Portfolio (incl. archived)' : 'Operational Portfolio'}
+          </h2>
+          <div className="flex items-center gap-3">
+            {/*
+              PHASE 2: Archive toggle. Hidden when there are no closed projects to avoid clutter.
+              When ON, all projects show; when OFF, completed/closed projects are filtered out
+              so the dashboard mirrors the Monitoring panel's "active" view.
+            */}
+            {closedCount > 0 && (
+              <button
+                onClick={() => setShowClosed(s => !s)}
+                className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all border ${
+                  showClosed
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+                }`}
+                title={showClosed ? 'Hide archived projects' : 'Show archived projects'}
+              >
+                {showClosed ? `Hiding ${closedCount} archived` : `Show ${closedCount} archived`}
+              </button>
+            )}
+            <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
+              {filteredProjects.length} Instances
+            </span>
+          </div>
         </div>
 
         {filteredProjects.length === 0 ? (
@@ -189,65 +268,23 @@ const Dashboard = () => {
             <p className="text-gray-400 font-bold italic">No projects matching your search.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project) => {
-              const pId = project.projectId || project.ProjectId;
-              return (
-                <motion.div
-                  layout
-                  key={pId}
-                  onClick={() => {
-                    if (userRole === 'Admin') fetchProjectDetails(pId);
-                    else if (userRole === 'QA') navigate(`/qa/review?projectId=${pId}`);
-                    else navigate(`/projects/${pId}`);
-                  }}
-                  className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col"
-                >
-                  <FiBriefcase className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-indigo-50 transition-colors pointer-events-none" />
-                  <div className="relative flex-1">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                        (project.status || project.Status) === 'Closed' ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'
-                      }`}>
-                        {project.status || project.Status || 'Active'}
-                      </div>
-
-                      {userRole === 'Admin' && (
-                        <div className="flex gap-2">
-                          <button onClick={(e) => openEditModal(e, project)} className="p-2 text-gray-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
-                            <FiEdit3 size={18} />
-                          </button>
-                          <button onClick={(e) => confirmDelete(e, pId)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                            <FiTrash2 size={18} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <h3 className="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-4 line-clamp-1">
-                      {project.title || project.Title}
-                    </h3>
-                    <p className="text-gray-500 text-sm font-medium leading-relaxed mb-8 line-clamp-3">
-                      {project.description || project.Description || 'No description available.'}
-                    </p>
-                  </div>
-
-                  <div className="relative pt-6 border-t border-gray-50 flex items-center justify-between">
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">
-                          {i === 1 ? 'JD' : i === 2 ? 'AS' : 'RK'}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center text-indigo-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
-                      View Details <FiChevronRight />
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+          /*
+           * PHASE 2: replaced the previous flat 3-column grid with a methodology-aware
+           * dispatcher. Each project is rendered with the layout that matches its
+           * project model — Agile/Scrum gets sprint cards + velocity, Kanban gets
+           * the 3-column flow board, Waterfall gets a phase strip. Click handler is
+           * preserved so Admin opens details modal, QA opens review, others navigate
+           * to the project page.
+           */
+          <MethodologyDashboard
+            projects={filteredProjects}
+            aggregatesById={aggregates}
+            onOpen={(pId) => {
+              if (userRole === 'Admin') fetchProjectDetails(pId);
+              else if (userRole === 'QA') navigate(`/qa/review?projectId=${pId}`);
+              else navigate(`/projects/${pId}`);
+            }}
+          />
         )}
       </div>
 
@@ -341,7 +378,39 @@ const Dashboard = () => {
                     </ul>
                   </div>
 
-                  <button onClick={() => setShowModal(false)} className="mt-6 bg-indigo-600 text-white py-3 px-6 rounded-2xl font-bold">Close</button>
+                  {/*
+                    PHASE 2: Admin edit/delete buttons relocated from the (now removed) inline
+                    project cards to this details modal. Same handlers, same UX guarantees.
+                  */}
+                  <div className="flex flex-wrap gap-3 mt-6">
+                    {userRole === 'Admin' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            const proxyEvent = { stopPropagation: () => {} } as React.MouseEvent;
+                            openEditModal(proxyEvent, {
+                              projectId: selectedProject.ProjectId || selectedProject.projectId,
+                              title: selectedProject.Title,
+                              description: selectedProject.Description,
+                            });
+                          }}
+                          className="bg-indigo-600 text-white py-3 px-6 rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2"
+                        >
+                          <FiEdit3 /> Edit Project
+                        </button>
+                        <button
+                          onClick={() => {
+                            const proxyEvent = { stopPropagation: () => {} } as React.MouseEvent;
+                            confirmDelete(proxyEvent, selectedProject.ProjectId || selectedProject.projectId);
+                          }}
+                          className="bg-red-50 text-red-600 border border-red-100 py-3 px-6 rounded-2xl font-bold hover:bg-red-600 hover:text-white transition-all flex items-center gap-2"
+                        >
+                          <FiTrash2 /> Delete
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => setShowModal(false)} className="bg-gray-100 text-gray-600 py-3 px-6 rounded-2xl font-bold">Close</button>
+                  </div>
                 </>
               ) : null}
             </motion.div>
