@@ -11,6 +11,8 @@ export interface TaskCreateRequest {
   description?: string;
   /** Usually omitted; backend forces new tasks to Todo */
   status?: string;
+  estimatedHours?: number;
+  priority?: string;
 }
 
 /** `TaskUpdateDto` */

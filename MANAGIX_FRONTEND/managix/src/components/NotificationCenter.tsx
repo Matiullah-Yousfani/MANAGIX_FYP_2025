@@ -9,11 +9,16 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiBell, FiCheck, FiCheckCircle, FiVideo, FiUserCheck, FiAlertTriangle, FiFlag, FiZap } from 'react-icons/fi';
 import { notificationService } from '../api/notificationService';
-import type { NotificationItem } from '../types';
+import { meetingService } from '../api/meetingService';
+import type { NotificationItem, MeetingJoinStatus } from '../types';
 
 const POLL_MS = 30_000;
 
-const NotificationCenter: React.FC = () => {
+type Props = {
+  onOvertimeClick?: (requestId: string, asManager: boolean) => void;
+};
+
+const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -64,6 +69,18 @@ const NotificationCenter: React.FC = () => {
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
+  const parseMeetingId = (link?: string | null): string | null => {
+    if (!link) return null;
+    const m = link.match(/meetingId=([0-9a-f-]{36})/i);
+    return m ? m[1] : null;
+  };
+
+  const parseOvertimeId = (link?: string | null): string | null => {
+    if (!link) return null;
+    const m = link.match(/overtimeId=([0-9a-f-]{36})/i);
+    return m ? m[1] : null;
+  };
+
   const onItemClick = async (n: NotificationItem) => {
     if (!userId) return;
     if (!n.isRead) {
@@ -71,9 +88,31 @@ const NotificationCenter: React.FC = () => {
       setItems((prev) => prev.map((x) => (x.notificationId === n.notificationId ? { ...x, isRead: true } : x)));
       setUnread((u) => Math.max(0, u - 1));
     }
+    const t = (n.type || '').toLowerCase();
+    const oid = parseOvertimeId(n.link);
+    if (oid && onOvertimeClick && (t.includes('overtime') || t.includes('explanation'))) {
+      setOpen(false);
+      onOvertimeClick(oid, t.includes('manager'));
+      return;
+    }
     if (n.link) {
       setOpen(false);
       navigate(n.link);
+    }
+  };
+
+  const onMeetingJoin = async (n: NotificationItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const mid = parseMeetingId(n.link);
+    if (!mid || !userId) return;
+    try {
+      const status = await meetingService.joinStatus(mid, userId);
+      if (status.canJoin && n.link) {
+        setOpen(false);
+        navigate(n.link);
+      }
+    } catch {
+      /* ignore */
     }
   };
 
@@ -131,21 +170,13 @@ const NotificationCenter: React.FC = () => {
                 </div>
               ) : (
                 items.map((n) => (
-                  <button
+                  <MeetingNotificationRow
                     key={n.notificationId}
-                    onClick={() => onItemClick(n)}
-                    className={`w-full text-left px-5 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!n.isRead ? 'bg-indigo-50/40' : ''}`}
-                  >
-                    <NotifIcon type={n.type} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-gray-900 truncate">{n.title}</div>
-                      {n.body && <div className="text-xs text-gray-500 line-clamp-2">{n.body}</div>}
-                      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
-                        {new Date(n.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-                    {!n.isRead && <span className="size-2 bg-indigo-600 rounded-full self-start mt-2 shrink-0" />}
-                  </button>
+                    n={n}
+                    userId={userId!}
+                    onRowClick={() => onItemClick(n)}
+                    onJoin={(e) => onMeetingJoin(n, e)}
+                  />
                 ))
               )}
             </div>
@@ -163,7 +194,59 @@ const NotifIcon: React.FC<{ type: string }> = ({ type }) => {
   if (t.includes('taskassigned') || t.includes('extracted')) return <span className="bg-indigo-50 text-indigo-600 rounded-xl p-2"><FiUserCheck /></span>;
   if (t.includes('workload')) return <span className="bg-orange-50 text-orange-600 rounded-xl p-2"><FiAlertTriangle /></span>;
   if (t.includes('milestone')) return <span className="bg-emerald-50 text-emerald-600 rounded-xl p-2"><FiFlag /></span>;
+  if (t.includes('overtime')) return <span className="bg-rose-50 text-rose-600 rounded-xl p-2"><FiAlertTriangle /></span>;
   return <span className="bg-gray-50 text-gray-600 rounded-xl p-2"><FiZap /></span>;
+};
+
+const MeetingNotificationRow: React.FC<{
+  n: NotificationItem;
+  userId: string;
+  onRowClick: () => void;
+  onJoin: (e: React.MouseEvent) => void;
+}> = ({ n, userId, onRowClick, onJoin }) => {
+  const isMeeting = (n.type || '').toLowerCase().includes('meeting');
+  const meetingId = (n.link || '').match(/meetingId=([0-9a-f-]{36})/i)?.[1] ?? null;
+  const [joinState, setJoinState] = React.useState<MeetingJoinStatus | null>(null);
+
+  React.useEffect(() => {
+    if (!isMeeting || !meetingId) return;
+    meetingService.joinStatus(meetingId, userId).then(setJoinState).catch(() => setJoinState(null));
+  }, [isMeeting, meetingId, userId]);
+
+  const joinDisabled = !joinState?.canJoin;
+  const joinLabel =
+    joinState?.joinState === 'Expired' ? 'Expired' :
+    joinState?.joinState === 'BeforeStart' ? 'Join (soon)' :
+    joinState?.canJoin ? 'Join meeting' : 'Join';
+
+  return (
+    <button
+      onClick={onRowClick}
+      className={`w-full text-left px-5 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!n.isRead ? 'bg-indigo-50/40' : ''}`}
+    >
+      <NotifIcon type={n.type} />
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold text-gray-900 truncate">{n.title}</div>
+        {n.body && <div className="text-xs text-gray-500 line-clamp-2">{n.body}</div>}
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+          {new Date(n.createdAt).toLocaleString()}
+        </div>
+        {isMeeting && meetingId && (
+          <button
+            type="button"
+            disabled={joinDisabled}
+            onClick={onJoin}
+            className={`mt-2 text-xs font-black px-3 py-1.5 rounded-lg ${
+              joinDisabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+          >
+            {joinLabel}
+          </button>
+        )}
+      </div>
+      {!n.isRead && <span className="size-2 bg-indigo-600 rounded-full self-start mt-2 shrink-0" />}
+    </button>
+  );
 };
 
 export default NotificationCenter;

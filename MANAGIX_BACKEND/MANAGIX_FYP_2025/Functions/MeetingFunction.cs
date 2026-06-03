@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace MANAGIX_FYP_2025.Functions
 {
-    // PHASE 4: Meeting endpoints — schedule, complete (with transcript), extract tasks.
     public class MeetingFunction
     {
         private readonly IMeetingService _meetings;
@@ -22,27 +21,46 @@ namespace MANAGIX_FYP_2025.Functions
 
         public MeetingFunction(IMeetingService meetings) => _meetings = meetings;
 
-        // POST /meetings
         [Function("CreateMeeting")]
         public async Task<HttpResponseData> Create(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "meetings")] HttpRequestData req)
         {
-            var body = await new StreamReader(req.Body).ReadToEndAsync();
-            var dto = JsonSerializer.Deserialize<MeetingCreateDto>(body, _json);
-            if (dto == null || string.IsNullOrWhiteSpace(dto.Title) || dto.CreatedBy == Guid.Empty)
+            try
             {
-                var bad = req.CreateResponse(HttpStatusCode.BadRequest);
-                await bad.WriteAsJsonAsync(new { message = "Title and createdBy are required." });
-                return bad;
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                var dto = JsonSerializer.Deserialize<MeetingCreateDto>(body, _json);
+                if (dto == null || string.IsNullOrWhiteSpace(dto.Title) || dto.CreatedBy == Guid.Empty)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = "Title and createdBy are required." });
+                    return bad;
+                }
+                if (!dto.ProjectId.HasValue || dto.ProjectId == Guid.Empty)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = "Select a project before scheduling a meeting." });
+                    return bad;
+                }
+                var saved = await _meetings.CreateAsync(dto);
+                var resp = req.CreateResponse(HttpStatusCode.Created);
+                resp.Headers.Add("Content-Type", "application/json");
+                await resp.WriteStringAsync(JsonSerializer.Serialize(saved, _json));
+                return resp;
             }
-            var saved = await _meetings.CreateAsync(dto);
-            var resp = req.CreateResponse(HttpStatusCode.Created);
-            resp.Headers.Add("Content-Type", "application/json");
-            await resp.WriteStringAsync(JsonSerializer.Serialize(saved, _json));
-            return resp;
+            catch (UnauthorizedAccessException ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.Forbidden);
+                await err.WriteAsJsonAsync(new { message = ex.Message });
+                return err;
+            }
+            catch (InvalidOperationException ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.BadRequest);
+                await err.WriteAsJsonAsync(new { message = ex.Message });
+                return err;
+            }
         }
 
-        // GET /meetings/{id}
         [Function("GetMeeting")]
         public async Task<HttpResponseData> Get(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "meetings/{meetingId:guid}")] HttpRequestData req,
@@ -56,7 +74,31 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
-        // GET /meetings/project/{projectId}
+        [Function("GetMeetingJoinStatus")]
+        public async Task<HttpResponseData> JoinStatus(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "meetings/{meetingId:guid}/join-status/{userId:guid}")] HttpRequestData req,
+            Guid meetingId,
+            Guid userId)
+        {
+            var status = await _meetings.GetJoinStatusAsync(meetingId, userId);
+            if (status == null) return req.CreateResponse(HttpStatusCode.NotFound);
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            resp.Headers.Add("Content-Type", "application/json");
+            await resp.WriteStringAsync(JsonSerializer.Serialize(status, _json));
+            return resp;
+        }
+
+        [Function("ResolveMeetingParticipants")]
+        public async Task<HttpResponseData> ResolveParticipants(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "meetings/project/{projectId:guid}/participants")] HttpRequestData req,
+            Guid projectId)
+        {
+            var ids = await _meetings.ResolveProjectParticipantIdsAsync(projectId);
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(new { participantUserIds = ids });
+            return resp;
+        }
+
         [Function("ListMeetingsByProject")]
         public async Task<HttpResponseData> ListByProject(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "meetings/project/{projectId:guid}")] HttpRequestData req,
@@ -69,7 +111,6 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
-        // GET /meetings/user/{userId}/upcoming
         [Function("UpcomingMeetingsForUser")]
         public async Task<HttpResponseData> Upcoming(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "meetings/user/{userId:guid}/upcoming")] HttpRequestData req,
@@ -82,7 +123,6 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
-        // POST /meetings/{id}/complete   body: { transcriptText }
         [Function("CompleteMeeting")]
         public async Task<HttpResponseData> Complete(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "meetings/{meetingId:guid}/complete")] HttpRequestData req,
@@ -98,8 +138,6 @@ namespace MANAGIX_FYP_2025.Functions
             return resp;
         }
 
-        // POST /meetings/{id}/extract-tasks  → returns AI suggestions; persistence happens on the FE
-        // after the manager confirms. Two-step flow keeps the system honest about LLM output.
         [Function("ExtractMeetingTasks")]
         public async Task<HttpResponseData> Extract(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "meetings/{meetingId:guid}/extract-tasks")] HttpRequestData req,

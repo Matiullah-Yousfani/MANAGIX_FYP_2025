@@ -29,6 +29,8 @@ namespace MANAGIX.Models.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public DateTime? Deadline { get; set; }
+
         // PHASE 0: Workload + AI-allocation signals.
         // EstimatedHours feeds capacity math (sum across active tasks vs. UserProfile.WeeklyCapacityHours).
         public decimal? EstimatedHours { get; set; }

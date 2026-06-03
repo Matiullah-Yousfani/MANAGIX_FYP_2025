@@ -30,7 +30,30 @@ namespace MANAGIX.Models.Models
         public string? Summary { get; set; }
 
         // PHASE 0: Workload capacity. Default 40h/week — tunable per user (e.g. part-time, intern).
-        // WorkloadService divides sum-of-EstimatedHours of active tasks by this to compute utilization %.
         public decimal WeeklyCapacityHours { get; set; } = 40m;
+
+        /// <summary>Optional hourly rate for AI cost / workload budgeting signals.</summary>
+        public decimal? HourlyRate { get; set; }
+
+        /// <summary>Junior | Intermediate | Senior — updated when projects close.</summary>
+        public string EmployeeLevel { get; set; } = "Junior";
+
+        public int CompletedProjectsCount { get; set; }
+
+        public decimal? MonthlySalary { get; set; }
+
+        public DateTime? LastActiveAt { get; set; }
+
+        /// <summary>Standard work day length (default 8h).</summary>
+        public decimal StandardHoursPerDay { get; set; } = 8m;
+
+        /// <summary>Grace hours after standard before overtime flow (default 2h → trigger at 10h).</summary>
+        public decimal OvertimeGraceHours { get; set; } = 2m;
+
+        /// <summary>Optional shift display, e.g. 09:00.</summary>
+        public TimeSpan? ShiftStartTime { get; set; }
+
+        public TimeSpan? ShiftEndTime { get; set; }
     }
 }
+

@@ -23,7 +23,7 @@ type MilestoneDraft = {
   description: string;
   deadline: string;
   budgetAllocated: number;
-  tasks?: { title: string; description: string }[];
+  tasks?: { title: string; description: string; estimatedHours?: number }[];
 };
 
 const CreateProject = () => {
@@ -115,6 +115,7 @@ const CreateProject = () => {
           tasks: (ms.tasks || []).map((t) => ({
             title: (t.title || '').trim(),
             description: t.description || '',
+            estimatedHours: (t as { estimatedHours?: number }).estimatedHours,
           })),
         };
       });
@@ -283,11 +284,22 @@ const CreateProject = () => {
     setLoading(true);
     let projectId: string | undefined;
     try {
-      const newProject = await projectService.create({
-        ...formData,
-        title: formData.title.trim(),
-        deadline: formData.deadline,
-      });
+      let newProject;
+      try {
+        newProject = await projectService.create({
+          ...formData,
+          title: formData.title.trim(),
+          deadline: formData.deadline,
+        });
+      } catch (createErr: any) {
+        const msg = createErr?.response?.data?.message;
+        if (createErr?.response?.status === 409) {
+          alert(msg || 'A project with this title already exists.');
+          setLoading(false);
+          return;
+        }
+        throw createErr;
+      }
       projectId = String(newProject.ProjectId || newProject.projectId);
 
       try {
@@ -300,14 +312,24 @@ const CreateProject = () => {
             budgetAllocated: m.budgetAllocated,
           });
           const milestoneId = createdMs.milestoneId || createdMs.MilestoneId;
-          for (const t of m.tasks || []) {
+          const taskList = m.tasks || [];
+          const defaultHoursPerTask =
+            taskList.length > 0
+              ? Math.max(2, Math.round(((m.budgetAllocated || 0) / 40) / taskList.length) * 10) / 10
+              : 4;
+          for (const t of taskList) {
             if (!t.title?.trim()) continue;
+            const hours =
+              t.estimatedHours && t.estimatedHours > 0
+                ? t.estimatedHours
+                : defaultHoursPerTask;
             await taskService.create({
               projectId,
               milestoneId: String(milestoneId),
               title: t.title.trim(),
               description: t.description || '',
-            });
+              estimatedHours: hours,
+            } as any);
           }
         }
       } catch (inner: unknown) {

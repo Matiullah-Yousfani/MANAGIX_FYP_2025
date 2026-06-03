@@ -27,7 +27,10 @@ namespace MANAGIX.DataAccess.Repositories
 
 
         public void Remove(TeamEmployee entity) =>
-        _context.TeamEmployees.Remove(entity);
+            _context.TeamEmployees.Remove(entity);
+
+        public void Update(TeamEmployee entity) =>
+            _context.TeamEmployees.Update(entity);
 
         public async Task<TeamEmployee?> GetAsync(Guid teamId, Guid employeeId) =>
         await _context.TeamEmployees
@@ -66,5 +69,12 @@ namespace MANAGIX.DataAccess.Repositories
             var ids = await query.Select(te => te.EmployeeId).Distinct().ToListAsync();
             return new HashSet<Guid>(ids);
         }
+
+        public async Task<List<Guid>> GetTeamIdsForMemberAsync(Guid memberId) =>
+            await _context.TeamEmployees
+                .Where(te => te.EmployeeId == memberId)
+                .Select(te => te.TeamId)
+                .Distinct()
+                .ToListAsync();
     }
 }

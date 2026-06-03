@@ -12,6 +12,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task<Meeting?> GetByIdAsync(Guid meetingId);
         Task<List<Meeting>> GetByProjectAsync(Guid projectId);
         Task<List<Meeting>> GetUpcomingForUserAsync(Guid userId);
+        Task<List<Meeting>> GetPastScheduledAsync(DateTime utcNow);
         void Update(Meeting meeting);
         void Remove(Meeting meeting);
     }

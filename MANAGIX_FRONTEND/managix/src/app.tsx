@@ -19,10 +19,12 @@ import Task from './pages/task/Task';
 import TaskHub from './pages/task/TaskHub';
 import KanbanBoard from './pages/task/KanbanBoard';
 import Meeting from './pages/meeting/Meeting';
+import ScheduleMeeting from './pages/meeting/ScheduleMeeting';
 // PHASE 3: Workload panel.
 import WorkloadPanel from './pages/workload/WorkloadPanel';
-// PHASE 5: Admin monitoring panel.
-import MonitoringPanel from './pages/admin/MonitoringPanel';
+import EmployeeInsights from './pages/employee/EmployeeInsights';
+import PayrollPanel from './pages/payroll/PayrollPanel';
+import TimesheetsPage from './pages/timesheet/TimesheetsPage';
 
 function App() {
   return (
@@ -39,12 +41,15 @@ function App() {
         {/* Admin Section: Both links point to AdminPortal */}
         <Route path="/admin" element={<Layout><AdminPortal /></Layout>} />
         <Route path="/admin/approvals" element={<Layout><AdminPortal /></Layout>} />
-        {/* Handled by the sidebar logic we added to AdminPortal */}
         <Route path="/admin/roles" element={<Layout><AdminPortal /></Layout>} />
+        <Route path="/admin/monitoring" element={<Layout><AdminPortal /></Layout>} />
+        <Route path="/insights" element={<Layout><EmployeeInsights /></Layout>} />
+        <Route path="/payroll" element={<Layout><PayrollPanel /></Layout>} />
 
         {/* Shared Section: Profile & Resume (STEP 3) */}
         <Route path="/profile" element={<Layout><Profile /></Layout>} />
         <Route path="/meeting" element={<Layout><Meeting /></Layout>} />
+        <Route path="/meeting/schedule" element={<Layout><ScheduleMeeting /></Layout>} />
 
         {/* Manager Section */}
         <Route path="/create-project" element={<Layout><CreateProject /></Layout>} />
@@ -62,8 +67,7 @@ function App() {
        <Route path="/task-hub" element={<Layout><KanbanBoard /></Layout>} />
        {/* PHASE 3: Workload panel — accessible to managers and admins. */}
        <Route path="/workload" element={<Layout><WorkloadPanel /></Layout>} />
-       {/* PHASE 5: Admin monitoring — gated client-side inside the component. */}
-       <Route path="/admin/monitoring" element={<Layout><MonitoringPanel /></Layout>} />
+       <Route path="/timesheets" element={<Layout><TimesheetsPage /></Layout>} />
        <Route
               path="/projects/:projectId/milestones/:milestoneId/tasks"
               element={<Task />}

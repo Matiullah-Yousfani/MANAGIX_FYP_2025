@@ -8,6 +8,7 @@ export interface ProfileUpdateRequest {
   education?: string;
   experience?: string;
   bio?: string;
+  hourlyRate?: number;
 }
 
 /** `ResumeUploadDto` */

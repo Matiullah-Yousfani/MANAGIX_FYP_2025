@@ -1,29 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
   Users,
-  UserCheck,
   ListTodo,
   Brain,
   Loader2,
   Check,
   X,
   ChevronDown,
+  ChevronUp,
   ArrowRight,
   AlertCircle,
 } from 'lucide-react';
+import api from '../../api/axiosInstance';
 import { projectService } from '../../api/projectService';
 import { teamService } from '../../api/teamService';
 import { taskService } from '../../api/taskService';
 import {
   aiService,
   type TeamSuggestion,
-  type EmployeeRecommendation,
   type TaskAssignment,
+  type TeamOption,
 } from '../../api/aiService';
 
-type TabKey = 'team' | 'employees' | 'tasks';
+type TabKey = 'team' | 'tasks';
 
 interface Toast {
   message: string;
@@ -32,9 +33,28 @@ interface Toast {
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'team', label: 'Suggest Team', icon: <Users size={18} /> },
-  { key: 'employees', label: 'Recommend Employees', icon: <UserCheck size={18} /> },
   { key: 'tasks', label: 'Task Allocation', icon: <ListTodo size={18} /> },
 ];
+
+const isQaRole = (role?: string) => /qa|quality/i.test(role || '');
+
+const splitTeamMembers = (team: TeamSuggestion[]) => ({
+  qa: team.find((m) => isQaRole(m.role)),
+  devs: team.filter((m) => !isQaRole(m.role)),
+});
+
+function TeamMemberLine({ roleLabel, name }: { roleLabel: string; name: string }) {
+  return (
+    <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-gray-50/80 border border-gray-100">
+      <span className="text-[10px] font-bold text-gray-400 uppercase shrink-0 w-20">
+        {roleLabel}
+      </span>
+      <span className="text-sm font-semibold text-gray-900 truncate flex-1">
+        {name || '—'}
+      </span>
+    </div>
+  );
+}
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -70,32 +90,15 @@ function ToastNotification({ toast, onClose }: { toast: Toast; onClose: () => vo
   );
 }
 
-// ---------- Score Bar ----------
-function ScoreBar({ score }: { score: number }) {
-  const color =
-    score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500';
-  const textColor =
-    score >= 80 ? 'text-green-700' : score >= 60 ? 'text-yellow-700' : 'text-red-700';
-
-  return (
-    <div className="flex items-center gap-3 w-full">
-      <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${color}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${score}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-        />
-      </div>
-      <span className={`text-xs font-bold ${textColor} min-w-[36px] text-right`}>
-        {score}%
-      </span>
-    </div>
-  );
-}
-
 // ---------- Confidence Badge ----------
 function ConfidenceBadge({ confidence }: { confidence: number }) {
+  if (!confidence || confidence <= 0) {
+    return (
+      <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
+        N/A
+      </span>
+    );
+  }
   const pct = confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence);
   const color =
     pct >= 80
@@ -133,50 +136,128 @@ function LoadingOverlay() {
   );
 }
 
-export type AiAllocationProps = { embedded?: boolean };
+export type AiAllocationProps = { embedded?: boolean; onTeamApplied?: () => void | Promise<void> };
+
+type TeamOptionCard = TeamOption & {
+  id: string;
+  teamName: string;
+  expanded: boolean;
+  isRecommended?: boolean;
+};
 
 // ======================================================================
 // Main Component (full page or embedded in Team Setup)
 // ======================================================================
-const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
-  const [projects, setProjects] = useState<any[]>([]);
+const AiAllocation = ({ embedded = false, onTeamApplied }: AiAllocationProps) => {
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [assignedProjectIds, setAssignedProjectIds] = useState<Set<string>>(new Set());
+  const [taskAllocationProjects, setTaskAllocationProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('team');
   const [loading, setLoading] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const [teamSuggestions, setTeamSuggestions] = useState<TeamSuggestion[]>([]);
-  const [employeeRecommendations, setEmployeeRecommendations] = useState<EmployeeRecommendation[]>([]);
+  const [teamCards, setTeamCards] = useState<TeamOptionCard[]>([]);
+  const [suggestedDevCount, setSuggestedDevCount] = useState<number | null>(null);
+  const [applyingCardId, setApplyingCardId] = useState<string | null>(null);
   const [taskAssignments, setTaskAssignments] = useState<TaskAssignment[]>([]);
   const [applying, setApplying] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
-  // Load projects on mount
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const managerId = localStorage.getItem('userId');
-        let data: any[];
-        if (managerId) {
-          data = await projectService.getByManager(managerId);
-        } else {
-          data = await projectService.getAll();
-        }
-        setProjects(Array.isArray(data) ? data : []);
-      } catch {
-        setProjects([]);
-        showToast('Failed to load projects', 'error');
-      } finally {
-        setProjectsLoading(false);
-      }
-    };
-    fetchProjects();
-  }, []);
-
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
   }, []);
+
+  const loadUnassignedProjects = useCallback(async (clearSelectionIfAssigned?: boolean) => {
+    try {
+      const managerId = localStorage.getItem('userId');
+      let data: any[];
+      if (managerId) {
+        data = await projectService.getByManager(managerId);
+      } else {
+        data = await projectService.getAll();
+      }
+      const all = Array.isArray(data) ? data : [];
+      const teams = await teamService.getAllTeams(managerId || undefined);
+      const assignedIds = new Set(
+        (Array.isArray(teams) ? teams : [])
+          .map((t: { projectId?: string; ProjectId?: string }) =>
+            String(t.projectId ?? t.ProjectId ?? '')
+          )
+          .filter((id) => id && id !== 'undefined')
+      );
+      setAllProjects(all);
+      setAssignedProjectIds(assignedIds);
+
+      const managerIdForTasks = localStorage.getItem('userId') || undefined;
+      const taskEligible = await aiService.getTaskAllocationProjects(managerIdForTasks);
+      setTaskAllocationProjects(
+        taskEligible.map((p) => ({
+          ProjectId: p.projectId,
+          projectId: p.projectId,
+          Title: p.title,
+          title: p.title,
+          unassignedTaskCount: p.unassignedTaskCount,
+        }))
+      );
+
+      if (clearSelectionIfAssigned) {
+        setSelectedProject((prev) => {
+          if (!prev) return null;
+          const pid = String(prev.ProjectId ?? prev.projectId ?? '');
+          return assignedIds.has(pid) ? null : prev;
+        });
+        setTeamCards([]);
+        setSuggestedDevCount(null);
+      }
+    } catch {
+      setAllProjects([]);
+      setAssignedProjectIds(new Set());
+      setTaskAllocationProjects([]);
+      showToast('Failed to load projects', 'error');
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    loadUnassignedProjects();
+  }, [loadUnassignedProjects]);
+
+  const teamFormationProjects = useMemo(
+    () =>
+      allProjects.filter((p: { ProjectId?: string; projectId?: string }) => {
+        const pid = String(p.ProjectId ?? p.projectId ?? '');
+        return pid && !assignedProjectIds.has(pid);
+      }),
+    [allProjects, assignedProjectIds]
+  );
+
+  const taskAllocationProjectsNormalized = useMemo(
+    () => taskAllocationProjects,
+    [taskAllocationProjects]
+  );
+
+  const projectListForSelector =
+    activeTab === 'team'
+      ? teamFormationProjects
+      : activeTab === 'tasks'
+        ? taskAllocationProjectsNormalized
+        : allProjects;
+
+  useEffect(() => {
+    if (activeTab !== 'tasks' || !selectedProject) return;
+    const pid = String(selectedProject.ProjectId ?? selectedProject.projectId ?? '');
+    const stillEligible = taskAllocationProjectsNormalized.some(
+      (p: { ProjectId?: string; projectId?: string }) =>
+        String(p.ProjectId ?? p.projectId) === pid
+    );
+    if (!stillEligible) {
+      setSelectedProject(null);
+      setTaskAssignments([]);
+    }
+  }, [activeTab, taskAllocationProjectsNormalized, selectedProject]);
 
   const apiErrDetail = (err: unknown, fallback: string) => {
     const ax = err as {
@@ -189,8 +270,7 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
 
   // Clear results when switching projects or tabs
   useEffect(() => {
-    setTeamSuggestions([]);
-    setEmployeeRecommendations([]);
+    setTeamCards([]);
     setTaskAssignments([]);
   }, [selectedProject, activeTab]);
 
@@ -200,40 +280,24 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
     setLoading(true);
     try {
       const pid = selectedProject.ProjectId || selectedProject.projectId;
-      const res = await aiService.suggestTeam(pid);
-      setTeamSuggestions(res.team || []);
+      const res = await aiService.suggestTeamOptions(pid);
+      const opts = res.options || [];
+      if (opts.length === 0) {
+        showToast('No team options returned. Check available employees and QA in the system.', 'error');
+        return;
+      }
+      setSuggestedDevCount(res.suggestedDeveloperCount ?? null);
+      setTeamCards(
+        opts.map((opt, i) => ({
+          ...opt,
+          id: `team-opt-${i}`,
+          teamName: opt.suggestedTeamName || opt.label || `Team ${i + 1}`,
+          expanded: Boolean(opt.isRecommended),
+          isRecommended: opt.isRecommended,
+        }))
+      );
     } catch (err) {
-      showToast(
-        apiErrDetail(
-          err,
-          'AI service unavailable. Start allocation on port 8002 (scripts/start-ai-services.ps1) and restart the API.'
-        ),
-        'error'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSuggestEmployees = async () => {
-    if (!selectedProject) return;
-    setLoading(true);
-    try {
-      const description = selectedProject.Description || selectedProject.Title || '';
-      const pid = selectedProject.ProjectId || selectedProject.projectId;
-      const res = await aiService.suggestEmployees(description, pid);
-      const sorted = (res.recommendedEmployees || []).sort(
-        (a, b) => b.matchScore - a.matchScore
-      );
-      setEmployeeRecommendations(sorted);
-    } catch (err) {
-      showToast(
-        apiErrDetail(
-          err,
-          'AI service unavailable. Start allocation on port 8002 (scripts/start-ai-services.ps1) and restart the API.'
-        ),
-        'error'
-      );
+      showToast(apiErrDetail(err, 'Could not generate team options.'), 'error');
     } finally {
       setLoading(false);
     }
@@ -245,7 +309,16 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
     try {
       const pid = selectedProject.ProjectId || selectedProject.projectId;
       const res = await aiService.suggestTaskAllocation(pid);
-      setTaskAssignments(res.taskAssignments || []);
+      const rows = res.taskAssignments || [];
+      if (rows.length === 0) {
+        showToast(
+          'No unassigned tasks to suggest. All open tasks may already have owners, or add tasks with no assignee.',
+          'error'
+        );
+        setTaskAssignments([]);
+        return;
+      }
+      setTaskAssignments(rows);
     } catch (err) {
       showToast(
         apiErrDetail(
@@ -259,50 +332,111 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
     }
   };
 
-  const handleApplyTeam = async () => {
-    if (!selectedProject || teamSuggestions.length === 0) return;
+  const validateTeamComposition = async (teamId: string) => {
+    const members = await teamService.getTeamMembers(teamId);
+    const usersRes = await api.get('/users');
+    const users = Array.isArray(usersRes.data) ? usersRes.data : [];
+    const QA_ROLE_ID = '8DA96376-659A-40B2-A3D4-34165984E90F'.toUpperCase(); // Quality Assurance
+    const EMP_ROLE_ID = '90E6C731-B51A-44D7-ADA1-815102900862'.toUpperCase();
+    const isQaRole = (roleId: string, roleName?: string) =>
+      roleId === QA_ROLE_ID || /quality|qa/i.test(roleName || '');
+    let hasQa = false;
+    let hasEmp = false;
+    for (const member of members) {
+      const mid = String(member.userId ?? member.UserId ?? member.id ?? '');
+      const u = users.find(
+        (x: any) => String(x.userId ?? x.UserId ?? x.id) === mid
+      );
+      const roleId = String(u?.roleId ?? u?.RoleId ?? '').toUpperCase();
+      const roleName = String(u?.roleName ?? u?.RoleName ?? u?.role ?? '');
+      if (isQaRole(roleId, roleName)) hasQa = true;
+      if (roleId === EMP_ROLE_ID) hasEmp = true;
+    }
+    return hasQa && hasEmp;
+  };
+
+  const teamHasQaAndEmployee = (members: TeamSuggestion[]) => {
+    const hasQa = members.some((m) => isQaRole(m.role));
+    const hasDev = members.some((m) => !isQaRole(m.role) && !/manager|admin/i.test(m.role || ''));
+    return hasQa && hasDev && members.length >= 2;
+  };
+
+  const handleCreateTeamFromCard = async (card: TeamOptionCard) => {
+    if (!selectedProject || card.team.length === 0) return;
     const userId = localStorage.getItem('userId') || '';
     if (!userId) {
       showToast('You must be logged in as a manager.', 'error');
       return;
     }
-    setApplying(true);
+    const teamName = card.teamName.trim();
+    if (!teamName) {
+      showToast('Team name is required.', 'error');
+      return;
+    }
+    if (!teamHasQaAndEmployee(card.team)) {
+      showToast('Each team needs at least one QA and one Employee.', 'error');
+      return;
+    }
+    setApplyingCardId(card.id);
     try {
-      const teamName = `${selectedProject.Title} Team`;
-
-      // 1. Create a new team
       const teamRes = await teamService.createTeam({ name: teamName, createdBy: userId });
       const teamId = teamRes.TeamId || teamRes.teamId || teamRes.id;
 
-      // 2. Add each suggested employee
-      for (const member of teamSuggestions) {
+      for (const member of card.team) {
         await teamService.addEmployeeToTeam(teamId, member.userId);
       }
 
-      // 3. Assign team to project
+      const ok = await validateTeamComposition(teamId);
+      if (!ok) {
+        showToast('Team must include at least one Employee and one QA.', 'error');
+        await teamService.deleteTeam(teamId);
+        return;
+      }
+
       const pid = selectedProject.ProjectId || selectedProject.projectId;
       await teamService.assignTeamToProject(teamId, pid);
 
-      showToast('Team created and assigned to project successfully!', 'success');
-    } catch {
-      showToast('Failed to apply team suggestion. Please try again.', 'error');
+      setTeamCards([]);
+      setSuggestedDevCount(null);
+      setDropdownOpen(false);
+      showToast(`Team "${teamName}" created and assigned!`, 'success');
+      await loadUnassignedProjects(true);
+      if (onTeamApplied) await onTeamApplied();
+    } catch (err) {
+      showToast(apiErrDetail(err, 'Failed to create team.'), 'error');
     } finally {
-      setApplying(false);
+      setApplyingCardId(null);
     }
   };
 
+  const updateCardTeamName = (id: string, name: string) => {
+    setTeamCards((prev) => prev.map((c) => (c.id === id ? { ...c, teamName: name } : c)));
+  };
+
+  const toggleCardExpanded = (id: string) => {
+    setTeamCards((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, expanded: !c.expanded } : c))
+    );
+  };
+
   const handleApplyTaskAssignments = async () => {
-    if (taskAssignments.length === 0) return;
+    if (taskAssignments.length === 0 || !selectedProject) return;
     setApplying(true);
     try {
-      for (const assignment of taskAssignments) {
-        await taskService.update(assignment.taskId, {
-          assignedEmployeeId: assignment.userId,
-        });
+      const pid = selectedProject.ProjectId || selectedProject.projectId;
+      const result = await aiService.applyTaskAssignments(pid, taskAssignments);
+      const applied = result.applied ?? result.Applied ?? 0;
+      const failed = result.failed ?? result.Failed ?? 0;
+      if (failed > 0) {
+        const errs = result.errors ?? result.Errors ?? [];
+        showToast(`Applied ${applied}; ${failed} failed. ${errs[0] ?? ''}`, 'error');
+      } else {
+        setTaskAssignments([]);
+        showToast(`Applied ${applied} task assignment(s).`, 'success');
+        await loadUnassignedProjects(true);
       }
-      showToast('All task assignments applied successfully!', 'success');
-    } catch {
-      showToast('Failed to apply some task assignments. Please try again.', 'error');
+    } catch (err: unknown) {
+      showToast(apiErrDetail(err, 'Failed to apply task assignments.'), 'error');
     } finally {
       setApplying(false);
     }
@@ -347,12 +481,16 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
                 transition={{ duration: 0.15 }}
                 className="absolute z-20 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-64 overflow-y-auto"
               >
-                {projects.length === 0 ? (
-                  <div className="p-4 text-sm text-gray-400 text-center">
-                    No projects found
+                {projectListForSelector.length === 0 ? (
+                  <div className="p-4 text-sm text-gray-500 text-center">
+                    {activeTab === 'team'
+                      ? 'All your projects already have a team assigned.'
+                      : activeTab === 'tasks'
+                        ? 'No projects with unassigned tasks. Assign a team and create tasks first.'
+                        : 'No projects found'}
                   </div>
                 ) : (
-                  projects.map((p: any) => {
+                  projectListForSelector.map((p: any) => {
                     const pid = p.ProjectId || p.projectId;
                     const selId =
                       selectedProject?.ProjectId || selectedProject?.projectId;
@@ -370,7 +508,13 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
                         <p className="font-semibold text-gray-900 text-sm">
                           {p.Title || p.title}
                         </p>
-                        {(p.Description || p.description) && (
+                        {activeTab === 'tasks' && (p.unassignedTaskCount ?? 0) > 0 && (
+                          <p className="text-xs text-amber-700 mt-0.5 font-medium">
+                            {p.unassignedTaskCount} unassigned task
+                            {p.unassignedTaskCount === 1 ? '' : 's'}
+                          </p>
+                        )}
+                        {activeTab !== 'tasks' && (p.Description || p.description) && (
                           <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
                             {p.Description || p.description}
                           </p>
@@ -410,7 +554,11 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
         <div>
           <h3 className="text-lg font-bold text-gray-900">AI Team Formation</h3>
           <p className="text-sm text-gray-400 mt-0.5">
-            Let AI analyze your project requirements and suggest the ideal team
+            Up to 3 stable options — always 1 QA plus{' '}
+            {suggestedDevCount != null
+              ? `${suggestedDevCount} developer${suggestedDevCount === 1 ? '' : 's'}`
+              : '2–4 developers based on project scope'}
+            . Regenerating keeps the same &quot;best fit&quot; pick. Adjust members later via Assign Member above.
           </p>
         </div>
         <button
@@ -419,115 +567,107 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
           className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
         >
           <Sparkles size={16} />
-          Generate Team Suggestion
+          Generate Team Options
         </button>
       </div>
 
       <AnimatePresence mode="wait">
         {loading ? (
           <LoadingOverlay key="loading" />
-        ) : teamSuggestions.length > 0 ? (
-          <motion.div key="results" variants={stagger} initial="initial" animate="animate">
-            <div className="grid gap-4">
-              {teamSuggestions.map((member, i) => (
-                <motion.div
-                  key={member.userId + i}
-                  variants={fadeUp}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                        {member.name?.charAt(0) || '?'}
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900">{member.name}</p>
-                        <span className="inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
-                          {member.role}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500 mt-3 leading-relaxed pl-15">
-                    {member.reason}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div variants={fadeUp} className="mt-6 flex justify-end">
-              <button
-                onClick={handleApplyTeam}
-                disabled={applying}
-                className="flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-xl font-semibold text-sm hover:bg-green-700 disabled:opacity-50 transition-all active:scale-[0.97]"
+        ) : teamCards.length > 0 ? (
+          <motion.div
+            key="results"
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 overflow-visible"
+            variants={stagger}
+            initial="initial"
+            animate="animate"
+          >
+            {teamCards.map((card) => {
+              const { qa, devs } = splitTeamMembers(card.team);
+              return (
+              <motion.div
+                key={card.id}
+                variants={fadeUp}
+                className={`rounded-2xl p-5 shadow-sm flex flex-col relative overflow-visible ${
+                  card.isRecommended
+                    ? 'bg-gradient-to-b from-amber-50 to-white border-2 border-amber-300 ring-2 ring-amber-200/60'
+                    : 'bg-white border border-gray-100'
+                }`}
               >
-                {applying ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Check size={16} />
-                )}
-                {applying ? 'Applying...' : 'Apply Team'}
-              </button>
-            </motion.div>
-          </motion.div>
-        ) : (
-          <EmptyState key="empty" message="Click the button above to generate an AI-powered team suggestion" />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
-  const renderEmployeeTab = () => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Employee Recommendations</h3>
-          <p className="text-sm text-gray-400 mt-0.5">
-            Find the best-matching employees based on project requirements
-          </p>
-        </div>
-        <button
-          onClick={handleSuggestEmployees}
-          disabled={!selectedProject || loading}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
-        >
-          <UserCheck size={16} />
-          Find Best Employees
-        </button>
-      </div>
-
-      <AnimatePresence mode="wait">
-        {loading ? (
-          <LoadingOverlay key="loading" />
-        ) : employeeRecommendations.length > 0 ? (
-          <motion.div key="results" variants={stagger} initial="initial" animate="animate">
-            <div className="grid gap-4">
-              {employeeRecommendations.map((emp, i) => (
-                <motion.div
-                  key={emp.userId + i}
-                  variants={fadeUp}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm">
-                      {emp.name?.charAt(0) || '?'}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-900">{emp.name}</p>
-                      <div className="mt-2">
-                        <ScoreBar score={emp.matchScore} />
-                      </div>
-                    </div>
+                {card.isRecommended && (
+                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-bl-xl flex items-center gap-1">
+                    <Sparkles size={10} />
+                    Best for this project
                   </div>
-                  <p className="text-sm text-gray-500 leading-relaxed">
-                    {emp.reason}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
+                )}
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${
+                  card.isRecommended ? 'text-amber-800' : 'text-indigo-600'
+                }`}>
+                  {card.label}
+                </p>
+                <label className="text-[10px] font-bold text-gray-400 uppercase">Team name</label>
+                <input
+                  type="text"
+                  value={card.teamName}
+                  onChange={(e) => updateCardTeamName(card.id, e.target.value)}
+                  className="mt-1 mb-3 w-full px-3 py-2 rounded-xl border border-gray-200 font-bold text-gray-900 text-sm"
+                />
+
+                <div className="space-y-1.5 mb-3 flex-1">
+                  <TeamMemberLine roleLabel="QA" name={qa?.name ?? ''} />
+                  {devs.map((dev, slotIndex) => (
+                    <TeamMemberLine
+                      key={`${card.id}-dev-${slotIndex}`}
+                      roleLabel={`Dev ${slotIndex + 1}`}
+                      name={dev.name}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => toggleCardExpanded(card.id)}
+                  className="text-xs font-bold text-indigo-600 mb-3 flex items-center gap-1"
+                >
+                  {card.expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {card.expanded ? 'Hide AI notes' : 'Why this lineup?'}
+                </button>
+                {card.expanded && (
+                  <ul className="space-y-2 mb-4 max-h-36 overflow-y-auto">
+                    {card.team.map((member, i) => (
+                      <li
+                        key={member.userId + i}
+                        className="p-2 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500"
+                      >
+                        <span className="font-bold text-gray-700">{member.name}</span>
+                        {' — '}
+                        {member.reason}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleCreateTeamFromCard(card)}
+                  disabled={applyingCardId === card.id}
+                  className="mt-auto w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 disabled:opacity-50"
+                >
+                  {applyingCardId === card.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  {applyingCardId === card.id ? 'Creating...' : 'Create team'}
+                </button>
+              </motion.div>
+            );
+            })}
           </motion.div>
         ) : (
-          <EmptyState key="empty" message="Click the button above to find the best-matching employees" />
+          <EmptyState
+            key="empty"
+            message="Select a project and generate up to 3 AI team options (available employees + QA only)"
+          />
         )}
       </AnimatePresence>
     </div>
@@ -539,7 +679,8 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
         <div>
           <h3 className="text-lg font-bold text-gray-900">Smart Task Allocation</h3>
           <p className="text-sm text-gray-400 mt-0.5">
-            AI will analyze tasks and assign them to the most suitable team members
+            Only projects with unassigned open tasks appear below. AI suggests owners for those tasks
+            only — already-assigned tasks are skipped.
           </p>
         </div>
         <button
@@ -616,9 +757,9 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
   );
 
   const tabsCard = (
-        <div className={`bg-white rounded-2xl shadow-sm overflow-hidden ${embedded ? 'border border-gray-100' : ''}`}>
+        <div className={`bg-white rounded-2xl shadow-sm ${embedded ? 'border border-gray-100' : ''}`}>
           {/* Tab Bar */}
-          <div className="flex border-b border-gray-100">
+          <div className="flex border-b border-gray-100 overflow-hidden rounded-t-2xl">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -643,7 +784,7 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-6 overflow-visible">
             {!selectedProject ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
@@ -664,7 +805,6 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
                   transition={{ duration: 0.2 }}
                 >
                   {activeTab === 'team' && renderTeamTab()}
-                  {activeTab === 'employees' && renderEmployeeTab()}
                   {activeTab === 'tasks' && renderTaskTab()}
                 </motion.div>
               </AnimatePresence>
@@ -684,7 +824,7 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
     return (
       <div className="relative">
         {toastWrap}
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
           <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-indigo-50/80">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
@@ -696,8 +836,8 @@ const AiAllocation = ({ embedded = false }: AiAllocationProps) => {
                   <Sparkles size={18} className="text-yellow-500" />
                 </h2>
                 <p className="text-sm text-gray-600 mt-1 max-w-3xl leading-relaxed">
-                  Suggest teams, rank employees from résumés/skills, and propose task owners. Assign a project team
-                  first; richer employee profiles (CV upload in Profile) improve recommendations.
+                  Build project teams (1 QA + developers), then allocate tasks. Change members anytime using Assign
+                  Member above. Task allocation needs a team on the project first.
                 </p>
               </div>
             </div>

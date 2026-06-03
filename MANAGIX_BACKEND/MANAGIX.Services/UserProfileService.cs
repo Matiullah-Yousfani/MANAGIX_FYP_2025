@@ -32,6 +32,8 @@ namespace MANAGIX.Services
             profile.Education = dto.Education ?? profile.Education;
             profile.Experience = dto.Experience ?? profile.Experience;
             profile.Bio = dto.Bio ?? profile.Bio;
+            if (dto.HourlyRate.HasValue)
+                profile.HourlyRate = dto.HourlyRate.Value;
 
             _unitOfWork.UserProfiles.Update(profile);
             await _unitOfWork.CompleteAsync(); // Commit changes

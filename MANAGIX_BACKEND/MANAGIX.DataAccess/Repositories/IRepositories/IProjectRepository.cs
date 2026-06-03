@@ -21,6 +21,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         void Remove(Project project); // ✅ NEW
 
         Task<bool> ExistsByManagerAndTitleAsync(Guid managerId, string title, Guid? excludeProjectId);
+        Task<bool> ExistsByTitleAsync(string title, Guid? excludeProjectId);
 
     }
 }

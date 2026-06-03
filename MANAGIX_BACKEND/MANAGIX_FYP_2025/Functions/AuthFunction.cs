@@ -198,8 +198,11 @@ namespace MANAGIX_FYP_2025.Functions
         // GET /api/management/pending-users
         [Function("PendingUsers")]
         public async Task<HttpResponseData> PendingUsers(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "management/pending-users")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "management/pending-users")] HttpRequestData req)
         {
+            var (_, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
             try
             {
                 var list = await _unitOfWork.UserRequests.GetPendingRequestsAsync();
@@ -209,17 +212,20 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
-                return err;
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return errorResp;
             }
         }
 
         // PUT /api/management/approve-user/{id}
         [Function("ApproveUser")]
         public async Task<HttpResponseData> ApproveUser(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "management/approve-user/{id}/{roleId}")] HttpRequestData req, string id , string roleId)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "management/approve-user/{id}/{roleId}")] HttpRequestData req, string id , string roleId)
         {
+            var (_, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
             if (!Guid.TryParse(id, out Guid requestId) || !Guid.TryParse(roleId, out Guid rId))
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
@@ -242,9 +248,9 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
-                return err;
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return errorResp;
             }
         }
 
@@ -253,9 +259,12 @@ namespace MANAGIX_FYP_2025.Functions
         // PUT /api/management/reject-user/{id}
         [Function("RejectUser")]
         public async Task<HttpResponseData> RejectUser(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "management/reject-user/{id}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "management/reject-user/{id}")] HttpRequestData req,
             string id)
         {
+            var (_, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
             if (!Guid.TryParse(id, out Guid requestId))
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
@@ -280,17 +289,20 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
-                return err;
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return errorResp;
             }
         }
 
         [Function("AdminDeleteUser")]
         public async Task<HttpResponseData> AdminDeleteUser(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "management/users/{userId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "management/users/{userId}")] HttpRequestData req,
             string userId)
         {
+            var (actingUserId, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
             if (!Guid.TryParse(userId, out var uid))
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
@@ -308,9 +320,9 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
-                return err;
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
+                return errorResp;
             }
         }
     }

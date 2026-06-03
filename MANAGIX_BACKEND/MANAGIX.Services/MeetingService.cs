@@ -1,6 +1,7 @@
 using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
+using MANAGIX.Utility;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -12,16 +13,6 @@ using System.Threading.Tasks;
 
 namespace MANAGIX.Services
 {
-    // PHASE 4: Meeting CRUD + AI extraction.
-    //
-    // AI extraction wires to the existing planner Python service (port 8001 by default) at
-    // a new endpoint `/extract-tasks`. The endpoint reuses the prototype `task_extractor.py`
-    // already living in the FE components folder (lifted there during a prior spike).
-    //
-    // Notification fan-out: when a meeting is created we publish a `MeetingInvite` to each
-    // participant; when extracted tasks are confirmed (in the UI flow) the AI extractor
-    // returns assignees and the frontend will call taskService.create + this service publishes
-    // `TaskExtractedFromMeeting` notifications.
     public class MeetingService : IMeetingService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -42,61 +33,120 @@ namespace MANAGIX.Services
         {
             _unitOfWork = unitOfWork;
             _notifications = notifications;
-            // Reuse the same default as the Layer-2 planner (`AiPlannerUrl` config key) so the
-            // operator only has to point to one Python service.
             _aiPlannerUrl = (configuration["AiPlannerUrl"] ?? "http://127.0.0.1:8001").TrimEnd('/');
             _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
         }
 
         public async Task<MeetingDto> CreateAsync(MeetingCreateDto input)
         {
+            if (string.IsNullOrWhiteSpace(input.Title))
+                throw new InvalidOperationException("Meeting title is required.");
+
+            if (!input.ProjectId.HasValue || input.ProjectId == Guid.Empty)
+                throw new InvalidOperationException("Meeting must belong to a project.");
+
+            var creator = await _unitOfWork.Users.GetByIdAsync(input.CreatedBy);
+            if (creator == null)
+                throw new InvalidOperationException("Creator user not found.");
+
+            var isManager = creator.UserRoles?.Any(ur =>
+                ur.Role != null &&
+                string.Equals(ur.Role.RoleName, "Manager", StringComparison.OrdinalIgnoreCase)) == true;
+            if (!isManager)
+                throw new UnauthorizedAccessException("Only managers can schedule meetings.");
+
+            var project = await _unitOfWork.Projects.GetByIdAsync(input.ProjectId.Value);
+            if (project == null)
+                throw new InvalidOperationException("Project not found.");
+
+            if (input.DurationMinutes < 5 || input.DurationMinutes > 480)
+                throw new InvalidOperationException("Duration must be between 5 and 480 minutes.");
+
+            var participantIds = input.ParticipantUserIds?.Where(id => id != Guid.Empty).Distinct().ToList()
+                                 ?? new List<Guid>();
+            if (participantIds.Count == 0)
+                participantIds = await ResolveProjectParticipantIdsAsync(input.ProjectId.Value);
+
+            if (participantIds.Count == 0)
+                throw new InvalidOperationException("No project members found to invite.");
+
+            var roomName = string.IsNullOrWhiteSpace(input.JitsiRoomName)
+                ? $"Managix-{input.ProjectId.Value:N[..8]}-{DateTime.UtcNow:yyyyMMddHHmmss}"
+                : input.JitsiRoomName.Trim();
+
             var meeting = new Meeting
             {
                 ProjectId = input.ProjectId,
-                Title = input.Title,
-                ScheduledAt = input.ScheduledAt,
+                Title = input.Title.Trim(),
+                Description = input.Description?.Trim(),
+                ScheduledAt = input.ScheduledAt.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(input.ScheduledAt, DateTimeKind.Utc)
+                    : input.ScheduledAt.ToUniversalTime(),
                 DurationMinutes = input.DurationMinutes,
-                JitsiRoomName = input.JitsiRoomName,
+                JitsiRoomName = roomName,
                 CreatedBy = input.CreatedBy,
                 Status = "Scheduled",
             };
+
+            meeting.MeetingId = Guid.NewGuid();
+            meeting.MeetingLink = $"/meeting?meetingId={meeting.MeetingId}";
+
             await _unitOfWork.Meetings.AddAsync(meeting);
 
-            foreach (var pid in input.ParticipantUserIds.Distinct())
+            foreach (var pid in participantIds.Distinct())
             {
                 await _unitOfWork.MeetingParticipants.AddAsync(new MeetingParticipant
                 {
                     MeetingId = meeting.MeetingId,
                     UserId = pid,
-                    Role = "Attendee",
+                    Role = pid == input.CreatedBy ? "Host" : "Attendee",
                 });
             }
 
             await _unitOfWork.CompleteAsync();
 
-            // Fan out invite notifications. Skip the creator — they don't need to invite themselves.
-            var invitees = input.ParticipantUserIds
-                .Where(u => u != input.CreatedBy)
-                .Distinct();
+            var endsAt = meeting.ScheduledAt.AddMinutes(meeting.DurationMinutes);
+            var invitees = participantIds.Where(u => u != input.CreatedBy).Distinct();
             await _notifications.PublishToManyAsync(invitees, new NotificationCreateDto
             {
                 Type = "MeetingInvite",
-                Title = $"New meeting: {input.Title}",
-                Body = $"Scheduled for {input.ScheduledAt:u} ({input.DurationMinutes} min).",
-                Link = "/meeting",
+                Title = $"Meeting: {meeting.Title}",
+                Body = $"{endsAt:u} — tap Join when the meeting window is active.",
+                Link = meeting.MeetingLink,
             });
 
             return await BuildDto(meeting);
         }
 
+        public async Task<List<Guid>> ResolveProjectParticipantIdsAsync(Guid projectId)
+        {
+            var ids = new HashSet<Guid>();
+
+            var pt = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(projectId);
+            if (pt != null)
+            {
+                var teamMembers = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(pt.TeamId);
+                foreach (var te in teamMembers)
+                    ids.Add(te.EmployeeId);
+            }
+
+            var qaIds = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(AppRoles.QualityAssurance);
+            foreach (var q in qaIds)
+                ids.Add(q);
+
+            return ids.ToList();
+        }
+
         public async Task<MeetingDto?> GetAsync(Guid meetingId)
         {
+            await ExpirePastMeetingsAsync();
             var m = await _unitOfWork.Meetings.GetByIdAsync(meetingId);
             return m == null ? null : await BuildDto(m);
         }
 
         public async Task<List<MeetingDto>> GetByProjectAsync(Guid projectId)
         {
+            await ExpirePastMeetingsAsync();
             var rows = await _unitOfWork.Meetings.GetByProjectAsync(projectId);
             var list = new List<MeetingDto>();
             foreach (var m in rows) list.Add(await BuildDto(m));
@@ -105,10 +155,53 @@ namespace MANAGIX.Services
 
         public async Task<List<MeetingDto>> GetUpcomingForUserAsync(Guid userId)
         {
+            await ExpirePastMeetingsAsync();
             var rows = await _unitOfWork.Meetings.GetUpcomingForUserAsync(userId);
             var list = new List<MeetingDto>();
             foreach (var m in rows) list.Add(await BuildDto(m));
             return list;
+        }
+
+        public async Task<MeetingJoinStatusDto?> GetJoinStatusAsync(Guid meetingId, Guid userId)
+        {
+            await ExpirePastMeetingsAsync();
+            var m = await _unitOfWork.Meetings.GetByIdAsync(meetingId);
+            if (m == null) return null;
+
+            var isParticipant = await _unitOfWork.MeetingParticipants.ExistsAsync(meetingId, userId)
+                || m.CreatedBy == userId;
+            var (joinState, canJoin) = ComputeJoinAccess(m, isParticipant);
+
+            return new MeetingJoinStatusDto
+            {
+                MeetingId = m.MeetingId,
+                Title = m.Title,
+                ScheduledAt = m.ScheduledAt,
+                EndsAt = m.ScheduledAt.AddMinutes(m.DurationMinutes),
+                Status = m.Status,
+                JoinState = joinState,
+                CanJoin = canJoin,
+                IsParticipant = isParticipant,
+                MeetingLink = m.MeetingLink,
+                JitsiRoomName = m.JitsiRoomName,
+            };
+        }
+
+        public async Task<int> ExpirePastMeetingsAsync()
+        {
+            var now = DateTime.UtcNow;
+            var past = await _unitOfWork.Meetings.GetPastScheduledAsync(now);
+            if (past.Count == 0) return 0;
+
+            foreach (var m in past)
+            {
+                m.Status = "Expired";
+                m.MeetingLink = null;
+                _unitOfWork.Meetings.Update(m);
+            }
+
+            await _unitOfWork.CompleteAsync();
+            return past.Count;
         }
 
         public async Task<bool> CompleteWithTranscriptAsync(Guid meetingId, string transcriptText)
@@ -118,6 +211,7 @@ namespace MANAGIX.Services
 
             meeting.TranscriptText = transcriptText;
             meeting.Status = "Completed";
+            meeting.MeetingLink = null;
             _unitOfWork.Meetings.Update(meeting);
             await _unitOfWork.CompleteAsync();
             return true;
@@ -129,7 +223,6 @@ namespace MANAGIX.Services
             if (meeting == null || string.IsNullOrWhiteSpace(meeting.TranscriptText))
                 return new ExtractTasksResponseDto();
 
-            // Build the team-context payload so the LLM can suggest assignees.
             var teamMembers = new List<object>();
             if (meeting.ProjectId.HasValue)
             {
@@ -186,19 +279,53 @@ namespace MANAGIX.Services
         private async Task<MeetingDto> BuildDto(Meeting m)
         {
             var participants = await _unitOfWork.MeetingParticipants.GetUserIdsForMeetingAsync(m.MeetingId);
+            var (_, canJoin) = ComputeJoinAccess(m, true);
+
             return new MeetingDto
             {
                 MeetingId = m.MeetingId,
                 ProjectId = m.ProjectId,
                 Title = m.Title,
+                Description = m.Description,
                 ScheduledAt = m.ScheduledAt,
+                EndsAt = m.ScheduledAt.AddMinutes(m.DurationMinutes),
                 DurationMinutes = m.DurationMinutes,
+                MeetingLink = m.MeetingLink,
                 JitsiRoomName = m.JitsiRoomName,
                 CreatedBy = m.CreatedBy,
                 Status = m.Status,
                 TranscriptText = m.TranscriptText,
                 Participants = participants,
+                JoinState = ComputeJoinState(m),
+                CanJoin = canJoin,
             };
+        }
+
+        private static (string joinState, bool canJoin) ComputeJoinAccess(Meeting m, bool isParticipant)
+        {
+            var joinState = ComputeJoinState(m);
+            var canJoin = isParticipant
+                && joinState == "Active"
+                && !string.Equals(m.Status, "Expired", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(m.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(m.MeetingLink);
+            return (joinState, canJoin);
+        }
+
+        private static string ComputeJoinState(Meeting m)
+        {
+            if (string.Equals(m.Status, "Expired", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(m.Status, "Completed", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(m.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+                return "Expired";
+
+            var now = DateTime.UtcNow;
+            var start = m.ScheduledAt;
+            var end = start.AddMinutes(m.DurationMinutes);
+
+            if (now < start) return "BeforeStart";
+            if (now >= start && now <= end) return "Active";
+            return "Expired";
         }
     }
 }

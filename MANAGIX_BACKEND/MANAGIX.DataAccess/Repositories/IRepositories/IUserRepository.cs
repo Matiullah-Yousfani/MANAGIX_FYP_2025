@@ -12,6 +12,8 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task<User?> GetByIdAsync(Guid id);
         Task<User?> GetByEmailAsync(string email);
         Task<IEnumerable<User>> GetAllAsync();
+        Task<List<User>> GetAllWithRolesAndProfileAsync();
+        Task<List<Guid>> GetUserIdsByRoleNameAsync(string roleName);
         Task AddAsync(User user);
         void Update(User user);
         void Remove(User user);

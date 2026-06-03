@@ -15,5 +15,7 @@ namespace MANAGIX.Models.DTO
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string Status { get; set; } = "Todo";
+        public decimal? EstimatedHours { get; set; }
+        public string? Priority { get; set; }
     }
 }

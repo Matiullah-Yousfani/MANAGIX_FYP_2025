@@ -15,5 +15,7 @@ namespace MANAGIX.Models.DTO
         public string? Experience { get; set; }
         public string? Bio { get; set; }
 
+        /// <summary>Optional hourly rate used by AI allocation and payroll hints.</summary>
+        public decimal? HourlyRate { get; set; }
     }
 }

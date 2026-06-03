@@ -23,6 +23,7 @@ interface Team {
     ProjectTitle?: string;
     ProjectId?: string;
     CreatedBy?: string;
+    MemberCount?: number;
     members?: any[];
 }
 
@@ -49,13 +50,16 @@ const Teams = () => {
             const storedId = localStorage.getItem('userId');
             const storedRole = localStorage.getItem('userRole');
 
+            const managerId =
+                storedRole === 'Manager' && storedId ? storedId : undefined;
             const [teamsRes, usersRes] = await Promise.all([
-                teamService.getAllTeams(),
+                teamService.getAllTeams(managerId),
                 api.get('/users')
             ]);
 
             // GUIDs in Uppercase for standard comparison
             const EMPLOYEE_ROLE_ID = "90E6C731-B51A-44D7-ADA1-815102900862".toUpperCase();
+            // Quality Assurance (canonical QA role — not the duplicate "QA" row)
             const QA_ROLE_ID = "8DA96376-659A-40B2-A3D4-34165984E90F".toUpperCase();
 
             console.log("Raw API Response Users:", usersRes.data);
@@ -90,6 +94,7 @@ const Teams = () => {
                 ProjectTitle: t.projectTitle ?? t.ProjectTitle,
                 ProjectId: t.projectId ?? t.ProjectId,
                 CreatedBy: t.createdBy ?? t.CreatedBy,
+                MemberCount: t.memberCount ?? t.MemberCount ?? 0,
             })));
             setEmployees(assignableUsers);
             const projArr = Array.isArray(projectsData) ? projectsData : [];
@@ -144,13 +149,21 @@ const Teams = () => {
         }
     };
 
-    const handleDeleteTeam = async (e: React.MouseEvent, teamId: string) => {
+    const handleDeleteTeam = async (e: React.MouseEvent, team: Team) => {
         e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this team?")) return;
+        const hasMembers = (team.MemberCount ?? 0) > 0;
+        const msg = hasMembers
+            ? `"${team.Name}" still has members. Remove everyone from the team first, then delete.`
+            : team.ProjectId
+                ? `Delete "${team.Name}"? Its project will become available for a new team.`
+                : `Delete empty team "${team.Name}"?`;
+        if (!window.confirm(msg)) return;
         try {
-            await teamService.deleteTeam(teamId);
+            await teamService.deleteTeam(team.TeamId);
             loadData();
-        } catch (err) { alert("Error deleting team"); }
+        } catch (err) {
+            alert(apiErr(err));
+        }
     };
 
     const apiErr = (err: unknown) => {
@@ -338,7 +351,12 @@ const Teams = () => {
                                         {team.Name}
                                     </h3>
                                     <button 
-                                        onClick={(e) => handleDeleteTeam(e, team.TeamId)}
+                                        onClick={(e) => handleDeleteTeam(e, team)}
+                                        title={
+                                            (team.MemberCount ?? 0) > 0
+                                                ? 'Remove all members before deleting'
+                                                : 'Delete team'
+                                        }
                                         className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                                     >
                                         <FiTrash2 size={18} />
@@ -372,7 +390,7 @@ const Teams = () => {
 
             {portalRole === 'Manager' && (
                 <div className="mt-12">
-                    <AiAllocation embedded />
+                    <AiAllocation embedded onTeamApplied={loadData} />
                 </div>
             )}
 

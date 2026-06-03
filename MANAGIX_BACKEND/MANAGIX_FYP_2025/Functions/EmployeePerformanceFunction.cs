@@ -1,12 +1,10 @@
 ﻿using MANAGIX.DataAccess.Repositories.IRepositories;
-using MANAGIX.Models.Models;
-using Microsoft.Azure.Functions.Worker.Http;
+using MANAGIX.Services;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace MANAGIX_FYP_2025.Functions
@@ -14,50 +12,69 @@ namespace MANAGIX_FYP_2025.Functions
     public class EmployeePerformanceFunction
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IEmployeePerformanceService _performance;
+        private static readonly JsonSerializerOptions _json = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+        };
 
-        public EmployeePerformanceFunction(IUnitOfWork unitOfWork)
+        public EmployeePerformanceFunction(IUnitOfWork unitOfWork, IEmployeePerformanceService performance)
         {
             _unitOfWork = unitOfWork;
+            _performance = performance;
         }
+
         [Function("RecalculateProjectPerformance")]
         public async Task<HttpResponseData> Recalculate(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "performance/recalculate/{projectId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "performance/recalculate/{projectId}")] HttpRequestData req,
             string projectId)
         {
             if (!Guid.TryParse(projectId, out var pid))
                 return await BadRequest(req, "Invalid ProjectId");
 
-            // MINIMAL CHANGE: Verify the team assignment exists in the bridge table
-            var assignment = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
-            if (assignment == null)
+            try
             {
-                // This prevents the frontend from getting a generic error and showing the alert
-                var errorResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                await errorResp.WriteAsJsonAsync(new { message = "No team assigned to this project yet." });
-                return errorResp;
+                await _performance.RecalculateProjectAsync(pid);
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                await resp.WriteAsJsonAsync(new { message = "Scores updated successfully" });
+                return resp;
             }
-
-            // ... existing calculation logic continues here ...
-
-            var resp = req.CreateResponse(HttpStatusCode.OK);
-            await resp.WriteAsJsonAsync(new { message = "Scores updated successfully" });
-            return resp;
+            catch (InvalidOperationException ex)
+            {
+                return await BadRequest(req, ex.Message);
+            }
         }
 
         [Function("GetProjectEmployeePerformance")]
         public async Task<HttpResponseData> GetPerformanceByProject(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "performance/project/{projectId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "performance/project/{projectId}")] HttpRequestData req,
             string projectId)
         {
             if (!Guid.TryParse(projectId, out var pid))
                 return await BadRequest(req, "Invalid ProjectId");
 
-            // Return an empty list if null to prevent frontend .map() crashes
             var performances = await _unitOfWork.EmployeePerformances.GetByProjectIdAsync(pid)
-                               ?? new List<EmployeePerformance>();
+                               ?? new System.Collections.Generic.List<MANAGIX.Models.Models.EmployeePerformance>();
+
+            var lines = new System.Collections.Generic.List<object>();
+            foreach (var perf in performances)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(perf.EmployeeId);
+                lines.Add(new
+                {
+                    employeeId = perf.EmployeeId,
+                    projectId = perf.ProjectId,
+                    employeeName = user?.FullName ?? "Unknown",
+                    tasksAssigned = perf.TasksAssigned,
+                    tasksCompleted = perf.TasksCompleted,
+                    approvalRate = Math.Round(perf.ApprovalRate * 100, 1),
+                });
+            }
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
-            await resp.WriteAsJsonAsync(performances);
+            resp.Headers.Add("Content-Type", "application/json");
+            await resp.WriteStringAsync(JsonSerializer.Serialize(lines, _json));
             return resp;
         }
 

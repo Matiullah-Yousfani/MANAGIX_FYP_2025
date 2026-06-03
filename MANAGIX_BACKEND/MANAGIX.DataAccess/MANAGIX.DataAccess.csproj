@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MANAGIX.Models\MANAGIX.Models.csproj" />
+    <ProjectReference Include="..\MANAGIX.Utility\MANAGIX.Utility.csproj" />
   </ItemGroup>
 
 </Project>

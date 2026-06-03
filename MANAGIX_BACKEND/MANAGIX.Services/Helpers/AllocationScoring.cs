@@ -35,25 +35,37 @@ namespace MANAGIX.Services.Helpers
             return Math.Max(0.0, 1.0 - (ratio / 1.5));
         }
 
-        // Token-set overlap. Empty requiredSkills → neutral 0.5 (don't punish legacy tasks with no skill tags).
+        /// <summary>Case-insensitive exact or substring overlap (aligned with assignment reason text).</summary>
+        public static bool SkillTokensMatch(string required, string memberSkill)
+        {
+            var r = required.Trim().ToLowerInvariant();
+            var h = memberSkill.Trim().ToLowerInvariant();
+            if (r.Length == 0 || h.Length == 0) return false;
+            return string.Equals(r, h, StringComparison.Ordinal)
+                || h.Contains(r, StringComparison.Ordinal)
+                || r.Contains(h, StringComparison.Ordinal);
+        }
+
+        // Fraction of required tokens matched (fuzzy). Empty requiredSkills → neutral 0.5.
         public static double SkillMatchScore(IEnumerable<string>? requiredSkills, IEnumerable<string>? memberSkills)
         {
             var required = (requiredSkills ?? Array.Empty<string>())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim().ToLowerInvariant())
-                .ToHashSet();
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             if (required.Count == 0) return 0.5;
 
             var have = (memberSkills ?? Array.Empty<string>())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim().ToLowerInvariant())
-                .ToHashSet();
+                .Select(s => s.Trim())
+                .ToList();
 
             if (have.Count == 0) return 0.0;
 
-            var intersect = required.Intersect(have).Count();
-            return (double)intersect / required.Count;
+            var matched = required.Count(req => have.Any(h => SkillTokensMatch(req, h)));
+            return (double)matched / required.Count;
         }
 
         public static double Composite(double skill, double capacity, double approval)
@@ -68,7 +80,7 @@ namespace MANAGIX.Services.Helpers
             IReadOnlyDictionary<Guid, decimal> capacityByMember,
             IReadOnlyDictionary<Guid, double> approvalRateByMember)
         {
-            var ranked = new List<(EmployeeInfoDto, double, double, double, double)>();
+            var ranked = new List<(EmployeeInfoDto Member, double Score, double SkillScore, double CapacityScore, double ApprovalScore)>();
             foreach (var m in members)
             {
                 var skill = SkillMatchScore(requiredSkills, m.Skills);
@@ -77,9 +89,14 @@ namespace MANAGIX.Services.Helpers
                 var capScore = CapacityScore(hours, cap);
                 var appr = approvalRateByMember.TryGetValue(m.UserId, out var a) ? a : 0.5;
                 var total = Composite(skill, capScore, appr);
-                ranked.Add((m, total, skill, capScore, appr));
+                ranked.Add((Member: m, Score: total, SkillScore: skill, CapacityScore: capScore, ApprovalScore: appr));
             }
-            return ranked.OrderByDescending(r => r.Item2).ToList();
+            // Skill fit first so capacity/approval alone cannot assign every task to one person.
+            return ranked
+                .OrderByDescending(r => r.SkillScore)
+                .ThenByDescending(r => r.Score)
+                .ThenBy(r => r.Member.UserId)
+                .ToList();
         }
     }
 }

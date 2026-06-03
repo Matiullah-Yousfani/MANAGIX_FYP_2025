@@ -24,6 +24,8 @@ namespace MANAGIX.Models.Models
         public User? Employee { get; set; }
 
         public string? FilePath { get; set; }
+        /// <summary>Original upload name from the employee (e.g. report.pdf).</summary>
+        public string? FileName { get; set; }
         public string? Comment { get; set; }
 
         public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;

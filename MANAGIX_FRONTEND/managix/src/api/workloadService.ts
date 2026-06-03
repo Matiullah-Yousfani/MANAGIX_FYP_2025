@@ -1,7 +1,6 @@
-// PHASE 3: Frontend wrapper for the workload endpoints.
-// Mirrors the existing service file pattern (auth/aiService/projectService).
 import api from './axiosInstance';
 import type { WorkloadEntry } from '../types';
+import { normalizeProjectWorkload, normalizeWorkloadEntry } from './normalize';
 
 export interface ProjectWorkload {
   projectId: string;
@@ -12,21 +11,27 @@ export interface ProjectWorkload {
 }
 
 export const workloadService = {
-  // Single employee's load — used on Profile and dashboards.
   getEmployee: async (userId: string): Promise<WorkloadEntry> => {
     const r = await api.get(`/workload/employee/${userId}`);
-    return r.data;
+    return normalizeWorkloadEntry(r.data);
   },
 
-  // Per-project breakdown for the manager view.
   getProject: async (projectId: string): Promise<ProjectWorkload> => {
     const r = await api.get(`/workload/project/${projectId}`);
-    return r.data;
+    return normalizeProjectWorkload(r.data);
   },
 
-  // Anyone over `threshold` (default 0.9 = 90% capacity).
-  getOverloaded: async (threshold = 0.9): Promise<WorkloadEntry[]> => {
-    const r = await api.get(`/workload/overloaded?threshold=${threshold}`);
-    return r.data;
+  getManagerTeam: async (managerId: string): Promise<WorkloadEntry[]> => {
+    const r = await api.get(`/workload/manager/${managerId}`);
+    const list = Array.isArray(r.data) ? r.data : [];
+    return list.map(normalizeWorkloadEntry);
+  },
+
+  getOverloaded: async (threshold = 0.9, managerId?: string): Promise<WorkloadEntry[]> => {
+    const params = new URLSearchParams({ threshold: String(threshold) });
+    if (managerId) params.set('managerId', managerId);
+    const r = await api.get(`/workload/overloaded?${params.toString()}`);
+    const list = Array.isArray(r.data) ? r.data : [];
+    return list.map(normalizeWorkloadEntry);
   },
 };

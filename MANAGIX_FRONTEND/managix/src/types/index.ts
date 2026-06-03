@@ -52,6 +52,8 @@ export interface WorkloadEntry {
   capacityHours: number;
   utilizationPct: number; // 0..1+ — values > 1 mean over capacity
   projectsAssigned: number;
+  clockedHoursThisWeek?: number;
+  usesClockedHours?: boolean;
 }
 
 // PHASE 4: meeting record (also used to drive the AI task-extraction modal).
@@ -59,12 +61,31 @@ export interface Meeting {
   meetingId: string;
   projectId?: string | null;
   title: string;
+  description?: string | null;
   scheduledAt: string;
+  endsAt?: string;
   durationMinutes: number;
+  meetingLink?: string | null;
   jitsiRoomName?: string | null;
   createdBy: string;
-  status: 'Scheduled' | 'Live' | 'Completed' | 'Cancelled' | string;
+  status: 'Scheduled' | 'Live' | 'Completed' | 'Cancelled' | 'Expired' | string;
   transcriptText?: string | null;
+  participants?: string[];
+  joinState?: 'BeforeStart' | 'Active' | 'Expired' | string;
+  canJoin?: boolean;
+}
+
+export interface MeetingJoinStatus {
+  meetingId: string;
+  title: string;
+  scheduledAt: string;
+  endsAt: string;
+  status: string;
+  joinState: 'BeforeStart' | 'Active' | 'Expired' | string;
+  canJoin: boolean;
+  isParticipant: boolean;
+  meetingLink?: string | null;
+  jitsiRoomName?: string | null;
 }
 
 // PHASE 4: shape returned by the meeting-task-extraction endpoint (one row per suggested task).

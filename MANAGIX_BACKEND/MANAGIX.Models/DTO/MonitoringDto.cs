@@ -13,6 +13,9 @@ namespace MANAGIX.Models.DTO
         public int BlockedTaskCount { get; set; }
         public List<TopOverloadedDto> TopOverloaded { get; set; } = new();
         public Dictionary<string, int> MethodologyBreakdown { get; set; } = new();
+        public int TotalUsers { get; set; }
+        public int PendingUsers { get; set; }
+        public int ActiveUsers { get; set; }
     }
 
     public class TopOverloadedDto

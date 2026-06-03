@@ -30,6 +30,9 @@ namespace MANAGIX_FYP_2025.Functions
         public async Task<HttpResponseData> System(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "monitoring/system")] HttpRequestData req)
         {
+            var (_, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
             try
             {
                 var data = await _monitor.GetSystemHealthAsync();
@@ -40,9 +43,9 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = ex.Message });
-                return err;
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = ex.Message });
+                return errorResp;
             }
         }
 
@@ -53,6 +56,9 @@ namespace MANAGIX_FYP_2025.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "monitoring/project/{projectId:guid}")] HttpRequestData req,
             Guid projectId)
         {
+            var (_, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
             try
             {
                 var data = await _monitor.GetProjectHealthAsync(projectId);
@@ -63,9 +69,9 @@ namespace MANAGIX_FYP_2025.Functions
             }
             catch (Exception ex)
             {
-                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await err.WriteAsJsonAsync(new { message = ex.Message });
-                return err;
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = ex.Message });
+                return errorResp;
             }
         }
     }

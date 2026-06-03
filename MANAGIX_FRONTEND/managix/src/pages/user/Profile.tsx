@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { userService } from '../../api/userService';
 import { resumeService, ResumeParsedDataDto, ResumeSaveProfileDto, EducationDto, ProjectDto, ExperienceDto } from '../../api/resumeService';
 import { User, FileText, Shield, Upload, CheckCircle, Edit3, X, Brain, Plus, Save } from 'lucide-react';
+import { canUploadResume, normalizeAppRole } from '../../utils/roles';
 
 const Profile = () => {
+    const navigate = useNavigate();
     const [userProfile, setUserProfile] = useState<any>(null);
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -35,13 +38,16 @@ const Profile = () => {
         bio: '', 
         skills: '',
         phone: '',
-        address: ''
+        address: '',
+        hourlyRate: '',
     });
     
     const [message, setMessage] = useState({ type: '', text: '' });
     
     const userId = localStorage.getItem('userId');
     const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
+    const appRole = normalizeAppRole(role);
+    const showResumeUpload = canUploadResume(role);
 
     useEffect(() => {
         fetchProfile();
@@ -66,7 +72,8 @@ const Profile = () => {
                 bio: (data.bio ?? data.Bio) || '',
                 skills: (data.skills ?? data.Skills) || '',
                 phone: (data.phone ?? data.Phone) || '',
-                address: (data.address ?? data.Address) || ''
+                address: (data.address ?? data.Address) || '',
+                hourlyRate: String(data.hourlyRate ?? data.HourlyRate ?? ''),
             });
 
             // Try to load resume data if exists
@@ -86,11 +93,13 @@ const Profile = () => {
         if (!userId) return;
         try {
             // Sends the updated Bio, Skills, Phone, Address to [PUT] /api/profile/{userId}
+            const rate = editForm.hourlyRate.trim() ? parseFloat(editForm.hourlyRate) : undefined;
             await userService.updateProfile(userId, {
                 bio: editForm.bio,
                 skills: editForm.skills,
                 phone: editForm.phone,
                 address: editForm.address,
+                hourlyRate: rate,
             });
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             setIsEditing(false);
@@ -584,6 +593,20 @@ const Profile = () => {
                                             onChange={e => setEditForm({...editForm, phone: e.target.value})}
                                         />
                                     </div>
+                                    {(appRole === 'Employee' || appRole === 'Manager') && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Hourly rate (USD, for AI & payroll hints)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
+                                            value={editForm.hourlyRate}
+                                            onChange={e => setEditForm({...editForm, hourlyRate: e.target.value})}
+                                            placeholder="e.g. 25"
+                                        />
+                                    </div>
+                                    )}
                                 </div>
                                 <div className="flex gap-3 pt-4">
                                     <button type="submit" className="bg-black text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-gray-800 transition">Save Profile</button>
@@ -603,7 +626,7 @@ const Profile = () => {
                                         <h2 className="text-3xl font-black text-gray-800 tracking-tighter">{editForm.fullName}</h2>
                                         <div className="flex gap-2 items-center mt-1">
                                             <span className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">
-                                                {role}
+                                                {appRole === 'QA' ? 'Quality Assurance' : appRole}
                                             </span>
                                             <span className="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
                                                 <Shield size={10} /> Verified
@@ -646,7 +669,7 @@ const Profile = () => {
                 </div>
 
                 <div className="lg:col-span-1">
-                    {(role === 'Employee' || role === 'Manager' || role === 'QA') && !showParsedForm && (
+                    {showResumeUpload && !showParsedForm && (
                         <div className="bg-black text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
                             <div className="relative z-10">
                                 <div className="h-12 w-12 bg-gray-800 rounded-2xl flex items-center justify-center mb-6">
@@ -682,14 +705,6 @@ const Profile = () => {
                                     </button>
                                 </form>
                             </div>
-                        </div>
-                    )}
-                    {!(role === 'Employee' || role === 'Manager') && !showParsedForm && (
-                        <div className="bg-gray-50 p-8 rounded-[2.5rem] border border-gray-100">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest">Employee Access</h3>
-                            <p className="text-xs text-gray-500 leading-relaxed font-bold italic">
-                                Resume uploading is reserved for the Employee role to facilitate AI-driven task allocation.
-                            </p>
                         </div>
                     )}
                 </div>

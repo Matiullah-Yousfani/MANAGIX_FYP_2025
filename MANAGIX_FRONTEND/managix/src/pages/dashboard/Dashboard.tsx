@@ -8,6 +8,7 @@ import { projectService } from '../../api/projectService';
 import { adminService } from '../../api/adminService';
 // PHASE 2: methodology-aware dashboard dispatcher.
 import MethodologyDashboard, { type ProjectAggregates } from '../../components/dashboard/MethodologyDashboard';
+import DashboardTimesheetCard from '../../components/DashboardTimesheetCard';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -59,11 +60,9 @@ const Dashboard = () => {
       setLoading(true);
       let projectData = [];
       if (role === 'Admin') {
-        const response = await api.get('/projects');
-        projectData = response.data;
+        projectData = await projectService.getAll();
       } else if (role === 'Manager') {
-        const response = await api.get(`/projects/manager/${id}`);
-        projectData = response.data;
+        projectData = await projectService.getByManager(id);
       } else {
         projectData = await projectService.getByEmployee(id);
       }
@@ -77,17 +76,26 @@ const Dashboard = () => {
         const id = p.projectId || p.ProjectId;
         if (!id) return null;
         try {
-          const dash = await projectService.getProjectDashboard(id);
-          // ProjectDashboardDto: totalTasks, completedTasks, pendingTasks, totalMilestones, completedMilestones
-          // Compute inProgress = total - completed - pending so the kanban "In Progress" column is non-zero.
+          const [dash, mileRes] = await Promise.all([
+            projectService.getProjectDashboard(id),
+            api.get(`/milestones/project/${id}`).catch(() => ({ data: [] })),
+          ]);
           const inProgress = Math.max(0, (dash?.totalTasks ?? 0) - (dash?.completedTasks ?? 0) - (dash?.pendingTasks ?? 0));
+          const rawMiles = mileRes.data;
+          const milestones = (Array.isArray(rawMiles) ? rawMiles : []).map((m: any) => ({
+            milestoneId: String(m.milestoneId ?? m.MilestoneId ?? ''),
+            title: m.title ?? m.Title ?? '',
+            status: m.status ?? m.Status ?? 'Pending',
+            deadline: m.deadline ?? m.Deadline ?? '',
+          }));
           return {
-            id,
+            id: String(id),
             agg: {
-              totalTasks: dash?.totalTasks ?? 0,
-              completedTasks: dash?.completedTasks ?? 0,
-              pendingTasks: dash?.pendingTasks ?? 0,
+              totalTasks: dash?.totalTasks ?? dash?.TotalTasks ?? 0,
+              completedTasks: dash?.completedTasks ?? dash?.CompletedTasks ?? 0,
+              pendingTasks: dash?.pendingTasks ?? dash?.PendingTasks ?? 0,
               inProgressTasks: inProgress,
+              milestones,
             } as ProjectAggregates,
           };
         } catch {
@@ -219,6 +227,8 @@ const Dashboard = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6">
+        {userRole?.toLowerCase() !== 'admin' && userRole?.toLowerCase() !== 'qa' && <DashboardTimesheetCard />}
+
         {/* METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">

@@ -52,6 +52,9 @@ namespace MANAGIX.Services
                     : p.ProjectModel.Methodology)
                 .ToDictionary(g => g.Key, g => g.Count());
 
+            var allUsers = (await _unitOfWork.Users.GetAllAsync()).ToList();
+            var pending = await _unitOfWork.UserRequests.GetPendingRequestsAsync();
+
             return new SystemHealthDto
             {
                 ActiveProjects = active.Count,
@@ -59,6 +62,9 @@ namespace MANAGIX.Services
                 AvgUtilization = avgUtil,
                 OverloadedCount = overloaded.Count,
                 BlockedTaskCount = blocked,
+                TotalUsers = allUsers.Count,
+                PendingUsers = pending.Count(),
+                ActiveUsers = allUsers.Count,
                 TopOverloaded = overloaded
                     .OrderByDescending(w => w.UtilizationPct)
                     .Take(5)

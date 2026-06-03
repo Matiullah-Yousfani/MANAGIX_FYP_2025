@@ -30,10 +30,20 @@ builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IAiAllocationService, AiAllocationService>();
 builder.Services.AddScoped<IAiProjectPlannerService, AiProjectPlannerService>();
 // PHASE 3 / 4 / 5: Workload, meetings, notifications, monitoring services.
+builder.Services.AddScoped<IManagerScopeService, ManagerScopeService>();
 builder.Services.AddScoped<IWorkloadService, WorkloadService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<IMonitoringService, MonitoringService>();
+builder.Services.AddScoped<IProjectClosureReportService, ProjectClosureReportService>();
+builder.Services.AddScoped<IProjectTimelineService, ProjectTimelineService>();
+builder.Services.AddScoped<IOvertimeService, OvertimeService>();
+builder.Services.AddScoped<IDailyTimesheetService, DailyTimesheetService>();
+builder.Services.AddScoped<ITimesheetService, TimesheetService>();
+builder.Services.AddScoped<IAdminPayrollSettingsService, AdminPayrollSettingsService>();
+builder.Services.AddScoped<IEmployeeInsightsService, EmployeeInsightsService>();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddScoped<IEmployeePerformanceService, EmployeePerformanceService>();
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -48,8 +58,15 @@ builder.Services.AddSingleton<JwtService>(sp =>
 });
 
 builder.Services.AddScoped<AUTH_SERVICE>();
+builder.Services.AddScoped<DatabaseBootstrapService>();
 
-// change started here
 var host = builder.Build();
+
+using (var scope = host.Services.CreateScope())
+{
+    var bootstrap = scope.ServiceProvider.GetRequiredService<DatabaseBootstrapService>();
+    await bootstrap.EnsureSeedAsync();
+}
+
 host.Run();
 // change ended here

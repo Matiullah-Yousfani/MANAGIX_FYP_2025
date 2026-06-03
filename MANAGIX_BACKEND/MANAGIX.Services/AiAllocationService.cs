@@ -2,6 +2,7 @@ using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
 using MANAGIX.Services.Helpers;
+using MANAGIX.Utility;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -26,11 +27,8 @@ namespace MANAGIX.Services
     //      RecentApprovalRate so the LLM AND the post-pass scoring have proper signals.
     //   2) SuggestEmployeesAsync filters out employees already on a *different* active project
     //      unless the manager explicitly opts in (`includeAlreadyAssigned`).
-    //   3) SuggestTaskAllocationAsync runs a deterministic post-pass via AllocationScoring:
-    //        – If LLM returned an out-of-team UUID OR confidence < 60, the score wins.
-    //        – After all assignments, members projected over 120% utilisation get rebalanced:
-    //          their lowest-priority extra task moves to the next best ranked member.
-    //        – The DTO now exposes the score breakdown so the manager understands the choice.
+    //   3) SuggestTaskAllocationAsync is fully deterministic (Team Hub + Kanban share one path):
+    //        AllocationScoring on skills + capacity + approval; same team pool; no Python LLM.
     //   4) The old "fallback to teamMembers[0]" branch is gone — it caused non-deterministic
     //      assignments and masked bad LLM output.
     // ─────────────────────────────────────────────────────────────────────────────
@@ -61,17 +59,190 @@ namespace MANAGIX.Services
         // PHASE 1: Enriched employee dossier sent to the LLM.
         // Adds CurrentLoadHours / WeeklyCapacityHours / RecentApprovalRate.
         // ────────────────────────────────────────────────────────────────────
+        private static List<string> ParseProfileSkills(string? raw) =>
+            string.IsNullOrWhiteSpace(raw)
+                ? new List<string>()
+                : raw.Split(',', ';')
+                    .Select(s => s.Trim())
+                    .Where(s => s.Length > 0)
+                    .ToList();
+
+        private async Task<bool> HasResumeUploadedAsync(Guid userId)
+        {
+            var profile = await _unitOfWork.UserProfiles.GetByUserIdAsync(userId);
+            if (!string.IsNullOrWhiteSpace(profile?.ResumeFilePath))
+                return true;
+            var educations = await _unitOfWork.ResumeEducations.GetByUserIdAsync(userId);
+            return educations.Count > 0;
+        }
+
+        private async Task<bool> HasListedSkillsAsync(Guid userId)
+        {
+            var resumeSkills = await _unitOfWork.ResumeSkills.GetByUserIdAsync(userId);
+            if (resumeSkills.Count > 0)
+                return true;
+            var profile = await _unitOfWork.UserProfiles.GetByUserIdAsync(userId);
+            return ParseProfileSkills(profile?.Skills).Count > 0;
+        }
+
+        /// <summary>Pool entry: skills and/or résumé data (relaxed for FYP test data).</summary>
+        private async Task<bool> IsEligibleForTeamPoolAsync(Guid userId) =>
+            await HasListedSkillsAsync(userId) || await HasResumeUploadedAsync(userId);
+
+        private async Task<HashSet<Guid>> GetManagerAndAdminIdsAsync()
+        {
+            var mgr = await _unitOfWork.Users.GetUserIdsByRoleNameAsync("Manager");
+            var adm = await _unitOfWork.Users.GetUserIdsByRoleNameAsync("Admin");
+            return new HashSet<Guid>(mgr.Concat(adm));
+        }
+
+        private async Task<List<EmployeeInfoDto>> GetAvailablePoolByRoleAsync(
+            string canonicalRole,
+            Guid? projectId,
+            bool filterBusy = true,
+            bool requireSkillsOrResume = false)
+        {
+            var roleIds = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(canonicalRole);
+            HashSet<Guid> busy = new();
+            if (filterBusy)
+            {
+                busy = projectId.HasValue && projectId.Value != Guid.Empty
+                    ? await _unitOfWork.TeamEmployees.GetActivelyAssignedEmployeeIdsAsync(projectId)
+                    : await _unitOfWork.TeamEmployees.GetActivelyAssignedEmployeeIdsAsync(null);
+            }
+
+            var excluded = await GetManagerAndAdminIdsAsync();
+            var list = new List<EmployeeInfoDto>();
+
+            foreach (var id in roleIds)
+            {
+                if (excluded.Contains(id))
+                    continue;
+                if (filterBusy && busy.Contains(id))
+                    continue;
+                if (requireSkillsOrResume && !await IsEligibleForTeamPoolAsync(id))
+                    continue;
+
+                var user = await _unitOfWork.Users.GetByIdAsync(id);
+                if (user != null)
+                    list.Add(await GetEmployeeInfoAsync(user.UserId, user.FullName));
+            }
+
+            return list;
+        }
+
+        private async Task<(List<EmployeeInfoDto> Employees, List<EmployeeInfoDto> Qas)> GetAvailableTeamPoolsAsync(Guid projectId) =>
+            (
+                await GetAvailablePoolByRoleAsync(AppRoles.Employee, projectId, filterBusy: false, requireSkillsOrResume: false),
+                await GetAvailablePoolByRoleAsync(AppRoles.QualityAssurance, projectId, filterBusy: false, requireSkillsOrResume: false)
+            );
+
+        /// <summary>2–4 developers based on scope signals; 1 QA is always added separately.</summary>
+        private static int SuggestedDeveloperCount(string? title, string? projectDescription)
+        {
+            var text = $"{title ?? ""} {projectDescription ?? ""}".Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(text))
+                return 2;
+
+            var score = 0;
+            if (text.Length > 350) score++;
+            if (text.Length > 700) score++;
+
+            string[] complex =
+            {
+                "enterprise", "microservice", "distributed", "machine learning", "blockchain",
+                "multi-tenant", "scalable", "high availability", "real-time", "integration",
+                "legacy", "migration", "security audit", "compliance", "full stack", "platform",
+            };
+            string[] simple =
+            {
+                "landing page", "portfolio", "blog", "crud", "simple", "basic", "small",
+                "prototype", "mvp", "static", "brochure", "minor fix", "maintenance",
+            };
+
+            foreach (var w in complex)
+                if (text.Contains(w, StringComparison.Ordinal))
+                    score += 2;
+            foreach (var w in simple)
+                if (text.Contains(w, StringComparison.Ordinal))
+                    score -= 2;
+
+            if (score <= 0) return 2;
+            if (score <= 3) return 3;
+            return 4;
+        }
+
+        private static List<string> ExtractProjectKeywords(string? title, string? description)
+        {
+            var text = $"{title ?? ""} {description ?? ""}".ToLowerInvariant();
+            var words = text.Split(
+                new[] { ' ', '\n', '\r', '\t', ',', '.', ';', ':', '/', '-', '_', '(', ')' },
+                StringSplitOptions.RemoveEmptyEntries);
+            return words
+                .Where(w => w.Length >= 3 && !IsStopWord(w))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(48)
+                .ToList();
+        }
+
+        private static bool IsStopWord(string w) =>
+            w is "the" or "and" or "for" or "with" or "from" or "this" or "that" or "are" or "was" or "will" or "have" or "has" or "not" or "but" or "can" or "all" or "any" or "our" or "your" or "project";
+
+        private static double ScoreMemberForProject(IReadOnlyList<string> projectKeywords, EmployeeInfoDto m)
+        {
+            var skill = AllocationScoring.SkillMatchScore(projectKeywords, m.Skills);
+            var cap = AllocationScoring.CapacityScore(m.CurrentLoadHours, m.WeeklyCapacityHours);
+            var appr = Math.Clamp(m.RecentApprovalRate, 0, 1);
+            return AllocationScoring.Composite(skill, cap, appr);
+        }
+
+        private static double ScoreTeamOption(IReadOnlyList<string> projectKeywords, EmployeeInfoDto qa, IReadOnlyList<EmployeeInfoDto> devs)
+        {
+            if (devs.Count == 0) return ScoreMemberForProject(projectKeywords, qa);
+            return (ScoreMemberForProject(projectKeywords, qa) + devs.Average(d => ScoreMemberForProject(projectKeywords, d))) / 2.0;
+        }
+
+        private static void ApplyRecommendedByFitScore(List<TeamOptionDto> options)
+        {
+            if (options.Count == 0) return;
+            var winnerIdx = 0;
+            for (var i = 1; i < options.Count; i++)
+            {
+                if (options[i].FitScore > options[winnerIdx].FitScore)
+                    winnerIdx = i;
+            }
+            for (var i = 0; i < options.Count; i++)
+                options[i].IsRecommended = i == winnerIdx;
+        }
+
+        private static List<TeamPoolMemberDto> ToPoolDtos(IEnumerable<EmployeeInfoDto> list) =>
+            list.Select(e => new TeamPoolMemberDto
+            {
+                UserId = e.UserId.ToString(),
+                Name = e.Name,
+                Skills = e.Skills.Take(12).ToList(),
+            }).ToList();
+
         private async Task<EmployeeInfoDto> GetEmployeeInfoAsync(Guid userId, string name)
         {
             var skills = await _unitOfWork.ResumeSkills.GetByUserIdAsync(userId);
             var experiences = await _unitOfWork.ResumeExperiences.GetByUserIdAsync(userId);
             var tasks = await _unitOfWork.Tasks.GetByEmployeeIdAsync(userId);
             var profile = await _unitOfWork.UserProfiles.GetByUserIdAsync(userId);
+            var mergedSkills = skills.Select(s => s.SkillName)
+                .Concat(ParseProfileSkills(profile?.Skills))
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             // Sum the estimated hours of active tasks (Status != "Done"). Null hours treated as 0.
             decimal currentLoadHours = tasks
-                .Where(t => t.Status != "Done")
-                .Sum(t => t.EstimatedHours ?? 0m);
+                .Where(t =>
+                {
+                    var n = TaskWorkflow.Normalize(t.Status);
+                    return n == TaskWorkflow.Todo || n == TaskWorkflow.InProgress;
+                })
+                .Sum(t => t.EstimatedHours ?? 4m);
 
             // Capacity defaults to 40h/week — UserProfile fallback when missing.
             decimal capacity = profile?.WeeklyCapacityHours ?? 40m;
@@ -82,7 +253,7 @@ namespace MANAGIX.Services
             {
                 UserId = userId,
                 Name = name,
-                Skills = skills.Select(s => s.SkillName).ToList(),
+                Skills = mergedSkills,
                 Experience = experiences.Select(e => new ExperienceInfoDto
                 {
                     Title = e.Title,
@@ -92,23 +263,29 @@ namespace MANAGIX.Services
                 ActiveTasks = tasks.Count(t => t.Status == "Todo" || t.Status == "InProgress"),
                 CurrentLoadHours = currentLoadHours,
                 WeeklyCapacityHours = capacity,
-                RecentApprovalRate = approvalRate
+                RecentApprovalRate = approvalRate,
+                EmployeeLevel = profile?.EmployeeLevel ?? EmployeeCareerService.ComputeLevel(profile?.CompletedProjectsCount ?? 0),
+                HourlyRate = profile?.HourlyRate,
+                CompletedProjectsCount = profile?.CompletedProjectsCount ?? 0,
             };
         }
 
-        private async Task<List<EmployeeInfoDto>> GetAllEmployeesInfoAsync()
-        {
-            var users = await _unitOfWork.Users.GetAllAsync();
-            var employeeList = new List<EmployeeInfoDto>();
+        private async Task<List<EmployeeInfoDto>> GetAllEmployeesInfoAsync(Guid? projectId = null) =>
+            await GetAvailablePoolByRoleAsync(
+                AppRoles.Employee,
+                projectId,
+                filterBusy: true,
+                requireSkillsOrResume: true);
 
-            foreach (var user in users)
-            {
-                var info = await GetEmployeeInfoAsync(user.UserId, user.FullName);
-                employeeList.Add(info);
-            }
+        private async Task<List<EmployeeInfoDto>> GetAllQaInfoAsync(Guid projectId) =>
+            await GetAvailablePoolByRoleAsync(
+                AppRoles.QualityAssurance,
+                projectId,
+                filterBusy: true,
+                requireSkillsOrResume: true);
 
-            return employeeList;
-        }
+        private async Task<bool> IsEligibleForAiSuggestionsAsync(Guid userId) =>
+            await IsEligibleForTeamPoolAsync(userId);
 
         /// <summary>Users on the team linked to this project (for scoped AI suggestions).</summary>
         private async Task<List<EmployeeInfoDto>> GetProjectTeamEmployeesInfoAsync(Guid projectId)
@@ -119,14 +296,51 @@ namespace MANAGIX.Services
 
             var teamEmployees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(projectTeam.TeamId);
             var list = new List<EmployeeInfoDto>();
+            var employeeRoleIds = (await _unitOfWork.Users.GetUserIdsByRoleNameAsync("Employee")).ToHashSet();
+
             foreach (var te in teamEmployees)
             {
+                if (!employeeRoleIds.Contains(te.EmployeeId)) continue;
                 var user = await _unitOfWork.Users.GetByIdAsync(te.EmployeeId);
                 if (user != null)
                     list.Add(await GetEmployeeInfoAsync(user.UserId, user.FullName));
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Same employee pool for Team Hub bulk suggest and Kanban per-task suggest:
+        /// project team, Employee role, résumé/skills eligibility — no extra filters per entry point.
+        /// </summary>
+        private async Task<List<EmployeeInfoDto>> GetTaskAllocationTeamMembersAsync(Guid projectId)
+        {
+            var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(projectId);
+            if (projectTeam == null)
+                return new List<EmployeeInfoDto>();
+
+            var teamEmployees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(projectTeam.TeamId);
+            var employeeRoleIds = (await _unitOfWork.Users.GetUserIdsByRoleNameAsync("Employee")).ToHashSet();
+            var list = new List<EmployeeInfoDto>();
+
+            foreach (var te in teamEmployees)
+            {
+                if (!employeeRoleIds.Contains(te.EmployeeId)) continue;
+                if (!await IsEligibleForAiSuggestionsAsync(te.EmployeeId)) continue;
+                var user = await _unitOfWork.Users.GetByIdAsync(te.EmployeeId);
+                if (user != null)
+                    list.Add(await GetEmployeeInfoAsync(user.UserId, user.FullName));
+            }
+
+            return list.OrderBy(m => m.UserId).ToList();
+        }
+
+        public async Task<string?> ResolveProjectDescriptionAsync(Guid projectId)
+        {
+            var project = await _unitOfWork.Projects.GetByIdAsync(projectId);
+            if (project == null) return null;
+            var text = $"{project.Title}. {project.Description ?? ""}".Trim();
+            return string.IsNullOrWhiteSpace(text) ? project.Title : text;
         }
 
         // ── Feature 1: Suggest Best Team ──
@@ -136,11 +350,14 @@ namespace MANAGIX.Services
             if (project == null)
                 throw new Exception($"Project with ID {projectId} not found.");
 
-            // PHASE 1: Pool is everyone NOT already on another active project. Single-active rule
-            // means a project can only recruit free employees + its own current members.
-            var allEmployees = await GetAllEmployeesInfoAsync();
-            var busy = await _unitOfWork.TeamEmployees.GetActivelyAssignedEmployeeIdsAsync(projectId);
-            var employees = allEmployees.Where(e => !busy.Contains(e.UserId)).ToList();
+            var employees = await GetAllEmployeesInfoAsync(projectId);
+            var qas = await GetAllQaInfoAsync(projectId);
+            var pool = employees.Concat(qas).ToList();
+
+            if (employees.Count == 0 || qas.Count == 0)
+                throw new InvalidOperationException(
+                    $"No employees or QA in the pool ({employees.Count} employees, {qas.Count} QA). " +
+                    "Ensure users have the Employee or Quality Assurance role (not the duplicate 'QA' role row).");
 
             var payload = new
             {
@@ -150,7 +367,7 @@ namespace MANAGIX.Services
                     title = project.Title,
                     description = project.Description ?? string.Empty
                 },
-                employees = employees
+                employees = pool
             };
 
             var json = JsonSerializer.Serialize(payload, _jsonOptions);
@@ -166,16 +383,16 @@ namespace MANAGIX.Services
 
                 if (result?.Team != null)
                 {
-                    var employeeLookup = employees.ToDictionary(e => e.UserId.ToString(), e => e.Name);
-                    var empByName = employees.ToDictionary(e => e.Name.ToLower(), e => e.UserId.ToString());
+                    var employeeLookup = pool.ToDictionary(e => e.UserId.ToString(), e => e.Name);
+                    var empByName = pool.ToDictionary(e => e.Name.ToLower(), e => e.UserId.ToString());
                     foreach (var member in result.Team)
                     {
                         // Fix userId if LLM returned non-UUID
                         if (!Guid.TryParse(member.UserId, out _))
                         {
                             var numStr = new string(member.UserId.Where(char.IsDigit).ToArray());
-                            if (int.TryParse(numStr, out int idx) && idx >= 1 && idx <= employees.Count)
-                                member.UserId = employees[idx - 1].UserId.ToString();
+                            if (int.TryParse(numStr, out int idx) && idx >= 1 && idx <= pool.Count)
+                                member.UserId = pool[idx - 1].UserId.ToString();
                             else if (empByName.TryGetValue(member.UserId.ToLower(), out var realId))
                                 member.UserId = realId;
                         }
@@ -184,9 +401,8 @@ namespace MANAGIX.Services
                             member.Name = name;
                     }
 
-                    // PHASE 1: Hard constraint — drop any LLM result outside the eligible pool.
                     var allowed = new HashSet<string>(
-                        employees.Select(e => e.UserId.ToString()),
+                        pool.Select(e => e.UserId.ToString()),
                         StringComparer.OrdinalIgnoreCase);
                     result.Team = result.Team
                         .Where(t => !string.IsNullOrWhiteSpace(t.UserId) && allowed.Contains(t.UserId))
@@ -205,6 +421,154 @@ namespace MANAGIX.Services
             }
         }
 
+        private static TeamOptionDto BuildTeamOption(
+            string label,
+            string suggestedTeamName,
+            EmployeeInfoDto qa,
+            IReadOnlyList<EmployeeInfoDto> devs,
+            string projectTitle,
+            double fitScore)
+        {
+            var team = new List<TeamSuggestionDto>
+            {
+                new()
+                {
+                    UserId = qa.UserId.ToString(),
+                    Name = qa.Name,
+                    Role = "QA",
+                    Reason = "Dedicated QA for quality gate (one per team).",
+                },
+            };
+            foreach (var e in devs)
+            {
+                team.Add(new TeamSuggestionDto
+                {
+                    UserId = e.UserId.ToString(),
+                    Name = e.Name,
+                    Role = "Developer",
+                    Reason = $"Matched to {projectTitle} based on skills: {string.Join(", ", e.Skills.Take(5))}.",
+                });
+            }
+
+            return new TeamOptionDto
+            {
+                Label = label,
+                SuggestedTeamName = suggestedTeamName,
+                Team = team,
+                FitScore = Math.Round(fitScore, 4),
+            };
+        }
+
+        /// <summary>Up to 3 deterministic team options: 1 QA + N developers (stable across regenerate).</summary>
+        public async Task<SuggestTeamOptionsResponseDto> SuggestTeamOptionsAsync(Guid projectId)
+        {
+            var project = await _unitOfWork.Projects.GetByIdAsync(projectId)
+                ?? throw new Exception($"Project with ID {projectId} not found.");
+
+            var (employees, qas) = await GetAvailableTeamPoolsAsync(projectId);
+
+            if (employees.Count == 0 || qas.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot suggest teams: {employees.Count} employee(s) and {qas.Count} Quality Assurance user(s) found. " +
+                    "Assign the Quality Assurance role (not a duplicate 'QA' role) and at least one Employee.");
+            }
+
+            var projectKeywords = ExtractProjectKeywords(project.Title, project.Description);
+            var devCount = Math.Min(SuggestedDeveloperCount(project.Title, project.Description), employees.Count);
+            devCount = Math.Max(1, devCount);
+
+            var rankedEmps = employees
+                .Select(e => (Member: e, Score: ScoreMemberForProject(projectKeywords, e)))
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.Member.UserId)
+                .Select(x => x.Member)
+                .ToList();
+
+            var rankedQas = qas
+                .Select(q => (Member: q, Score: ScoreMemberForProject(projectKeywords, q)))
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.Member.UserId)
+                .Select(x => x.Member)
+                .ToList();
+
+            var options = new List<TeamOptionDto>();
+            var usedSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var shortTitle = project.Title.Length > 24 ? project.Title[..24] + "…" : project.Title;
+
+            var variantPlans = new (int QaOffset, int EmpOffset)[]
+            {
+                (0, 0),
+                (1, 1),
+                (0, devCount),
+            };
+
+            foreach (var (qaOffset, empOffset) in variantPlans)
+            {
+                if (options.Count >= 3) break;
+
+                var qa = rankedQas[qaOffset % rankedQas.Count];
+                var devs = new List<EmployeeInfoDto>();
+                for (int d = 0; d < devCount; d++)
+                    devs.Add(rankedEmps[(empOffset + d) % rankedEmps.Count]);
+
+                var sig = string.Join("|", devs.Select(x => x.UserId).Append(qa.UserId).OrderBy(x => x));
+                if (!usedSignatures.Add(sig))
+                    continue;
+
+                var fit = ScoreTeamOption(projectKeywords, qa, devs);
+                var isFirst = options.Count == 0;
+                options.Add(BuildTeamOption(
+                    isFirst ? "Best fit" : $"Alternative {options.Count}",
+                    isFirst ? $"{shortTitle} Core Team" : $"{shortTitle} Squad {options.Count + 1}",
+                    qa,
+                    devs,
+                    project.Title,
+                    fit));
+            }
+
+            if (options.Count == 0)
+            {
+                var qa = rankedQas[0];
+                var devs = rankedEmps.Take(devCount).ToList();
+                options.Add(BuildTeamOption(
+                    "Best fit",
+                    $"{project.Title} Core Team",
+                    qa,
+                    devs,
+                    project.Title,
+                    ScoreTeamOption(projectKeywords, qa, devs)));
+            }
+
+            ApplyRecommendedByFitScore(options);
+            return new SuggestTeamOptionsResponseDto
+            {
+                Options = options,
+                SuggestedDeveloperCount = devCount,
+                AvailableQa = ToPoolDtos(rankedQas),
+                AvailableEmployees = ToPoolDtos(rankedEmps),
+            };
+        }
+
+        private static TeamOptionDto BuildOptionFromIds(
+            string label,
+            IEnumerable<string> userIds,
+            SuggestEmployeesResponseDto ranked)
+        {
+            var lookup = ranked.RecommendedEmployees.ToDictionary(r => r.UserId, r => r);
+            var team = userIds
+                .Where(lookup.ContainsKey)
+                .Select(id => new TeamSuggestionDto
+                {
+                    UserId = id,
+                    Name = lookup[id].Name,
+                    Role = "Member",
+                    Reason = lookup[id].Reason,
+                })
+                .ToList();
+            return new TeamOptionDto { Label = label, Team = team };
+        }
+
         // ── Feature 2: Suggest Employees ──
         // PHASE 1: Adds cross-project filter when no projectId is given (company-wide search).
         public async Task<SuggestEmployeesResponseDto> SuggestEmployeesAsync(string projectDescription, Guid? projectId = null, bool includeAlreadyAssigned = false)
@@ -212,17 +576,20 @@ namespace MANAGIX.Services
             List<EmployeeInfoDto> employees;
             if (projectId.HasValue && projectId.Value != Guid.Empty)
             {
-                // Scoped: only the project's existing team members. (No cross-project filter needed —
-                // by definition they're already on this project.)
-                employees = await GetProjectTeamEmployeesInfoAsync(projectId.Value);
+                var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(projectId.Value);
+                if (projectTeam != null)
+                    employees = await GetProjectTeamEmployeesInfoAsync(projectId.Value);
+                else
+                    employees = await GetAllEmployeesInfoAsync(projectId.Value);
+
                 if (employees.Count == 0)
                     return new SuggestEmployeesResponseDto();
             }
             else
             {
                 // Company-wide: filter out anyone busy on another active project (unless caller opted in).
-                employees = await GetAllEmployeesInfoAsync();
-                if (!includeAlreadyAssigned)
+                employees = await GetAllEmployeesInfoAsync(projectId);
+                if (!includeAlreadyAssigned && !projectId.HasValue)
                 {
                     var busyIds = await _unitOfWork.TeamEmployees.GetActivelyAssignedEmployeeIdsAsync(excludeProjectId: null);
                     employees = employees.Where(e => !busyIds.Contains(e.UserId)).ToList();
@@ -290,81 +657,136 @@ namespace MANAGIX.Services
 
         // ── Feature 3: Suggest Task Allocation ──
         // PHASE 1: Deterministic post-pass (AllocationScoring) replaces the silent fallback.
-        public async Task<SuggestTaskAllocationResponseDto> SuggestTaskAllocationAsync(Guid projectId)
+        public async Task<SuggestTaskAllocationResponseDto> SuggestTaskAllocationAsync(
+            Guid projectId,
+            Guid? singleTaskId = null)
         {
-            var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(projectId);
-            if (projectTeam == null)
-                return new SuggestTaskAllocationResponseDto();
-
-            var teamEmployees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(projectTeam.TeamId);
-            var teamMembers = new List<EmployeeInfoDto>();
-
-            foreach (var te in teamEmployees)
-            {
-                var user = await _unitOfWork.Users.GetByIdAsync(te.EmployeeId);
-                if (user != null)
-                {
-                    var info = await GetEmployeeInfoAsync(user.UserId, user.FullName);
-                    teamMembers.Add(info);
-                }
-            }
-
+            var teamMembers = await GetTaskAllocationTeamMembersAsync(projectId);
             if (teamMembers.Count == 0)
                 return new SuggestTaskAllocationResponseDto();
 
             var allTasks = await _unitOfWork.Tasks.GetByProjectIdAsync(projectId);
-            var pendingTasks = allTasks.Where(t => t.Status != "Done").ToList();
-
-            if (pendingTasks.Count == 0)
-                return new SuggestTaskAllocationResponseDto();
-
-            // PHASE 1: Build the enriched payload — title/description plus skill tags + effort + priority.
-            var taskDtos = pendingTasks.Select(t => new
+            List<TaskItem> pendingTasks;
+            if (singleTaskId.HasValue && singleTaskId.Value != Guid.Empty)
             {
-                taskId = t.TaskId.ToString(),
-                title = t.Title,
-                description = t.Description ?? string.Empty,
-                status = t.Status,
-                priority = t.Priority ?? "Medium",
-                estimatedHours = t.EstimatedHours ?? 0m,
-                requiredSkills = ParseSkills(t.RequiredSkillsJson)
-            }).ToList();
-
-            var payload = new
-            {
-                tasks = taskDtos,
-                teamMembers = teamMembers
-            };
-
-            var json = JsonSerializer.Serialize(payload, _jsonOptions);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            SuggestTaskAllocationResponseDto? result;
-            try
-            {
-                var response = await _httpClient.PostAsync($"{_aiServiceUrl}/suggest-task-allocation", content);
-                response.EnsureSuccessStatusCode();
-
-                var responseBody = await response.Content.ReadAsStringAsync();
-                result = JsonSerializer.Deserialize<SuggestTaskAllocationResponseDto>(responseBody, _jsonOptions);
+                var one = allTasks.FirstOrDefault(t => t.TaskId == singleTaskId.Value);
+                if (one == null || !TaskIsOpen(one))
+                    return new SuggestTaskAllocationResponseDto();
+                pendingTasks = new List<TaskItem> { one };
             }
-            catch (TaskCanceledException)
+            else
             {
-                throw new TaskCanceledException("AI service request timed out. Please try again.");
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new HttpRequestException($"Cannot connect to AI allocation service at {_aiServiceUrl}. Is it running? ({ex.Message})", ex);
+                pendingTasks = allTasks.Where(TaskNeedsAssignee).ToList();
+                if (pendingTasks.Count == 0)
+                    return new SuggestTaskAllocationResponseDto();
             }
 
-            result ??= new SuggestTaskAllocationResponseDto();
+            return BuildDeterministicTaskSuggestions(pendingTasks, teamMembers);
+        }
 
-            // ────────────────────────────────────────────────────────────────
-            // PHASE 1: DETERMINISTIC POST-PASS
-            // ────────────────────────────────────────────────────────────────
-            ApplyDeterministicPostPass(result, pendingTasks, teamMembers);
+        /// <summary>
+        /// Same merit scoring for Team Hub bulk and Kanban per-task: skills + capacity + approval per task,
+        /// using current DB workload only (no cross-task load stacking that would change winners).
+        /// </summary>
+        private SuggestTaskAllocationResponseDto BuildDeterministicTaskSuggestions(
+            List<TaskItem> pendingTasks,
+            List<EmployeeInfoDto> teamMembers)
+        {
+            var result = new SuggestTaskAllocationResponseDto();
+            var capacityByMember = teamMembers.ToDictionary(m => m.UserId, m => m.WeeklyCapacityHours);
+            var approvalByMember = teamMembers.ToDictionary(m => m.UserId, m => m.RecentApprovalRate);
+            var baselineHours = teamMembers.ToDictionary(m => m.UserId, m => m.CurrentLoadHours);
+
+            foreach (var task in pendingTasks.OrderBy(t => t.TaskId))
+            {
+                var requiredSkills = RefineRequiredSkillsForTeam(RequiredSkillsForTask(task), teamMembers);
+                var ranked = AllocationScoring.RankMembers(
+                    requiredSkills,
+                    teamMembers,
+                    baselineHours,
+                    capacityByMember,
+                    approvalByMember);
+
+                var top = ranked.First();
+                var assignment = new TaskAssignmentDto
+                {
+                    TaskId = task.TaskId.ToString(),
+                    TaskTitle = task.Title,
+                    UserId = top.Member.UserId.ToString(),
+                    EmployeeName = top.Member.Name,
+                    ScoreSkill = Math.Round(top.SkillScore, 3),
+                    ScoreCapacity = Math.Round(top.CapacityScore, 3),
+                    ScoreApproval = Math.Round(top.ApprovalScore, 3),
+                    ScoreTotal = Math.Round(top.Score, 3),
+                    Confidence = (int)Math.Round(top.Score * 100),
+                    OverrodeLlm = false,
+                };
+
+                if (top.Member.Skills.Count == 0)
+                {
+                    assignment.Confidence = 0;
+                    assignment.Reason =
+                        "No skills on file — upload résumé and add skills for a confidence score.";
+                }
+                else
+                {
+                    assignment.Reason = BuildStableAssignmentReason(top, task, requiredSkills);
+                }
+
+                result.TaskAssignments.Add(assignment);
+            }
 
             return result;
+        }
+
+        private static List<string> RequiredSkillsForTask(TaskItem task)
+        {
+            var fromJson = ParseSkillsStatic(task.RequiredSkillsJson);
+            if (fromJson.Count > 0)
+                return fromJson;
+
+            // Title-only keywords avoid flooding the scorer with description stop-words.
+            return ExtractProjectKeywords(task.Title, null);
+        }
+
+        /// <summary>When inferring from title, keep tokens that at least one teammate's skills can match.</summary>
+        private static List<string> RefineRequiredSkillsForTeam(
+            List<string> requiredSkills,
+            List<EmployeeInfoDto> teamMembers)
+        {
+            if (requiredSkills.Count == 0 || teamMembers.Count == 0)
+                return requiredSkills;
+
+            var teamSkills = teamMembers
+                .SelectMany(m => m.Skills)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToList();
+
+            if (teamSkills.Count == 0)
+                return requiredSkills;
+
+            var matchedToTeam = requiredSkills
+                .Where(k => teamSkills.Any(s => AllocationScoring.SkillTokensMatch(k, s)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return matchedToTeam.Count > 0 ? matchedToTeam : requiredSkills;
+        }
+
+        private static List<string> ParseSkillsStatic(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new List<string>();
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<string>>(json);
+                return parsed?.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim()).ToList()
+                    ?? new List<string>();
+            }
+            catch
+            {
+                return json.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .ToList();
+            }
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -379,10 +801,34 @@ namespace MANAGIX.Services
         //      pull their *lowest-priority* extra task and reassign it to the next best
         //      ranked member that's still under capacity.
         // ────────────────────────────────────────────────────────────────────
+        private static string BuildStableAssignmentReason(
+            (EmployeeInfoDto Member, double Score, double SkillScore, double CapacityScore, double ApprovalScore) pick,
+            TaskItem task,
+            IReadOnlyList<string> requiredSkills)
+        {
+            var matched = pick.Member.Skills
+                .Where(h => requiredSkills.Any(r => AllocationScoring.SkillTokensMatch(r, h)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(4)
+                .ToList();
+
+            var pct = (int)Math.Round(Math.Clamp(pick.Score, 0, 1) * 100);
+            var skillPct = (int)Math.Round(Math.Clamp(pick.SkillScore, 0, 1) * 100);
+            if (matched.Count > 0)
+            {
+                return $"Best match for \"{task.Title}\": {pick.Member.Name} — skills ({string.Join(", ", matched)}), " +
+                       $"capacity, approval rate (skill {skillPct}%, overall {pct}%).";
+            }
+
+            return $"Best match for \"{task.Title}\": {pick.Member.Name} — highest merit score " +
+                   $"(skill {skillPct}%, capacity, performance — overall {pct}%).";
+        }
+
         private void ApplyDeterministicPostPass(
             SuggestTaskAllocationResponseDto result,
             List<TaskItem> pendingTasks,
-            List<EmployeeInfoDto> teamMembers)
+            List<EmployeeInfoDto> teamMembers,
+            bool forceDeterministicTop = false)
         {
             if (result.TaskAssignments == null) result.TaskAssignments = new List<TaskAssignmentDto>();
 
@@ -451,44 +897,50 @@ namespace MANAGIX.Services
                     capacityByMember,
                     approvalByMember);
 
-                bool override_ = false;
-                Guid finalUserId;
-                double finalScore, finalSkill, finalCap, finalAppr;
+                var top = ranked.First();
+                Guid finalUserId = top.Member.UserId;
+                double finalScore = top.Score;
+                double finalSkill = top.SkillScore;
+                double finalCap = top.CapacityScore;
+                double finalAppr = top.ApprovalScore;
 
-                // LLM signal is trusted only if: in-team AND confidence ≥ 60.
-                if (llmUserId.HasValue && assignment.Confidence >= 60)
+                if (!forceDeterministicTop &&
+                    llmUserId.HasValue &&
+                    assignment.Confidence >= 60 &&
+                    ranked.Any(r => r.Member.UserId == llmUserId.Value))
                 {
                     finalUserId = llmUserId.Value;
-                    var entry = ranked.FirstOrDefault(r => r.Member.UserId == finalUserId);
+                    var entry = ranked.First(r => r.Member.UserId == finalUserId);
                     finalScore = entry.Score;
                     finalSkill = entry.SkillScore;
                     finalCap = entry.CapacityScore;
                     finalAppr = entry.ApprovalScore;
                 }
-                else
-                {
-                    // Override with the deterministic top scorer.
-                    var top = ranked.First();
-                    finalUserId = top.Member.UserId;
-                    finalScore = top.Score;
-                    finalSkill = top.SkillScore;
-                    finalCap = top.CapacityScore;
-                    finalAppr = top.ApprovalScore;
-                    override_ = true;
-                }
 
-                // Update the dto.
                 var member = memberById[finalUserId];
                 assignment.UserId = finalUserId.ToString();
                 assignment.EmployeeName = member.Name;
                 assignment.TaskTitle = task.Title;
-                assignment.OverrodeLlm = override_;
-                assignment.ScoreSkill = Math.Round(finalSkill, 3);
-                assignment.ScoreCapacity = Math.Round(finalCap, 3);
-                assignment.ScoreApproval = Math.Round(finalAppr, 3);
-                assignment.ScoreTotal = Math.Round(finalScore, 3);
+                assignment.OverrodeLlm = forceDeterministicTop;
+                if (member.Skills.Count == 0)
+                {
+                    assignment.Confidence = 0;
+                    assignment.Reason = "No skills on file — upload résumé and add skills for a confidence score.";
+                }
+                else
+                {
+                    assignment.ScoreSkill = Math.Round(finalSkill, 3);
+                    assignment.ScoreCapacity = Math.Round(finalCap, 3);
+                    assignment.ScoreApproval = Math.Round(finalAppr, 3);
+                    assignment.ScoreTotal = Math.Round(finalScore, 3);
+                    assignment.Confidence = (int)Math.Round(finalScore * 100);
+                    assignment.Reason = forceDeterministicTop
+                        ? BuildStableAssignmentReason(top, task, requiredSkills)
+                        : assignment.Reason;
+                }
 
-                if (override_)
+                if (!forceDeterministicTop && llmUserId.HasValue && assignment.Confidence >= 60 &&
+                    finalUserId != top.Member.UserId)
                 {
                     var note = " Overridden by deterministic skill/capacity scoring.";
                     assignment.Reason = string.IsNullOrWhiteSpace(assignment.Reason)
@@ -558,6 +1010,71 @@ namespace MANAGIX.Services
             }
         }
 
+        public async Task<ApplyTaskAssignmentsResultDto> ApplyTaskAssignmentsAsync(Guid projectId, List<TaskAssignmentDto> assignments)
+        {
+            var result = new ApplyTaskAssignmentsResultDto();
+            if (assignments == null || assignments.Count == 0)
+                return result;
+
+            var projectTeam = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(projectId);
+            if (projectTeam == null)
+            {
+                result.Errors.Add("Assign a team to the project before applying task assignments.");
+                result.Failed = assignments.Count;
+                return result;
+            }
+
+            var teamMemberIds = (await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(projectTeam.TeamId))
+                .Select(te => te.EmployeeId)
+                .ToHashSet();
+
+            foreach (var a in assignments)
+            {
+                if (!Guid.TryParse(a.TaskId, out var taskId))
+                {
+                    result.Errors.Add($"Invalid task id: {a.TaskId}");
+                    result.Failed++;
+                    continue;
+                }
+                if (!Guid.TryParse(a.UserId, out var userId))
+                {
+                    result.Errors.Add($"Invalid user id for task {a.TaskTitle}: {a.UserId}");
+                    result.Failed++;
+                    continue;
+                }
+                if (!teamMemberIds.Contains(userId))
+                {
+                    result.Errors.Add($"{a.EmployeeName} is not on the project team.");
+                    result.Failed++;
+                    continue;
+                }
+
+                var task = await _unitOfWork.Tasks.GetByIdAsync(taskId);
+                if (task == null || task.ProjectId != projectId)
+                {
+                    result.Errors.Add($"Task not found in project: {a.TaskTitle}");
+                    result.Failed++;
+                    continue;
+                }
+
+                if (!TaskNeedsAssignee(task))
+                {
+                    result.Errors.Add($"Task already has an assignee: {a.TaskTitle}");
+                    result.Failed++;
+                    continue;
+                }
+
+                task.AssignedEmployeeId = userId;
+                _unitOfWork.Tasks.Update(task);
+                result.Applied++;
+            }
+
+            if (result.Applied > 0)
+                await _unitOfWork.CompleteAsync();
+
+            return result;
+        }
+
         // PHASE 1: tolerant JSON skill-array parser. Accepts null/empty/legacy non-JSON.
         private static List<string> ParseSkills(string? json)
         {
@@ -572,6 +1089,46 @@ namespace MANAGIX.Services
                 // Legacy free-text fallback: comma-separated.
                 return json.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             }
+        }
+
+        private static bool TaskIsOpen(TaskItem t)
+        {
+            var n = TaskWorkflow.Normalize(t.Status);
+            return n != TaskWorkflow.Approved && n != TaskWorkflow.Done;
+        }
+
+        /// <summary>Open task with no assignee — bulk Team Setup allocation only.</summary>
+        private static bool TaskNeedsAssignee(TaskItem t) =>
+            TaskIsOpen(t) && (!t.AssignedEmployeeId.HasValue || t.AssignedEmployeeId.Value == Guid.Empty);
+
+        public async Task<List<TaskAllocationProjectDto>> GetTaskAllocationProjectsAsync(Guid? managerId)
+        {
+            var projects = managerId.HasValue
+                ? await _unitOfWork.Projects.GetByManagerIdAsync(managerId.Value)
+                : (await _unitOfWork.Projects.GetAllAsync()).ToList();
+
+            var assignments = await _unitOfWork.ProjectTeams.GetAllAssignmentsAsync();
+            var projectIdsWithTeam = assignments.Select(a => a.ProjectId).ToHashSet();
+
+            var result = new List<TaskAllocationProjectDto>();
+            foreach (var p in projects)
+            {
+                if (p.IsClosed) continue;
+                if (!projectIdsWithTeam.Contains(p.ProjectId)) continue;
+
+                var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(p.ProjectId);
+                var unassignedCount = tasks.Count(TaskNeedsAssignee);
+                if (unassignedCount == 0) continue;
+
+                result.Add(new TaskAllocationProjectDto
+                {
+                    ProjectId = p.ProjectId,
+                    Title = p.Title,
+                    UnassignedTaskCount = unassignedCount,
+                });
+            }
+
+            return result.OrderBy(p => p.Title, StringComparer.OrdinalIgnoreCase).ToList();
         }
     }
 }

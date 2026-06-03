@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { performanceService } from '../api/performanceService';
 import { projectService } from '../api/projectService';
-import { teamService } from '../api/teamService';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 interface Performance {
   employeeId: string;
@@ -15,6 +14,8 @@ interface Performance {
 
 const PerformanceDashboard = () => {
   const { projectId } = useParams<{ projectId: string }>();
+  const role = localStorage.getItem('roleName') || localStorage.getItem('userRole') || '';
+  const currentUserId = localStorage.getItem('userId') || '';
   const [performanceData, setPerformanceData] = useState<Performance[]>([]);
   const [projectTitle, setProjectTitle] = useState("Loading Project...");
   const [loading, setLoading] = useState(true);
@@ -29,12 +30,23 @@ const PerformanceDashboard = () => {
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch Project Details to get the Title (Scenario Alignment)
       const project = await projectService.getById(projectId!);
-      setProjectTitle(project.title ?? project.Title ?? "Project Performance");
+      setProjectTitle(project?.title ?? "Project Performance");
 
-      // 2. Load existing performance data
-      await loadPerformanceRecords();
+      let rows = await fetchPerformanceRows();
+      if (rows.length === 0) {
+        try {
+          await performanceService.recalculateProject(projectId!);
+          rows = await fetchPerformanceRows();
+        } catch {
+          /* no team yet */
+        }
+      }
+      const filtered =
+        role === 'Employee' && currentUserId
+          ? rows.filter((r) => r.employeeId === currentUserId)
+          : rows;
+      setPerformanceData(filtered);
     } catch (err) {
       console.error("Error loading project context:", err);
     } finally {
@@ -42,23 +54,24 @@ const PerformanceDashboard = () => {
     }
   };
 
-  const loadPerformanceRecords = async () => {
+  const fetchPerformanceRows = async (): Promise<Performance[]> => {
     try {
       const data = await performanceService.getProjectPerformance(projectId!);
-      
-      // Map backend PascalCase to frontend camelCase
-      const mappedData = (Array.isArray(data) ? data : []).map((emp: any) => ({
-        employeeId: emp.employeeId ?? emp.EmployeeId,
-        projectId: emp.projectId ?? emp.ProjectId,
-        tasksAssigned: emp.tasksAssigned ?? emp.TasksAssigned,
-        tasksCompleted: emp.tasksCompleted ?? emp.TasksCompleted,
-        approvalRate: emp.approvalRate ?? emp.ApprovalRate,
+      return (Array.isArray(data) ? data : []).map((emp: any) => ({
+        employeeId: String(emp.employeeId ?? emp.EmployeeId ?? ''),
+        projectId: String(emp.projectId ?? emp.ProjectId ?? ''),
+        tasksAssigned: Number(emp.tasksAssigned ?? emp.TasksAssigned ?? 0),
+        tasksCompleted: Number(emp.tasksCompleted ?? emp.TasksCompleted ?? 0),
+        approvalRate: Number(emp.approvalRate ?? emp.ApprovalRate ?? 0),
+        employeeName: emp.employeeName ?? emp.EmployeeName ?? 'Team member',
       }));
-
-      setPerformanceData(mappedData);
-    } catch (err) {
-      setPerformanceData([]);
+    } catch {
+      return [];
     }
+  };
+
+  const loadPerformanceRecords = async () => {
+    setPerformanceData(await fetchPerformanceRows());
   };
 
   // SCENARIO 9 FIX: Automated "Sync" to trigger the backend calculation
@@ -94,6 +107,7 @@ const handleCalculatePerformance = async () => {
           <p className="text-gray-500 text-sm mt-1">AI-calculated productivity metrics for your assigned team.</p>
         </div>
         
+        {role !== 'Employee' && (
         <button 
           onClick={handleCalculatePerformance}
           disabled={syncing}
@@ -103,6 +117,7 @@ const handleCalculatePerformance = async () => {
         >
           {syncing ? "Calculating..." : "🔄 Recalculate Team Scores"}
         </button>
+        )}
       </div>
 
       {performanceData.length === 0 ? (
@@ -120,7 +135,7 @@ const handleCalculatePerformance = async () => {
           {performanceData.map((emp) => (
             <div key={emp.employeeId} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="font-bold text-gray-800">Team Member</h3>
+                <h3 className="font-bold text-gray-800">{emp.employeeName}</h3>
                 <span className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-500 uppercase tracking-tighter">
                   ID: {emp.employeeId.substring(0, 8)}
                 </span>

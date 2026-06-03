@@ -19,5 +19,11 @@ namespace MANAGIX.Services
         // Calls the AI extractor (Python service) on the saved transcript and returns suggestions.
         // The caller (frontend) then confirms which to convert into real tasks.
         Task<ExtractTasksResponseDto> ExtractTasksAsync(Guid meetingId);
+
+        Task<List<Guid>> ResolveProjectParticipantIdsAsync(Guid projectId);
+
+        Task<MeetingJoinStatusDto?> GetJoinStatusAsync(Guid meetingId, Guid userId);
+
+        Task<int> ExpirePastMeetingsAsync();
     }
 }

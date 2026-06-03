@@ -14,6 +14,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         Task<TeamEmployee?> GetAsync(Guid teamId, Guid employeeId);
         void Remove(TeamEmployee entity);
+        void Update(TeamEmployee entity);
         Task<bool> ExistsAsync(Guid teamId, Guid employeeId);
         Task<bool> IsEmployeeOnAnyTeamAsync(Guid employeeId);
 
@@ -28,5 +29,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         // Bulk fetch — gives the list of employee IDs already busy on another active project.
         // More efficient than per-employee round-trips in cross-project filtering.
         Task<HashSet<Guid>> GetActivelyAssignedEmployeeIdsAsync(Guid? excludeProjectId);
+
+        Task<List<Guid>> GetTeamIdsForMemberAsync(Guid memberId);
     }
 }

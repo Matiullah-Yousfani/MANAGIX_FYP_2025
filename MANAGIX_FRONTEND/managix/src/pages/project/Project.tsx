@@ -22,6 +22,7 @@ const Projects = () => {
   const [newProject, setNewProject] = useState({ title: '', description: '' });
 
   const userId = localStorage.getItem('userId');
+  const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
 
   const addToast = (message: string, type: 'error' | 'success' = 'error') => {
     const id = Date.now();
@@ -35,17 +36,28 @@ const Projects = () => {
 
   const fetchProjects = async () => {
     try {
-      if (userId) {
+      if (!userId) return;
+      if (role === 'Manager') {
         const data = await projectService.getByManager(userId);
-        setProjects(data);
+        setProjects(Array.isArray(data) ? data : []);
+      } else if (role === 'Employee') {
+        const data = await projectService.getByEmployee(userId);
+        setProjects(Array.isArray(data) ? data : []);
+      } else if (role === 'Admin') {
+        const data = await projectService.getAll();
+        setProjects(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       addToast("Failed to fetch projects", "error");
     }
   };
 
-  const handleSelectProject = (projectId: string) => {
+  const openProject = (projectId: string) => {
     localStorage.setItem('lastViewedProjectId', projectId);
+    navigate(`/projects/${projectId}`);
+  };
+
+  const openPerformance = (projectId: string) => {
     navigate(`/performance/${projectId}`);
   };
 
@@ -220,12 +232,22 @@ const Projects = () => {
                         )}
                       </div>
 
-                      <button 
-                        onClick={() => handleSelectProject(pId)}
-                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:gap-3 transition-all"
-                      >
-                        Performance <FiArrowRight strokeWidth={3} />
-                      </button>
+                      <div className="flex flex-col items-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openProject(pId)}
+                          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:gap-3 transition-all"
+                        >
+                          Open project <FiArrowRight strokeWidth={3} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openPerformance(pId)}
+                          className="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-indigo-600"
+                        >
+                          Performance
+                        </button>
+                      </div>
                     </div>
                   </div>
 

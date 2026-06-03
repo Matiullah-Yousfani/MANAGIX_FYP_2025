@@ -37,10 +37,18 @@ namespace MANAGIX.DataAccess.Repositories
                    && m.ScheduledAt >= DateTime.UtcNow
                    && m.ScheduledAt <= horizon
                    && m.Status != "Cancelled"
+                   && m.Status != "Expired"
                 orderby m.ScheduledAt
                 select m
             ).Distinct().ToListAsync();
         }
+
+        public async Task<List<Meeting>> GetPastScheduledAsync(DateTime utcNow) =>
+            await _context.Meetings
+                .Where(m =>
+                    (m.Status == "Scheduled" || m.Status == "Live") &&
+                    m.ScheduledAt.AddMinutes(m.DurationMinutes) < utcNow)
+                .ToListAsync();
 
         public void Update(Meeting meeting) => _context.Meetings.Update(meeting);
         public void Remove(Meeting meeting) => _context.Meetings.Remove(meeting);

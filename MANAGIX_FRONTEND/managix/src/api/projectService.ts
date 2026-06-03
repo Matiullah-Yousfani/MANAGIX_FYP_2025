@@ -1,4 +1,5 @@
 import api from './axiosInstance';
+import { normalizeProject, normalizeProjectList, normalizeTimeline } from './normalize';
 
 /** `ProjectCreateDto` — use camelCase for JSON. deadline as ISO string. */
 export interface ProjectCreateRequest {
@@ -39,17 +40,17 @@ export const projectService = {
 
   getAll: async () => {
     const response = await api.get('/projects');
-    return response.data;
+    return normalizeProjectList(response.data);
   },
 
   getById: async (projectId: string) => {
     const response = await api.get(`/projects/${projectId}`);
-    return response.data;
+    return normalizeProject(response.data);
   },
 
   getByManager: async (managerId: string) => {
     const response = await api.get(`/projects/manager/${managerId}`);
-    return response.data;
+    return normalizeProjectList(response.data);
   },
 
   getProjectDashboard: async (projectId: string) => {
@@ -59,7 +60,7 @@ export const projectService = {
 
   getByEmployee: async (userId: string) => {
     const response = await api.get(`/projects/employee/${userId}`);
-    return response.data;
+    return normalizeProjectList(response.data);
   },
 
   getProjectModels: async () => {
@@ -78,5 +79,20 @@ export const projectService = {
       api.get(`/projects/${projectId}/team`).catch(() => ({ data: null })),
     ]);
     return { project: project.data, team: team.data };
+  },
+
+  getClosureReport: async (projectId: string) => {
+    const response = await api.get(`/projects/${projectId}/closure-report`);
+    return response.data;
+  },
+
+  getTimeline: async (projectId: string) => {
+    const response = await api.get(`/projects/${projectId}/timeline`);
+    return normalizeTimeline(response.data);
+  },
+
+  getAdminDetail: async (projectId: string) => {
+    const response = await api.get(`/projects/admin/${projectId}`);
+    return response.data;
   },
 };

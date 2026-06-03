@@ -21,13 +21,23 @@ namespace MANAGIX.Utility
             if (!authHeader.StartsWith("Bearer "))
                 throw new UnauthorizedAccessException("Invalid Authorization header");
 
-            var token = authHeader.Replace("Bearer ", "");
+            var token = authHeader.Replace("Bearer ", "", StringComparison.OrdinalIgnoreCase).Trim();
 
             var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
+            JwtSecurityToken jwt;
+            try
+            {
+                jwt = handler.ReadJwtToken(token);
+                if (jwt.ValidTo < DateTime.UtcNow)
+                    throw new UnauthorizedAccessException("Token expired");
+            }
+            catch (Exception ex) when (ex is not UnauthorizedAccessException)
+            {
+                throw new UnauthorizedAccessException("Invalid token");
+            }
 
             var userIdClaim = jwt.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "userId");
 
             if (userIdClaim == null)
                 throw new UnauthorizedAccessException("UserId claim missing");
@@ -68,7 +78,11 @@ namespace MANAGIX.Utility
                 foreach (var allowed in roleNames)
                 {
                     if (!string.IsNullOrEmpty(allowed) &&
-                        r.Equals(allowed, StringComparison.OrdinalIgnoreCase))
+                        (r.Equals(allowed, StringComparison.OrdinalIgnoreCase) ||
+                         (allowed.Equals("QA", StringComparison.OrdinalIgnoreCase) &&
+                          r.Contains("quality", StringComparison.OrdinalIgnoreCase)) ||
+                         (allowed.Equals(AppRoles.QualityAssurance, StringComparison.OrdinalIgnoreCase) &&
+                          r.Equals("QA", StringComparison.OrdinalIgnoreCase))))
                         return true;
                 }
             }

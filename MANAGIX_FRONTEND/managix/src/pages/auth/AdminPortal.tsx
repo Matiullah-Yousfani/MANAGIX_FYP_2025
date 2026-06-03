@@ -1,9 +1,15 @@
-// src/pages/AdminPortal.tsx
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { adminService } from '../../api/adminService';
 import api from '../../api/axiosInstance';
-import { motion, AnimatePresence } from 'framer-motion'; // Ensure you run: npm install framer-motion
+import { motion, AnimatePresence } from 'framer-motion';
+import AdminProjectsTab from '../../components/admin/AdminProjectsTab';
+import AdminHourlyRatesTab from '../../components/admin/AdminHourlyRatesTab';
+import AdminAllTimesheetsTab from '../../components/admin/AdminAllTimesheetsTab';
+import MonitoringPanel from '../admin/MonitoringPanel';
+
+const ADMIN_TABS = ['overview', 'users', 'all-users', 'projects', 'monitoring', 'payroll', 'all-timesheets'] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
 
 interface UserRequest {
   RequestId: string;
@@ -20,8 +26,14 @@ interface Role {
 }
 
 const AdminPortal = () => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'users' | 'all-users'>('users');
+  const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
+
+  useEffect(() => {
+    if (role && role !== 'Admin') navigate('/dashboard', { replace: true });
+  }, [role, navigate]);
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [allApprovedUsers, setAllApprovedUsers] = useState<any[]>([]);
   const [users, setUsers] = useState<UserRequest[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -78,9 +90,22 @@ const AdminPortal = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const setTab = (tab: AdminTab) => {
+    setActiveTab(tab);
+    navigate(`/admin?tab=${tab}`, { replace: true });
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    setActiveTab(params.get('tab') === 'all-users' ? 'all-users' : 'users');
+    const rawTab = params.get('tab');
+    const tab = (rawTab === 'hourly-rates' ? 'payroll' : rawTab) as AdminTab | null;
+    if (tab && ADMIN_TABS.includes(tab)) {
+      setActiveTab(tab);
+      return;
+    }
+    if (location.pathname === '/admin/roles') setActiveTab('all-users');
+    else if (location.pathname === '/admin/approvals') setActiveTab('users');
+    else if (location.pathname === '/admin/monitoring') setActiveTab('monitoring');
   }, [location]);
 
   const handleApprove = async (id: string, roleId: string) => {
@@ -164,28 +189,34 @@ const AdminPortal = () => {
             <p className="text-[#9CA3AF] font-bold uppercase tracking-[0.3em] text-[9px] mt-2 ml-1">Central Administrative Authority</p>
           </div>
           
-          <div className="flex bg-white border border-[#E5E7EB] p-1.5 rounded-2xl shadow-sm">
-            <button 
-              onClick={() => setActiveTab('users')} 
-              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-black text-white shadow-xl' : 'text-[#9CA3AF] hover:text-black'}`}
-            >
-              Requests [{users.length}]
-            </button>
-            <button 
-              onClick={() => setActiveTab('all-users')} 
-              className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'all-users' ? 'bg-black text-white shadow-xl' : 'text-[#9CA3AF] hover:text-black'}`}
-            >
-              Directory
-            </button>
+          <div className="flex flex-wrap bg-white border border-[#E5E7EB] p-1.5 rounded-2xl shadow-sm gap-1 max-w-full">
+            {([
+              ['overview', 'Overview'],
+              ['users', `Requests [${users.length}]`],
+              ['all-users', 'Directory'],
+              ['projects', 'Projects'],
+              ['monitoring', 'Monitoring'],
+              ['payroll', 'Payroll'],
+              ['all-timesheets', 'Timesheets'],
+            ] as [AdminTab, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === id ? 'bg-black text-white shadow-xl' : 'text-[#9CA3AF] hover:text-black'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* STATS OVERVIEW */}
+        {(activeTab === 'overview' || activeTab === 'users' || activeTab === 'all-users') && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {[
             { label: 'Total Users', value: allApprovedUsers.length, color: 'text-black' },
             { label: 'Pending Review', value: users.length, color: 'text-black' },
-            
+            { label: 'Active Tab', value: activeTab === 'overview' ? 'Portal' : activeTab, color: 'text-indigo-600' },
           ].map((stat, i) => (
             <div key={i} className="bg-white border border-[#E5E7EB] p-6 rounded-[1.5rem] shadow-sm">
               <p className="text-[#9CA3AF] text-[9px] font-black uppercase tracking-widest">{stat.label}</p>
@@ -193,8 +224,44 @@ const AdminPortal = () => {
             </div>
           ))}
         </div>
+        )}
 
-        {/* DATA TABLE CARD */}
+        {activeTab === 'overview' && (
+          <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-10 mb-8 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#9CA3AF] mb-4">Quick access</p>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => setTab('all-users')} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800">
+                User directory
+              </button>
+              <button type="button" onClick={() => setTab('users')} className="px-6 py-3 bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700">
+                Pending requests
+              </button>
+              <button type="button" onClick={() => setTab('projects')} className="px-6 py-3 bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700">
+                Projects
+              </button>
+              <button type="button" onClick={() => setTab('monitoring')} className="px-6 py-3 bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-700">
+                Monitoring
+              </button>
+              <button type="button" onClick={() => setTab('payroll')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700">
+                Payroll
+              </button>
+              <button type="button" onClick={() => setTab('all-timesheets')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700">
+                All timesheets
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-6">
+              Set <strong>hourly rates</strong> under <strong>Payroll</strong> and view <strong>all timesheets</strong> in the Timesheets tab above.
+              Project creation stays on the main Dashboard; use Projects here for oversight and Gantt timelines.
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'projects' && <AdminProjectsTab />}
+        {activeTab === 'monitoring' && <MonitoringPanel />}
+        {activeTab === 'payroll' && <AdminHourlyRatesTab />}
+        {activeTab === 'all-timesheets' && <AdminAllTimesheetsTab />}
+
+        {(activeTab === 'users' || activeTab === 'all-users') && (
         <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-2xl overflow-hidden">
           {loading ? (
             <div className="p-32 text-center">
@@ -292,6 +359,7 @@ const AdminPortal = () => {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

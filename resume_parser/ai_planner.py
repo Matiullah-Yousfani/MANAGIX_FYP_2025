@@ -96,10 +96,10 @@ Project Description:
 Project Deadline:
 {deadline}
 
-Project Budget:
+Project Budget (USD):
 {budget}
 {meth_section}
-Break the project into logical milestones.
+Break the project into logical milestones that fit THIS project's scope, description, and budget.
 For each milestone provide:
 - title
 - description
@@ -108,13 +108,14 @@ For each milestone provide:
 - tasks (each task should have title and description)
 
 Rules:
-1. Generate 4 to 6 milestones that cover the full project lifecycle.
-2. Each milestone must have 4 to 8 specific, actionable tasks.
-3. deadlineOffsetDays must be cumulative and fit within the total project timeline.
-4. budgetPercentage values across all milestones must sum to exactly 100.
-5. Tasks must be specific development actions, NOT vague like "Work on backend".
-6. Every task title should start with an action verb (Design, Implement, Create, Develop, Test, Deploy, Configure, Build, Set up, Write, Prepare, Conduct, etc.)
-7. Task descriptions should explain what needs to be done in 1-2 sentences.
+1. Scale scope to the budget: if budget is under $5,000 use 3-4 milestones with 2-4 tasks each; $5k-$20k use 4-5 milestones with 3-5 tasks; above $20k use 5-6 milestones with 4-6 tasks.
+2. Milestone and task titles MUST reference the project domain from the description (e.g. e-commerce, hospital, mobile app) — never generic-only names like "Heavy Task" or "Phase 1 Work".
+3. budgetPercentage values across all milestones must sum to exactly 100. Allocate more % to milestones that need more effort per the description.
+4. deadlineOffsetDays must be cumulative and fit within the total project timeline before the deadline.
+5. Tasks must be small, deliverable engineering/QA items sized for the budget (avoid enterprise-scale scope on small budgets).
+6. Every task title should start with an action verb (Design, Implement, Create, Develop, Test, Deploy, Configure, Build, Write, Review, etc.)
+7. Task descriptions must mention concrete deliverables tied to the project description in 1-2 sentences.
+8. Do NOT invent technologies or features not implied by the project description unless they are standard for that domain.
 
 Return ONLY valid JSON in this exact structure. Do not include any text, explanation, or markdown outside the JSON:
 {{

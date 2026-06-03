@@ -5,15 +5,12 @@ using System.Threading.Tasks;
 
 namespace MANAGIX.Services
 {
-    // PHASE 3: Single source of truth for workload math. Used by:
-    //   - WorkloadFunction endpoints (panel UI)
-    //   - AiAllocationService scoring (already passes hours via EmployeeInfoDto, but this
-    //     is the canonical helper if we ever need cross-project rebalancing across projects)
-    //   - MonitoringService (Phase 5 admin panel)
     public interface IWorkloadService
     {
-        Task<WorkloadEntryDto> GetEmployeeLoadAsync(Guid userId);
+        Task<WorkloadEntryDto> GetEmployeeLoadAsync(Guid userId, Guid? projectId = null);
         Task<ProjectWorkloadDto> GetProjectWorkloadAsync(Guid projectId);
-        Task<List<WorkloadEntryDto>> GetOverloadedEmployeesAsync(double threshold = 0.9);
+        /// <summary>All scoped members (manager's project teams) or all employees when managerId is null (admin).</summary>
+        Task<List<WorkloadEntryDto>> GetTeamWorkloadAsync(Guid? managerId);
+        Task<List<WorkloadEntryDto>> GetOverloadedEmployeesAsync(double threshold = 0.9, Guid? managerId = null);
     }
 }

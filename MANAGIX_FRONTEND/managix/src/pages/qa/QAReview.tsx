@@ -34,9 +34,35 @@ const QAReview = () => {
     try {
       setLoading(true);
       const storedId = localStorage.getItem('userId');
-      const res = await api.get('/tasks/pending-review', { headers: { userId: storedId } });
-      const allSubmissions = Array.isArray(res.data) ? res.data : [];
-      
+      const headers = storedId ? { userId: storedId } : {};
+      const [pendingRes, doneRes] = await Promise.all([
+        api.get('/tasks/pending-review', { headers }),
+        api.get('/tasks/qa/done', { headers }),
+      ]);
+      const pending = Array.isArray(pendingRes.data) ? pendingRes.data : [];
+      const doneRows = Array.isArray(doneRes.data) ? doneRes.data : [];
+      const seen = new Set(
+        pending.map((s: any) => String(s.taskId ?? s.TaskId ?? s.task?.taskId ?? s.Task?.TaskId ?? ''))
+      );
+      const fromDone = doneRows
+        .filter((row: any) => row.submission?.status === 'Submitted')
+        .filter((row: any) => !seen.has(String(row.taskId)))
+        .map((row: any) => ({
+          taskId: row.taskId,
+          status: row.submission?.status ?? 'Submitted',
+          submittedAt: row.submission?.submittedAt,
+          comment: row.submission?.comment,
+          fileName: row.submission?.fileName,
+          task: {
+            taskId: row.taskId,
+            title: row.title,
+            projectId: row.projectId,
+            status: row.status,
+          },
+          employee: { fullName: 'Assignee' },
+        }));
+      const allSubmissions = [...pending, ...fromDone];
+
       if (filterProjectId) {
         const filtered = allSubmissions.filter((sub: any) =>
           (sub.task?.projectId ?? sub.Task?.projectId ?? sub.Task?.ProjectId)?.toString() ===

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosInstance';
-import { FiBriefcase, FiPlus, FiUploadCloud } from 'react-icons/fi';
+import { FiBriefcase, FiPlus, FiUploadCloud, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { taskService } from '../api/taskService';
 
 const scrollbarStyles = `
   .custom-scroll::-webkit-scrollbar { width: 6px; }
@@ -25,6 +26,8 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [submission, setSubmission] = useState({ file: null as File | null, comment: '' });
   const [projectTeam, setProjectTeam] = useState<any | null>(null);
+  const [editTask, setEditTask] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '', status: '' });
 
   useEffect(() => {
     if (!showTaskModal || role !== 'Manager') return;
@@ -81,7 +84,8 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       await api.post('/tasks', {
         projectId,
         ...newTask,
-        milestoneId: newTask.milestoneId === "" ? null : newTask.milestoneId
+        milestoneId: newTask.milestoneId === "" ? null : newTask.milestoneId,
+        estimatedHours: 4,
       });
       setShowTaskModal(false);
       refresh();
@@ -109,6 +113,33 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
         refresh();
       } catch (err) { alert("Upload failed."); }
     };
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!window.confirm('Delete this task?')) return;
+    try {
+      await taskService.delete(taskId);
+      refresh();
+    } catch {
+      alert('Could not delete task.');
+    }
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTask) return;
+    const taskId = editTask.taskId || editTask.TaskId;
+    try {
+      await taskService.update(taskId, {
+        title: editForm.title,
+        description: editForm.description,
+        status: editForm.status,
+      });
+      setEditTask(null);
+      refresh();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Update failed');
+    }
   };
 
   const handleDownloadWork = async (taskId: string, title: string) => {
@@ -190,6 +221,33 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                     >
                       VIEW WORK
                     </button>
+                  )}
+                  {role === 'Manager' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditTask(t);
+                          setEditForm({
+                            title: t.title || t.Title || '',
+                            description: t.description || t.Description || '',
+                            status: status || 'Todo',
+                          });
+                        }}
+                        className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100"
+                        title="Edit task"
+                      >
+                        <FiEdit2 size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(taskId)}
+                        className="p-2 rounded-lg border border-red-100 text-red-600 hover:bg-red-50"
+                        title="Delete task"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -279,6 +337,42 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {editTask && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-lg shadow-2xl">
+            <h2 className="text-2xl font-black mb-4">Edit task</h2>
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <input
+                className="w-full p-3 border rounded-xl font-bold"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                required
+              />
+              <textarea
+                className="w-full p-3 border rounded-xl h-24"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+              <select
+                className="w-full p-3 border rounded-xl font-bold"
+                value={editForm.status}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+              >
+                <option value="Todo">Todo</option>
+                <option value="InProgress">In Progress</option>
+              </select>
+              <p className="text-xs text-gray-500">
+                Managers cannot mark Done without an employee file submission. Use QA review after submit.
+              </p>
+              <div className="flex gap-3">
+                <button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black">Save</button>
+                <button type="button" onClick={() => setEditTask(null)} className="flex-1 bg-gray-100 py-3 rounded-xl font-black">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

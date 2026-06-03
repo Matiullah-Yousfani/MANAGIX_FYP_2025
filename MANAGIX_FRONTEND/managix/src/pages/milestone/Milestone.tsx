@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosInstance';
 import { milestoneService } from '../../api/milestoneService';
+import { projectService } from '../../api/projectService';
 import { motion, AnimatePresence } from 'framer-motion'; // Added Framer Motion
 import { 
   FiCalendar, FiDollarSign, FiTrash2, FiEdit3, 
@@ -51,8 +52,9 @@ const Milestones = () => {
 
   const fetchManagerProjects = async () => {
     try {
-      const res = await api.get(`/projects/manager/${userId}`);
-      setProjects(res.data);
+      if (!userId) return;
+      const list = await projectService.getByManager(userId);
+      setProjects(list);
     } catch (err) {
       console.error("Error fetching projects", err);
     }
@@ -158,8 +160,26 @@ const Milestones = () => {
       await milestoneService.close(id, { comment: "Completed" });
       fetchMilestones(selectedProjectId);
       addToast("Milestone marked as completed", "success");
-    } catch (err) {
-      addToast("Error closing milestone");
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || "Cannot complete milestone yet", "error");
+    }
+  };
+
+  const handleReopen = async (milestone: any) => {
+    const id = milestone?.milestoneId || milestone?.MilestoneId;
+    if (!id || !window.confirm('Reopen this milestone? Status will return to Pending.')) return;
+    try {
+      await milestoneService.update(id, {
+        title: milestone.title || milestone.Title,
+        description: milestone.description || milestone.Description,
+        deadline: (milestone.deadline || milestone.Deadline || '').split('T')[0],
+        budgetAllocated: milestone.budgetAllocated ?? milestone.BudgetAllocated ?? 0,
+        status: 'Pending',
+      });
+      fetchMilestones(selectedProjectId);
+      addToast("Milestone reopened", "success");
+    } catch {
+      addToast("Could not reopen milestone", "error");
     }
   };
 
@@ -297,16 +317,13 @@ const Milestones = () => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!isCompleted ? (
-                          <>
-                            <button onClick={() => handleClose(m)} className="p-4 text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-colors"><FiCheckCircle size={20} /></button>
-                            <button onClick={() => openEditModal(m)} className="p-4 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors"><FiEdit3 size={20} /></button>
-                            <button onClick={() => handleDelete(m)} className="p-4 text-red-600 hover:bg-red-50 rounded-2xl transition-colors"><FiTrash2 size={20} /></button>
-                          </>
-                        ) : (
-                          <div className="px-6 py-3 bg-emerald-50 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-emerald-100">
-                             <FiCheckCircle strokeWidth={3} /> Finalized
-                          </div>
+                        {!isCompleted && (
+                          <button onClick={() => handleClose(m)} className="p-4 text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-colors" title="Complete when all tasks are Done or Approved"><FiCheckCircle size={20} /></button>
+                        )}
+                        <button onClick={() => openEditModal(m)} className="p-4 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors" title="Edit"><FiEdit3 size={20} /></button>
+                        <button onClick={() => handleDelete(m)} className="p-4 text-red-600 hover:bg-red-50 rounded-2xl transition-colors" title="Delete (only if no tasks)"><FiTrash2 size={20} /></button>
+                        {isCompleted && (
+                          <button onClick={() => handleReopen(m)} className="px-4 py-2 text-xs font-black uppercase text-amber-700 bg-amber-50 rounded-xl">Reopen</button>
                         )}
                       </div>
                     </div>

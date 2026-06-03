@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Video, PhoneOff, Download, Loader, FileText, CheckCircle, AlertCircle } from 'lucide-react';
-// PHASE 4: AI task extraction modal — opens after transcript is ready.
 import MeetingTaskExtractor from '../../components/MeetingTaskExtractor';
+import MeetingJoinGate from '../../components/MeetingJoinGate';
+import type { MeetingJoinStatus } from '../../types';
 
 declare global {
   interface Window {
@@ -10,6 +12,16 @@ declare global {
 }
 
 const Meeting = () => {
+  const [searchParams] = useSearchParams();
+  const scheduledMeetingId = searchParams.get('meetingId');
+  const [canJoinMeeting, setCanJoinMeeting] = useState(!scheduledMeetingId);
+  const [scheduledRoomName, setScheduledRoomName] = useState<string | null>(null);
+
+  const handleJoinAllowed = useCallback((s: MeetingJoinStatus) => {
+    setCanJoinMeeting(true);
+    if (s.jitsiRoomName) setScheduledRoomName(s.jitsiRoomName);
+  }, []);
+
   const [jitsiApi, setJitsiApi] = useState<any>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isMeetingActive, setIsMeetingActive] = useState(false);
@@ -41,13 +53,17 @@ const Meeting = () => {
   // JWT Token for recording (you may need to generate this dynamically)
   const JAAS_JWT = 'eyJraWQiOiJ2cGFhcy1tYWdpYy1jb29raWUtOTA1MTg2NzUzNmQyNDY2ODkxNDFkMTE3N2YyZmVlM2YvYTJhMzQ0LVNBTVBMRV9BUFAiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiJqaXRzaSIsImlzcyI6ImNoYXQiLCJpYXQiOjE3NjgwMzgzNDUsImV4cCI6MTc2ODA0NTU0NSwibmJmIjoxNzY4MDM4MzQwLCJzdWIiOiJ2cGFhcy1tYWdpYy1jb29raWUtOTA1MTg2NzUzNmQyNDY2ODkxNDFkMTE3N2YyZmVlM2YiLCJjb250ZXh0Ijp7ImZlYXR1cmVzIjp7ImxpdmVzdHJlYW1pbmciOmZhbHNlLCJmaWxlLXVwbG9hZCI6ZmFsc2UsIm91dGJvdW5kLWNhbGwiOmZhbHNlLCJzaXAtb3V0Ym91bmQtY2FsbCI6ZmFsc2UsInRyYW5zY3JpcHRpb24iOmZhbHNlLCJsaXN0LXZpc2l0b3JzIjpmYWxzZSwicmVjb3JkaW5nIjpmYWxzZSwiZmxpcCI6ZmFsc2V9LCJ1c2VyIjp7ImhpZGRlbi1mcm9tLXJlY29yZGVyIjpmYWxzZSwibW9kZXJhdG9yIjp0cnVlLCJuYW1lIjoiVGVzdCBVc2VyIiwiaWQiOiJnb29nbGUtb2F1dGgyfDExNDg1MTUxMjgyMTczODQ5MTcxNiIsImF2YXRhciI6IiIsImVtYWlsIjoidGVzdC51c2VyQGNvbXBhbnkuY29tIn19LCJyb29tIjoiKiJ9.mROI-6w_kfPF3B5AfABsmmQKp5gmG1lEo0tc7SPBZLTsZQ2EiYdSH_NYjG2qFaZZTTIeDhMit5MLV9sJoOXTdgjy2JrzcPJaPObVt-vFzdRr9x_yHaZ-bJTJjLpDo6JzxGHIH0ZDD7d6NxRCM6zseR69kUn-HrC70fCNfLTXtZjvRbA8wgTXXdfXY_KO6hx8SLvMQhod1QbtAsCuVSfsnDFLPmmCFIM0hYOwmnj-5aPOSykEC6j99Gcf9OWvXJ6KYDeCJcnMFxMwRsgTw5hZmUwxQw94guJ4eNW0aRFGbSEG7ffpyfGmK_zRnAR_GSV2Piu36ljFfo3aK8VboX_eHg';
 
-  // Generate unique meeting room name on component mount
   useEffect(() => {
+    if (scheduledRoomName) {
+      setMeetingRoomName(scheduledRoomName);
+      return;
+    }
+    if (scheduledMeetingId) return;
     const userName = localStorage.getItem('userName') || 'User';
     const timestamp = Date.now();
     const roomName = `SampleApp${userName.replace(/\s+/g, '')}${timestamp}`;
     setMeetingRoomName(roomName);
-  }, []);
+  }, [scheduledMeetingId, scheduledRoomName]);
 
   // Update recording duration every second
   useEffect(() => {
@@ -70,9 +86,8 @@ const Meeting = () => {
     };
   }, [isRecording, recordingStartTime]);
 
-  // Load Jitsi Meet External API script (JaaS version)
   useEffect(() => {
-    if (!meetingRoomName) return;
+    if (!canJoinMeeting || !meetingRoomName) return;
 
     const script = document.createElement('script');
     script.src = JAAS_API_SCRIPT;
@@ -100,7 +115,7 @@ const Meeting = () => {
         }
       }
     };
-  }, [meetingRoomName]);
+  }, [meetingRoomName, canJoinMeeting]);
 
   const initializeJitsi = () => {
     if (!jitsiContainerRef.current || !meetingRoomName || !window.JitsiMeetExternalAPI) {
@@ -573,6 +588,10 @@ const Meeting = () => {
             </p>
           )}
         </div>
+
+        {scheduledMeetingId && (
+          <MeetingJoinGate meetingId={scheduledMeetingId} onCanJoin={handleJoinAllowed} />
+        )}
 
         {/* Error Message */}
         {error && (

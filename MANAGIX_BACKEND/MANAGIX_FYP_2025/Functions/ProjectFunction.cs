@@ -1,6 +1,7 @@
 ﻿using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
+using MANAGIX.Services;
 using MANAGIX.Utility;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -17,7 +18,23 @@ namespace MANAGIX_FYP_2025.Functions
     public class ProjectFunction
     {
         private readonly IUnitOfWork _unitOfWork;
-        public ProjectFunction(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+        private readonly IProjectClosureReportService _closureReports;
+        private readonly IProjectTimelineService _timeline;
+        private static readonly JsonSerializerOptions _json = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+        };
+
+        public ProjectFunction(
+            IUnitOfWork unitOfWork,
+            IProjectClosureReportService closureReports,
+            IProjectTimelineService timeline)
+        {
+            _unitOfWork = unitOfWork;
+            _closureReports = closureReports;
+            _timeline = timeline;
+        }
 
         [Function("CreateProject")]
         public async Task<HttpResponseData> CreateProject(
@@ -86,10 +103,10 @@ namespace MANAGIX_FYP_2025.Functions
                 return badResp;
             }
 
-            if (await _unitOfWork.Projects.ExistsByManagerAndTitleAsync(dto.ManagerId, dto.Title, null))
+            if (await _unitOfWork.Projects.ExistsByTitleAsync(dto.Title, null))
             {
                 var conflict = req.CreateResponse(HttpStatusCode.Conflict);
-                await conflict.WriteAsJsonAsync(new { message = "A project with this title already exists for this manager." });
+                await conflict.WriteAsJsonAsync(new { message = "A project with this title already exists. Choose a unique project name." });
                 return conflict;
             }
 
@@ -224,7 +241,18 @@ namespace MANAGIX_FYP_2025.Functions
 
             var pt = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
             if (pt != null)
+            {
+                var teamId = pt.TeamId;
+                var teamMembers = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(teamId);
+                foreach (var m in teamMembers)
+                    _unitOfWork.TeamEmployees.Remove(m);
+
                 _unitOfWork.ProjectTeams.Remove(pt);
+
+                var team = await _unitOfWork.Teams.GetByIdAsync(teamId);
+                if (team != null)
+                    _unitOfWork.Teams.Remove(team);
+            }
 
             _unitOfWork.Projects.Remove(project);
             await _unitOfWork.CompleteAsync();
@@ -293,7 +321,26 @@ namespace MANAGIX_FYP_2025.Functions
             project.IsClosed = true;
             project.ClosedAt = DateTime.UtcNow;
             project.Status = "Completed";
-            // Optional: store dto.Comment somewhere
+
+            var pt = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
+            if (pt != null)
+            {
+                var members = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(pt.TeamId);
+                foreach (var te in members)
+                {
+                    var profile = await _unitOfWork.UserProfiles.GetByUserIdAsync(te.EmployeeId);
+                    if (profile != null)
+                    {
+                        profile.CompletedProjectsCount += 1;
+                        profile.EmployeeLevel = EmployeeCareerService.ComputeLevel(profile.CompletedProjectsCount);
+                        _unitOfWork.UserProfiles.Update(profile);
+                    }
+                }
+            }
+
+            await ProjectSkillsSyncService.SyncAssigneeSkillsOnProjectCloseAsync(_unitOfWork, pid);
+
+            await TeamProjectGuards.ReleaseTeamFromProjectAsync(_unitOfWork, pid);
 
             _unitOfWork.Projects.Update(project);
             await _unitOfWork.CompleteAsync();
@@ -317,18 +364,24 @@ namespace MANAGIX_FYP_2025.Functions
             // Fetch the team assignment from the bridge table
             var teamAssignment = await _unitOfWork.ProjectTeams.GetByProjectIdAsync(pid);
             var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+            var milestones = await _unitOfWork.Milestones.GetByProjectIdAsync(pid);
 
             int completedCount = tasks.Count(t =>
                 TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Approved ||
                 t.Status == "Completed");
 
+            int completedMilestones = milestones.Count(m =>
+                string.Equals(m.Status, "Completed", StringComparison.OrdinalIgnoreCase));
+
             var dashboard = new ProjectDashboardDto
             {
                 ProjectId = pid,
-                TeamId = teamAssignment?.TeamId, // Crucial for the frontend check
+                TeamId = teamAssignment?.TeamId,
                 TotalTasks = tasks.Count,
                 CompletedTasks = completedCount,
                 PendingTasks = tasks.Count - completedCount,
+                TotalMilestones = milestones.Count,
+                CompletedMilestones = completedMilestones,
                 ProgressPercentage = tasks.Count > 0
                     ? Math.Round((double)completedCount / tasks.Count * 100, 2)
                     : 0
@@ -338,6 +391,49 @@ namespace MANAGIX_FYP_2025.Functions
             await resp.WriteAsJsonAsync(dashboard);
             return resp;
         }
+
+        [Function("GetProjectClosureReport")]
+        public async Task<HttpResponseData> GetClosureReport(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "projects/{projectId}/closure-report")] HttpRequestData req,
+            string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            var report = await _closureReports.BuildAsync(pid);
+            if (report == null) return await BadRequest(req, "Project not found");
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(report);
+            return resp;
+        }
+
+        [Function("GetProjectTimeline")]
+        public async Task<HttpResponseData> GetTimeline(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "projects/{projectId}/timeline")] HttpRequestData req,
+            string projectId)
+        {
+            if (!Guid.TryParse(projectId, out var pid))
+                return await BadRequest(req, "Invalid ProjectId");
+
+            try
+            {
+                var timeline = await _timeline.GetAsync(pid);
+                if (timeline == null) return await BadRequest(req, "Project not found");
+
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                resp.Headers.Add("Content-Type", "application/json; charset=utf-8");
+                await resp.WriteStringAsync(JsonSerializer.Serialize(timeline, _json));
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = "Timeline failed", detail = ex.Message });
+                return err;
+            }
+        }
+
         private async Task<HttpResponseData> BadRequest(HttpRequestData req, string message)
         {
             var resp = req.CreateResponse(HttpStatusCode.BadRequest);
@@ -404,7 +500,7 @@ namespace MANAGIX_FYP_2025.Functions
                 return await BadRequest(req, "Deadline must be today or a future date.");
 
             if (!string.IsNullOrWhiteSpace(dto.Title) &&
-                await _unitOfWork.Projects.ExistsByManagerAndTitleAsync(project.CreatedBy, dto.Title, pid))
+                await _unitOfWork.Projects.ExistsByTitleAsync(dto.Title, pid))
                 return await BadRequest(req, "Another project with this title already exists for this manager.");
 
             project.Title = dto.Title;

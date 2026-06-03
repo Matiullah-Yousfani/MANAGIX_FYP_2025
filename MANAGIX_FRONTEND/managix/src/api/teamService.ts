@@ -7,8 +7,10 @@ export interface TeamCreateRequest {
 }
 
 export const teamService = {
-  getAllTeams: async () => {
-    const res = await api.get('/teams');
+  getAllTeams: async (managerId?: string) => {
+    const res = await api.get('/teams', {
+      params: managerId ? { managerId } : undefined,
+    });
     return res.data;
   },
 

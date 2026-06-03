@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { isQaRole, normalizeAppRole } from '../utils/roles';
 
 const Sidebar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // Fetch role from localStorage
     const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
+    const appRole = normalizeAppRole(role);
 
     const handleLogout = () => {
         localStorage.clear();
@@ -38,14 +39,14 @@ const Sidebar = () => {
                     <span className="text-sm tracking-tight">Dashboard</span>
                 </Link>
 
-                {role !== 'Admin' && (
+                {appRole !== 'Admin' && (
                     <Link to="/profile" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/profile')}`}>
                         <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                         <span className="text-sm tracking-tight">My Profile</span>
                     </Link>
                 )}
 
-                {role !== 'QA' && (
+                {!isQaRole(role) && appRole !== 'Admin' && (
                     <Link to="/task-hub" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/task-hub')}`}>
                         <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                         <span className="text-sm tracking-tight">Tasks</span>
@@ -53,7 +54,7 @@ const Sidebar = () => {
                 )}
 
                 {/* MEETING ROOM: Hidden for Admin only */}
-                {role !== 'Admin' && (
+                {appRole !== 'Admin' && (
                     <Link to="/meeting" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/meeting')}`}>
                         <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         <span className="text-sm tracking-tight">Meeting Room</span>
@@ -66,27 +67,17 @@ const Sidebar = () => {
 
                 {/* --- ROLE BASED LINKS --- */}
 
-                {role === 'Admin' && (
+                {appRole === 'Admin' && (
                     <>
                         <div className="pb-2 px-4 text-[10px] font-black text-indigo-500 uppercase tracking-widest">Admin Control</div>
-                        <Link to="/admin/approvals" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/admin/approvals')}`}>
+                        <Link to="/admin?tab=overview" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${location.pathname.startsWith('/admin') ? "bg-white/10 text-white border-l-4 border-white font-bold" : "hover:bg-white/5 text-gray-400 hover:text-gray-100 border-l-4 border-transparent"}`}>
                             <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                            <span className="text-sm tracking-tight">Actions</span>
-                        </Link>
-                        {/* PHASE 5: Admin monitoring panel link. */}
-                        <Link to="/admin/monitoring" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/admin/monitoring')}`}>
-                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                            <span className="text-sm tracking-tight">Monitoring</span>
-                        </Link>
-                        {/* PHASE 3: Workload heatmap also useful to admins for system-wide view. */}
-                        <Link to="/workload" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/workload')}`}>
-                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                            <span className="text-sm tracking-tight">Workload</span>
+                            <span className="text-sm tracking-tight">Admin Portal</span>
                         </Link>
                     </>
                 )}
 
-                {role === 'Manager' && (
+                {appRole === 'Manager' && (
                     <>
                         <div className="pb-2 px-4 text-[10px] font-black text-emerald-500 uppercase tracking-widest">Project Management</div>
                         <Link to="/create-project" className="mx-4 flex items-center justify-center gap-2 p-3 bg-white text-black text-xs font-black rounded-xl mb-4 hover:bg-emerald-400 transition-all transform active:scale-95 shadow-xl shadow-white/5">
@@ -104,25 +95,45 @@ const Sidebar = () => {
                             <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                             <span className="text-sm tracking-tight">Milestones</span>
                         </Link>
+                        <Link to="/meeting/schedule" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/meeting/schedule')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span className="text-sm tracking-tight">Schedule Meeting</span>
+                        </Link>
                         {/* PHASE 3: Manager workload panel — capacity overview for the team. */}
                         <Link to="/workload" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/workload')}`}>
                             <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
                             <span className="text-sm tracking-tight">Workload</span>
                         </Link>
+                        <Link to="/payroll" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/payroll')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-sm tracking-tight">Payroll</span>
+                        </Link>
+                        <Link to="/insights" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/insights')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            <span className="text-sm tracking-tight">Team insights</span>
+                        </Link>
+                        <Link to="/timesheets" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/timesheets')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-sm tracking-tight">Timesheets</span>
+                        </Link>
                     </>
                 )}
 
-                {role === 'Employee' && (
+                {appRole === 'Employee' && (
                     <>
                         <div className="pb-2 px-4 text-[10px] font-black text-blue-500 uppercase tracking-widest">Employee Portal</div>
                         <Link to="/projects" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/projects')}`}>
                             <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             <span className="text-sm tracking-tight">My Assignments</span>
                         </Link>
+                        <Link to="/insights" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/insights')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                            <span className="text-sm tracking-tight">My Insights</span>
+                        </Link>
                     </>
                 )}
 
-                {role === 'QA' && (
+                {isQaRole(role) && (
                     <>
                         <div className="pb-2 px-4 text-[10px] font-black text-orange-500 uppercase tracking-widest">Quality Assurance</div>
                         <Link to="/qa/review" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/qa/review')}`}>

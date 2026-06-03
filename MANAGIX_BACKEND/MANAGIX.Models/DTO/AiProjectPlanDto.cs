@@ -7,6 +7,7 @@ namespace MANAGIX.Models.DTO
     {
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public decimal? EstimatedHours { get; set; }
     }
 
     public class AiPlannerMilestoneItemDto

@@ -18,6 +18,9 @@ namespace MANAGIX.Models.DTO
 
         // Distinct active projects this employee touches (cross-project view).
         public int ProjectsAssigned { get; set; }
+
+        public decimal ClockedHoursThisWeek { get; set; }
+        public bool UsesClockedHours { get; set; }
     }
 
     // PHASE 3: Project-scoped workload — used by manager dashboards and AI scoring.

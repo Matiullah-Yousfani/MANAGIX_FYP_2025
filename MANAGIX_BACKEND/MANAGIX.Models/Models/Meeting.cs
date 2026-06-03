@@ -17,9 +17,15 @@ namespace MANAGIX.Models.Models
         [Required]
         public string Title { get; set; } = null!;
 
+        public string? Description { get; set; }
+
         public DateTime ScheduledAt { get; set; } = DateTime.UtcNow;
 
         public int DurationMinutes { get; set; } = 30;
+
+        // In-app join route or external URL shown in notifications (cleared when expired).
+        [MaxLength(512)]
+        public string? MeetingLink { get; set; }
 
         // Identifier passed to Jitsi when the room is opened. We store it so the same meeting can be re-joined.
         [MaxLength(128)]
@@ -28,7 +34,7 @@ namespace MANAGIX.Models.Models
         [Required]
         public Guid CreatedBy { get; set; } // Manager / scheduler UserId
 
-        // Lifecycle: Scheduled → Live → Completed (or Cancelled).
+        // Lifecycle: Scheduled → Live → Completed | Expired | Cancelled.
         [MaxLength(16)]
         public string Status { get; set; } = "Scheduled";
 

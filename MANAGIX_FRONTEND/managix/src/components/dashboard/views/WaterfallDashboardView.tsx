@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FiLayers, FiCalendar, FiChevronRight, FiCheckCircle } from 'react-icons/fi';
 import MethodologyBadge from '../MethodologyBadge';
+import ProjectGantt from '../../ProjectGantt';
 import type { Methodology } from '../../../types';
 
 export interface WaterfallMilestone {
@@ -100,7 +101,11 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
               )}
             </div>
 
-            <div className="relative pt-4 border-t border-gray-50 flex items-center justify-between">
+            <div className="mt-6" onClick={(e) => e.stopPropagation()}>
+              <ProjectGantt projectId={p.projectId} />
+            </div>
+
+            <div className="relative pt-4 border-t border-gray-50 flex items-center justify-between mt-4">
               <div className="flex-1 mr-6">
                 <div className="flex justify-between mb-1">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Overall progress</span>
@@ -110,9 +115,13 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
                   <div className="h-full bg-orange-500" style={{ width: `${completionPct}%` }} />
                 </div>
               </div>
-              <div className="flex items-center text-orange-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onOpen(p.projectId); }}
+                className="flex items-center text-orange-600 font-bold text-sm hover:translate-x-1 transition-transform"
+              >
                 Open Plan <FiChevronRight />
-              </div>
+              </button>
             </div>
           </motion.div>
         );

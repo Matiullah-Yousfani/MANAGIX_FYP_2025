@@ -44,6 +44,10 @@ namespace MANAGIX.DataAccess.Repositories
             MeetingParticipants = new MeetingParticipantRepository(_context);
             Notifications = new NotificationRepository(_context);
             MonitoringSnapshots = new MonitoringSnapshotRepository(_context);
+            TimeEntries = new TimeEntryRepository(_context);
+            OvertimeRequests = new OvertimeRequestRepository(_context);
+            TimesheetPolicy = new TimesheetPolicyRepository(_context);
+            DailyTimesheets = new DailyTimesheetRepository(_context);
         }
 
         public IUserRepository Users { get; }
@@ -76,6 +80,10 @@ namespace MANAGIX.DataAccess.Repositories
         public IMeetingParticipantRepository MeetingParticipants { get; private set; }
         public INotificationRepository Notifications { get; private set; }
         public IMonitoringSnapshotRepository MonitoringSnapshots { get; private set; }
+        public ITimeEntryRepository TimeEntries { get; private set; }
+        public IOvertimeRequestRepository OvertimeRequests { get; private set; }
+        public ITimesheetPolicyRepository TimesheetPolicy { get; private set; }
+        public IDailyTimesheetRepository DailyTimesheets { get; private set; }
 
         public async Task<int> CompleteAsync() => await _context.SaveChangesAsync();
 

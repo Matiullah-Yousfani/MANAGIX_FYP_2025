@@ -7,6 +7,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -50,10 +51,28 @@ namespace MANAGIX_FYP_2025.Functions
             return req.JwtHasAnyRole("Admin", "Manager", "QA");
         }
 
+        private static bool IsEmployeeOnly(HttpRequestData req) =>
+            req.JwtHasAnyRole("Employee") &&
+            !req.JwtHasAnyRole("Admin", "Manager", "QA");
+
+        private static List<TaskItem> FilterTasksForCaller(HttpRequestData req, List<TaskItem> tasks, Guid callerId)
+        {
+            if (!IsEmployeeOnly(req))
+                return tasks;
+            return tasks.Where(t => t.AssignedEmployeeId == callerId).ToList();
+        }
+
+        private static bool CanViewSubmission(HttpRequestData req, TaskItem task, Guid callerId)
+        {
+            if (req.JwtHasAnyRole("QA", "Manager", "Admin"))
+                return true;
+            return task.AssignedEmployeeId == callerId;
+        }
+
         // ✅ GET /tasks/assigned-to-me
         [Function("GetAssignedTasks")]
         public async Task<HttpResponseData> GetAssignedTasks(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/assigned-to-me")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/assigned-to-me")] HttpRequestData req)
         {
             var employeeId = ResolveCallerUserId(req);
             var tasks = await _unitOfWork.Tasks.GetByEmployeeIdAsync(employeeId);
@@ -64,7 +83,7 @@ namespace MANAGIX_FYP_2025.Functions
         }
         [Function("SubmitTask")]
         public async Task<HttpResponseData> SubmitTask(
-      [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/submit")] HttpRequestData req,
+      [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks/{taskId}/submit")] HttpRequestData req,
       string taskId)
         {
             try
@@ -129,14 +148,13 @@ namespace MANAGIX_FYP_2025.Functions
                         return await BadRequest(req, "A submission already exists for this task.");
                 }
 
-                var projectRoot = @"D:\FYP-Project\MANAGIX_FYP_2025\MANAGIX_BACKEND\MANAGIX_FYP_2025";
-                var uploadPath = Path.Combine(projectRoot, "wwwroot", "tasks");
-
-                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+                var uploadPath = Path.Combine(TaskUploadPathHelper.GetWwwRootDirectory(), "tasks");
+                if (!Directory.Exists(uploadPath))
+                    Directory.CreateDirectory(uploadPath);
 
                 var extension = Path.GetExtension(dto.FileName) ?? ".dat";
-                var fileName = $"{tid}_{DateTime.UtcNow.Ticks}{extension}";
-                var physicalPath = Path.Combine(uploadPath, fileName);
+                var storageName = $"{tid}_{DateTime.UtcNow.Ticks}{extension}";
+                var physicalPath = Path.Combine(uploadPath, storageName);
 
                 await File.WriteAllBytesAsync(physicalPath, fileBytes);
 
@@ -144,7 +162,8 @@ namespace MANAGIX_FYP_2025.Functions
                 {
                     TaskId = tid,
                     SubmittedBy = submitterId,
-                    FilePath = $"/tasks/{fileName}", // Store the URL path
+                    FilePath = $"/tasks/{storageName}",
+                    FileName = dto.FileName?.Trim(),
                     Comment = dto.Comment,
                     Status = "Submitted",
                     SubmittedAt = DateTime.UtcNow
@@ -173,7 +192,7 @@ namespace MANAGIX_FYP_2025.Functions
         // ✅ NEW: GET /tasks/{taskId}/submission -> Fetches the file for the Manager
         [Function("GetTaskSubmission")]
         public async Task<HttpResponseData> GetTaskSubmission(
-    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/{taskId}/submission")] HttpRequestData req,
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/{taskId}/submission")] HttpRequestData req,
     string taskId)
         {
             try
@@ -181,26 +200,36 @@ namespace MANAGIX_FYP_2025.Functions
                 if (!Guid.TryParse(taskId, out var tid))
                     return await BadRequest(req, "Invalid TaskId");
 
-                if (!req.JwtHasAnyRole("QA", "Manager", "Admin"))
-                    return await BadRequest(req, "Not authorized to view submissions.");
+                var task = await _unitOfWork.Tasks.GetByIdAsync(tid);
+                if (task == null)
+                    return await NotFound(req, "Task not found.");
 
-                // 1. Fetch submission
+                Guid callerId;
+                try
+                {
+                    callerId = ResolveCallerUserId(req);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return await BadRequest(req, "Authorization required.");
+                }
+
+                if (!CanViewSubmission(req, task, callerId))
+                    return await BadRequest(req, "Not authorized to view this submission.");
+
                 var submission = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
                 if (submission == null)
                     return await NotFound(req, "No submission record found.");
 
-                // 2. Build file path
-                var projectRoot = @"D:\FYP-Project\MANAGIX_FYP_2025\MANAGIX_BACKEND\MANAGIX_FYP_2025";
-                var physicalPath = Path.Combine(projectRoot, "wwwroot", submission.FilePath?.TrimStart('/') ?? "");
+                var physicalPath = TaskUploadPathHelper.ToPhysicalPath(submission.FilePath);
 
                 string? base64File = null;
-                string? fileName = null;
+                var fileName = TaskUploadPathHelper.DisplayFileName(submission.FileName, submission.FilePath);
 
-                if (!string.IsNullOrEmpty(submission.FilePath) && File.Exists(physicalPath))
+                if (!string.IsNullOrEmpty(physicalPath) && File.Exists(physicalPath))
                 {
                     var fileBytes = await File.ReadAllBytesAsync(physicalPath);
                     base64File = Convert.ToBase64String(fileBytes);
-                    fileName = Path.GetFileName(physicalPath);
                 }
 
                 // 3. Build response
@@ -233,10 +262,23 @@ namespace MANAGIX_FYP_2025.Functions
         }
 
 
+        private async Task<HashSet<Guid>> GetProjectIdsForTeamMemberAsync(Guid userId)
+        {
+            var teamIds = await _unitOfWork.TeamEmployees.GetTeamIdsForMemberAsync(userId);
+            if (teamIds.Count == 0)
+                return new HashSet<Guid>();
+
+            var assignments = await _unitOfWork.ProjectTeams.GetAllAssignmentsAsync();
+            return assignments
+                .Where(a => teamIds.Contains(a.TeamId))
+                .Select(a => a.ProjectId)
+                .ToHashSet();
+        }
+
         // ✅ GET /tasks/pending-review
         [Function("GetPendingSubmissions")]
         public async Task<HttpResponseData> GetPendingSubmissions(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/pending-review")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/pending-review")] HttpRequestData req)
         {
             if (!req.JwtHasAnyRole("QA", "Admin"))
             {
@@ -247,15 +289,79 @@ namespace MANAGIX_FYP_2025.Functions
 
             var submissions = await _unitOfWork.TaskSubmissions.GetPendingSubmissionsAsync();
 
+            if (req.JwtHasAnyRole("QA") && !req.JwtHasAnyRole("Admin"))
+            {
+                var qaId = ResolveCallerUserId(req);
+                var projectIds = await GetProjectIdsForTeamMemberAsync(qaId);
+                submissions = submissions
+                    .Where(s => s.Task != null && projectIds.Contains(s.Task.ProjectId))
+                    .ToList();
+            }
+
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(submissions);
+            return resp;
+        }
+
+        // ✅ GET /tasks/qa/done — all Done tasks on projects the QA belongs to
+        [Function("GetQaDoneTasks")]
+        public async Task<HttpResponseData> GetQaDoneTasks(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/qa/done")] HttpRequestData req)
+        {
+            if (!req.JwtHasAnyRole("QA", "Admin"))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { message = "QA access only." });
+                return forbidden;
+            }
+
+            HashSet<Guid> projectIds;
+            if (req.JwtHasAnyRole("Admin"))
+            {
+                var all = await _unitOfWork.Projects.GetAllAsync();
+                projectIds = all.Select(p => p.ProjectId).ToHashSet();
+            }
+            else
+            {
+                var qaId = ResolveCallerUserId(req);
+                projectIds = await GetProjectIdsForTeamMemberAsync(qaId);
+            }
+
+            var result = new List<object>();
+            foreach (var pid in projectIds)
+            {
+                var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+                foreach (var t in tasks.Where(t => TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Done))
+                {
+                    var sub = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(t.TaskId);
+                    result.Add(new
+                    {
+                        taskId = t.TaskId,
+                        title = t.Title,
+                        status = t.Status,
+                        projectId = t.ProjectId,
+                        assignedEmployeeId = t.AssignedEmployeeId,
+                        submission = sub == null ? null : new
+                        {
+                            submissionId = sub.SubmissionId,
+                            status = sub.Status,
+                            fileName = TaskUploadPathHelper.DisplayFileName(sub.FileName, sub.FilePath),
+                            submittedAt = sub.SubmittedAt,
+                            comment = sub.Comment,
+                        },
+                    });
+                }
+            }
+
+            var resp = req.CreateResponse(HttpStatusCode.OK);
+            await resp.WriteAsJsonAsync(result);
             return resp;
         }
 
         // ✅ POST /tasks/{taskId}/approve
         [Function("ApproveTask")]
         public async Task<HttpResponseData> ApproveTask(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/approve")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks/{taskId}/approve")] HttpRequestData req,
             string taskId)
         {
             return await ReviewTask(req, taskId, "Approved", TaskWorkflow.Approved);
@@ -264,7 +370,7 @@ namespace MANAGIX_FYP_2025.Functions
         // ✅ POST /tasks/{taskId}/reject
         [Function("RejectTask")]
         public async Task<HttpResponseData> RejectTask(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks/{taskId}/reject")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks/{taskId}/reject")] HttpRequestData req,
             string taskId)
         {
             return await ReviewTask(req, taskId, "Rejected", TaskWorkflow.InProgress);
@@ -315,7 +421,7 @@ namespace MANAGIX_FYP_2025.Functions
         // GET /tasks/{taskId} → Get task by ID
         [Function("GetTaskById")]
         public async Task<HttpResponseData> GetTaskById(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/{taskId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/{taskId}")] HttpRequestData req,
             string taskId)
         {
             if (!Guid.TryParse(taskId, out var tid))
@@ -348,7 +454,7 @@ namespace MANAGIX_FYP_2025.Functions
 
         [Function("UpdateTask")]
         public async Task<HttpResponseData> UpdateTask(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "tasks/{taskId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "tasks/{taskId}")] HttpRequestData req,
             string taskId)
         {
             if (!Guid.TryParse(taskId, out var tid))
@@ -414,6 +520,14 @@ namespace MANAGIX_FYP_2025.Functions
                         task.Status, dto.Status, callerIsQa, out var normalizedStatus, out var err))
                     return await BadRequest(req, err ?? "Invalid status.");
 
+                if (normalizedStatus == TaskWorkflow.Done && !callerIsQa)
+                {
+                    var submission = await _unitOfWork.TaskSubmissions.GetByTaskIdAsync(tid);
+                    if (submission == null)
+                        return await BadRequest(req,
+                            "A work submission is required before marking this task Done. Employees must upload their deliverable first.");
+                }
+
                 task.Status = normalizedStatus;
             }
 
@@ -424,6 +538,13 @@ namespace MANAGIX_FYP_2025.Functions
                 task.AssignedEmployeeId = null;
             else if (dto.AssignedEmployeeId.HasValue && dto.AssignedEmployeeId.Value != Guid.Empty)
                 task.AssignedEmployeeId = dto.AssignedEmployeeId.Value;
+
+            if (dto.Deadline.HasValue)
+            {
+                if (!managerOrAdmin)
+                    return await BadRequest(req, "Only a manager can set task deadlines.");
+                task.Deadline = dto.Deadline.Value;
+            }
 
             _unitOfWork.Tasks.Update(task);
             await _unitOfWork.CompleteAsync();
@@ -437,7 +558,7 @@ namespace MANAGIX_FYP_2025.Functions
         // DELETE /tasks/{taskId} → Delete task
         [Function("DeleteTask")]
         public async Task<HttpResponseData> DeleteTask(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "tasks/{taskId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "tasks/{taskId}")] HttpRequestData req,
             string taskId)
         {
             if (!Guid.TryParse(taskId, out var tid))
@@ -454,8 +575,23 @@ namespace MANAGIX_FYP_2025.Functions
             if (sub != null)
                 _unitOfWork.TaskSubmissions.Remove(sub);
 
+            var milestoneId = task.MilestoneId;
             _unitOfWork.Tasks.Remove(task);
             await _unitOfWork.CompleteAsync();
+
+            if (milestoneId.HasValue)
+            {
+                var remaining = await _unitOfWork.Tasks.GetByMilestoneIdAsync(milestoneId.Value);
+                if (remaining.Count == 0)
+                {
+                    var milestone = await _unitOfWork.Milestones.GetByIdAsync(milestoneId.Value);
+                    if (milestone != null)
+                    {
+                        _unitOfWork.Milestones.Remove(milestone);
+                        await _unitOfWork.CompleteAsync();
+                    }
+                }
+            }
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(new { message = "Task deleted successfully" });
@@ -465,14 +601,22 @@ namespace MANAGIX_FYP_2025.Functions
         // ✅ GET /tasks/project/{projectId} -> Get all tasks for a specific project
         [Function("GetTasksByProject")]
         public async Task<HttpResponseData> GetTasksByProject(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/project/{projectId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/project/{projectId}")] HttpRequestData req,
             string projectId)
         {
             if (!Guid.TryParse(projectId, out var pid))
                 return await BadRequest(req, "Invalid ProjectId");
 
-            // This method should exist in your TaskRepository via UnitOfWork
             var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+            try
+            {
+                var callerId = ResolveCallerUserId(req);
+                tasks = FilterTasksForCaller(req, tasks, callerId);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // anonymous — return unfiltered (legacy)
+            }
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(tasks);
@@ -482,7 +626,7 @@ namespace MANAGIX_FYP_2025.Functions
         //create task
         [Function("CreateTask")]
         public async Task<HttpResponseData> CreateTask(
-         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "tasks")] HttpRequestData req)
+         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] HttpRequestData req)
         {
             try
             {
@@ -578,6 +722,8 @@ namespace MANAGIX_FYP_2025.Functions
                     Description = dto.Description,
                     Status = TaskWorkflow.Todo,
                     AssignedEmployeeId = hasAssignee ? dto.AssignedEmployeeId : null,
+                    EstimatedHours = dto.EstimatedHours > 0 ? dto.EstimatedHours : 4m,
+                    Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Medium" : dto.Priority,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -610,13 +756,22 @@ namespace MANAGIX_FYP_2025.Functions
         // GET /tasks/milestone/{milestoneId} → Get tasks by milestone
         [Function("GetTasksByMilestone")]
         public async Task<HttpResponseData> GetTasksByMilestone(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "tasks/milestone/{milestoneId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/milestone/{milestoneId}")] HttpRequestData req,
             string milestoneId)
         {
             if (!Guid.TryParse(milestoneId, out var mid))
                 return await BadRequest(req, "Invalid MilestoneId");
 
             var tasks = await _unitOfWork.Tasks.GetByMilestoneIdAsync(mid);
+            try
+            {
+                var callerId = ResolveCallerUserId(req);
+                tasks = FilterTasksForCaller(req, tasks, callerId);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // anonymous — return unfiltered (legacy)
+            }
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(tasks);

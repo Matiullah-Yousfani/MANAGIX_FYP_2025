@@ -5,7 +5,6 @@ import { taskService } from "../../api/taskService";
 import { milestoneService } from "../../api/milestoneService";
 import { projectService } from "../../api/projectService";
 import { teamService } from "../../api/teamService";
-import { aiService, type TaskAssignment } from "../../api/aiService";
 
 // --- Constants ---
 const KANBAN_COLUMNS = ["Todo", "InProgress", "Done"];
@@ -23,30 +22,46 @@ const STATUS_MAP: Record<string, string> = {
 const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; onClick: () => void; role: string | null }) => {
   const roleNorm = (role || "").toLowerCase();
   const [submission, setSubmission] = useState<any>(null);
+  const [submissionLoading, setSubmissionLoading] = useState(false);
   const st = task.Status || task.status;
-  const isDone = STATUS_MAP[st] === "Done";
+  const isDone =
+    st === "Approved" || st === "Done" || STATUS_MAP[st] === "Done";
   const canDrag = roleNorm === "employee" && !isDone && st !== "Approved";
 
   useEffect(() => {
-    if (isDone) {
-      api.get(`/tasks/${task.TaskId || task.taskId}/submission`)
-        .then((res) => setSubmission(res.data))
-        .catch(() => setSubmission(null));
+    if (!isDone) {
+      setSubmission(null);
+      setSubmissionLoading(false);
+      return;
     }
-  }, [task.TaskId, task.taskId, isDone]);
+    const tid = task.TaskId || task.taskId;
+    setSubmissionLoading(true);
+    api.get(`/tasks/${tid}/submission`)
+      .then((res) => setSubmission(res.data))
+      .catch(() => setSubmission(null))
+      .finally(() => setSubmissionLoading(false));
+  }, [task.TaskId, task.taskId, isDone, task.submissionLoadedAt]);
+
+  const submissionStatus = submission?.status ?? submission?.Status;
+  const submissionFile =
+    submission?.fileName ?? submission?.FileName ??
+    (submission?.filePath ? String(submission.filePath).split(/[/\\]/).pop() : null);
 
   const getStatusDisplay = () => {
+    if (st === "Approved") return "Approved";
     if (!isDone) return st === "Pending" ? "Todo" : st;
-    if (!submission) return "Submitted";
-    if (submission.status === "Submitted") return "Under Review";
-    return submission.status;
+    if (submissionLoading) return "Submitted for review";
+    if (!submission || submissionStatus === "Submitted") return "Submitted for review";
+    if (submissionStatus === "Approved") return "Approved";
+    if (submissionStatus === "Rejected") return "Rejected";
+    return submissionStatus || "Submitted for review";
   };
 
   const getBadgeColor = () => {
     const s = getStatusDisplay();
     if (s === "Approved") return "bg-emerald-100 text-emerald-700";
     if (s === "Rejected") return "bg-red-50 text-red-600";
-    if (s === "Under Review") return "bg-indigo-50 text-indigo-600";
+    if (s === "Submitted for review" || s === "Under Review") return "bg-amber-50 text-amber-700";
     return "bg-gray-100 text-gray-500";
   };
 
@@ -77,9 +92,9 @@ const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; on
             {task.Description || task.description}
           </p>
 
-          {isDone && submission?.fileName && (
+          {isDone && submissionFile && (
             <div className="mb-4 flex items-center gap-2 text-[10px] text-indigo-600 font-black uppercase tracking-wider bg-indigo-50/50 p-2 rounded-xl">
-              <span>📎</span> {submission.fileName}
+              <span>📎</span> {submissionFile}
             </div>
           )}
 
@@ -110,7 +125,10 @@ const TaskModal = ({
   onRefresh: () => void;
 }) => {
   const taskStatus = task.Status || task.status;
-  const isReadOnly = STATUS_MAP[taskStatus] === "Done";
+  const isReadOnly =
+    taskStatus === "Approved" ||
+    taskStatus === "Done" ||
+    STATUS_MAP[taskStatus] === "Done";
   const [submission, setSubmission] = useState<any>(null);
   const [status, setStatus] = useState(
     taskStatus === "Pending" || taskStatus === "Todo" ? "Todo" : taskStatus === "InProgress" ? "InProgress" : "Todo"
@@ -122,9 +140,6 @@ const TaskModal = ({
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [assigneeId, setAssigneeId] = useState("");
-  const [aiPick, setAiPick] = useState<TaskAssignment | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-
   const roleRaw = localStorage.getItem("roleName") || localStorage.getItem("userRole") || "";
   const roleNorm = roleRaw.toLowerCase();
   const isEmployee = roleNorm === "employee";
@@ -139,7 +154,6 @@ const TaskModal = ({
   useEffect(() => {
     const id = task.AssignedEmployeeId ?? task.assignedEmployeeId;
     setAssigneeId(id ? String(id) : "");
-    setAiPick(null);
   }, [task.TaskId, task.taskId, task.AssignedEmployeeId, task.assignedEmployeeId]);
 
   useEffect(() => {
@@ -173,40 +187,6 @@ const TaskModal = ({
       cancelled = true;
     };
   }, [isManagerOrAdmin, projectId, task.TaskId, task.taskId]);
-
-  const handleAiSuggest = async () => {
-    if (!projectId) {
-      alert("Select a project in the board header first.");
-      return;
-    }
-    setAiLoading(true);
-    try {
-      const res = await aiService.suggestTaskAllocation(projectId);
-      const tid = String(task.TaskId || task.taskId || "");
-      const norm = (g: string) => g.replace(/-/g, "").toLowerCase();
-      const rows = res.taskAssignments || [];
-      const match =
-        rows.find((a) => norm(String(a.taskId)) === norm(tid)) ||
-        rows.find((a) => String(a.taskId) === tid);
-      if (!match) {
-        alert(
-          "No AI row for this task yet. Run task suggestions from Team Setup (AI assistant), and add employee CVs/skills for better matches."
-        );
-        return;
-      }
-      setAssigneeId(match.userId);
-      setAiPick(match);
-    } catch (e: any) {
-      alert(
-        e?.response?.data?.detail ||
-          e?.response?.data?.message ||
-          e?.message ||
-          "AI suggestion failed. Start the service on port 8002 and restart the Functions host."
-      );
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   const handleManagerSaveAssignment = async () => {
     try {
@@ -268,7 +248,9 @@ const TaskModal = ({
             comment: comment || undefined,
           });
           onRefresh();
+          onClose();
         };
+        return;
       } else {
         if (status === "Done") {
           alert("Attach a deliverable file to move this task to Done.");
@@ -298,8 +280,18 @@ const TaskModal = ({
           <div className="space-y-6">
             <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current Status</label>
-                <p className="text-lg font-sans font-black text-indigo-600 mb-4">{submission?.status || "Loading..."}</p>
-                <p className="text-sm font-medium text-gray-500 mb-1">File: {submission?.fileName}</p>
+                <p className="text-lg font-sans font-black text-indigo-600 mb-4">
+                  {taskStatus === "Approved" || submission?.status === "Approved"
+                    ? "Approved"
+                    : submission?.status === "Rejected"
+                      ? "Rejected"
+                      : submission?.status === "Submitted" || !submission?.status
+                        ? "Submitted for review"
+                        : submission?.status ?? taskStatus}
+                </p>
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  File: {submission?.fileName ?? submission?.FileName ?? "—"}
+                </p>
                 <p className="text-sm font-medium text-gray-400">"{submission?.comment}"</p>
             </div>
             {submission?.qaComment && (
@@ -355,10 +347,7 @@ const TaskModal = ({
                   )}
                   <select
                     value={assigneeId}
-                    onChange={(e) => {
-                      setAssigneeId(e.target.value);
-                      setAiPick(null);
-                    }}
+                    onChange={(e) => setAssigneeId(e.target.value)}
                     disabled={membersLoading || (!!membersError && members.length === 0)}
                     className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none disabled:opacity-50"
                   >
@@ -377,32 +366,18 @@ const TaskModal = ({
                   )}
                 </div>
 
-                {aiPick && (
-                  <div className="p-6 bg-violet-50 rounded-[2rem] border border-violet-100 space-y-2">
-                    <p className="text-[10px] font-black text-violet-700 uppercase tracking-widest">AI suggestion (review & save)</p>
-                    <p className="text-sm font-semibold text-gray-800">{aiPick.employeeName}</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{aiPick.reason}</p>
-                  </div>
-                )}
+                <p className="text-xs text-gray-400 font-medium px-1 leading-relaxed">
+                  Assign manually here. For AI suggestions across all open tasks, use Team Hub → Smart Task Allocation.
+                </p>
 
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={handleAiSuggest}
-                    disabled={aiLoading || !projectId}
-                    className="flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-sm bg-white border-2 border-violet-200 text-violet-700 hover:bg-violet-50 disabled:opacity-40 transition-all"
-                  >
-                    {aiLoading ? "Suggesting…" : "AI suggest assignee"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleManagerSaveAssignment}
-                    disabled={loading || membersLoading}
-                    className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm disabled:opacity-40 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all"
-                  >
-                    {loading ? "Saving…" : "Save assignment"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleManagerSaveAssignment}
+                  disabled={loading || membersLoading}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm disabled:opacity-40 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all"
+                >
+                  {loading ? "Saving…" : "Save assignment"}
+                </button>
 
                 <button
                   type="button"
@@ -500,8 +475,25 @@ const KanbanBoard = () => {
 
   const refreshTasks = async () => {
     if (!selectedProjectId) return;
-    const url = selectedMilestoneId 
-      ? `/tasks/milestone/${selectedMilestoneId}` 
+    const roleNorm = (role || "").toLowerCase();
+    if (roleNorm === "employee") {
+      const all = await taskService.getAssignedToMe();
+      const list = Array.isArray(all) ? all : [];
+      const pid = String(selectedProjectId);
+      let filtered = list.filter(
+        (t: any) => String(t.projectId ?? t.ProjectId) === pid
+      );
+      if (selectedMilestoneId) {
+        const mid = String(selectedMilestoneId);
+        filtered = filtered.filter(
+          (t: any) => String(t.milestoneId ?? t.MilestoneId) === mid
+        );
+      }
+      setTasks(filtered);
+      return;
+    }
+    const url = selectedMilestoneId
+      ? `/tasks/milestone/${selectedMilestoneId}`
       : `/tasks/project/${selectedProjectId}`;
     const res = await api.get(url);
     setTasks(res.data);

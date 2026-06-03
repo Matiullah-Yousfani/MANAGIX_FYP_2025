@@ -63,5 +63,13 @@ namespace MANAGIX.DataAccess.Repositories
                 p.Title.ToLower() == normalized &&
                 (!excludeProjectId.HasValue || p.ProjectId != excludeProjectId.Value));
         }
+
+        public async Task<bool> ExistsByTitleAsync(string title, Guid? excludeProjectId)
+        {
+            var normalized = title.Trim().ToLowerInvariant();
+            return await _context.Projects.AnyAsync(p =>
+                p.Title.ToLower() == normalized &&
+                (!excludeProjectId.HasValue || p.ProjectId != excludeProjectId.Value));
+        }
     }
 }

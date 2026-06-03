@@ -1,11 +1,11 @@
-// PHASE 4: Frontend wrapper for meeting + AI-extraction endpoints.
 import api from './axiosInstance';
-import type { Meeting, ExtractedTaskSuggestion } from '../types';
+import type { Meeting, ExtractedTaskSuggestion, MeetingJoinStatus } from '../types';
 
 export interface MeetingCreateInput {
-  projectId?: string | null;
+  projectId: string;
   title: string;
-  scheduledAt: string; // ISO
+  description?: string;
+  scheduledAt: string;
   durationMinutes?: number;
   jitsiRoomName?: string | null;
   createdBy: string;
@@ -23,6 +23,16 @@ export const meetingService = {
     return r.data;
   },
 
+  joinStatus: async (meetingId: string, userId: string): Promise<MeetingJoinStatus> => {
+    const r = await api.get(`/meetings/${meetingId}/join-status/${userId}`);
+    return r.data;
+  },
+
+  resolveParticipants: async (projectId: string): Promise<string[]> => {
+    const r = await api.get(`/meetings/project/${projectId}/participants`);
+    return r.data?.participantUserIds ?? [];
+  },
+
   byProject: async (projectId: string): Promise<Meeting[]> => {
     const r = await api.get(`/meetings/project/${projectId}`);
     return r.data;
@@ -33,13 +43,11 @@ export const meetingService = {
     return r.data;
   },
 
-  // Saves transcript + flips status to Completed. Called when AssemblyAI returns.
   completeWithTranscript: async (meetingId: string, transcriptText: string): Promise<boolean> => {
     const r = await api.post(`/meetings/${meetingId}/complete`, { transcriptText });
     return Boolean(r.data?.ok);
   },
 
-  // AI extraction — returns suggestions, manager confirms which to actually persist.
   extractTasks: async (meetingId: string): Promise<{ tasks: ExtractedTaskSuggestion[] }> => {
     const r = await api.post(`/meetings/${meetingId}/extract-tasks`);
     return r.data;

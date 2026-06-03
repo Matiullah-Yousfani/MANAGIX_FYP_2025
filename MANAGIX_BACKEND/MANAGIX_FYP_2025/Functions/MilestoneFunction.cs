@@ -2,6 +2,7 @@
 using MANAGIX.Models.DTO;
 using MANAGIX.Models.Models;
 using MANAGIX.Utility;
+using System.Linq;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker;
 using System;
@@ -25,7 +26,7 @@ namespace MANAGIX_FYP_2025.Functions
         // POST /milestones
         [Function("CreateMilestone")]
         public async Task<HttpResponseData> CreateMilestone(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "milestones")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "milestones")] HttpRequestData req)
         {
             try
             {
@@ -112,7 +113,7 @@ namespace MANAGIX_FYP_2025.Functions
 
         [Function("GetMilestoneById")]
         public async Task<HttpResponseData> GetMilestoneById(
-    [HttpTrigger(AuthorizationLevel.Function, "get", Route = "milestones/{milestoneId}")]
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "milestones/{milestoneId}")]
     HttpRequestData req,
     string milestoneId)
         {
@@ -131,7 +132,7 @@ namespace MANAGIX_FYP_2025.Functions
 
         [Function("UpdateMilestone")]
         public async Task<HttpResponseData> UpdateMilestone(
-    [HttpTrigger(AuthorizationLevel.Function, "put", Route = "milestones/{milestoneId}")]
+    [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "milestones/{milestoneId}")]
     HttpRequestData req,
     string milestoneId)
         {
@@ -187,7 +188,7 @@ namespace MANAGIX_FYP_2025.Functions
 
         [Function("DeleteMilestone")]
         public async Task<HttpResponseData> DeleteMilestone(
-    [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "milestones/{milestoneId}")]
+    [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "milestones/{milestoneId}")]
     HttpRequestData req,
     string milestoneId)
         {
@@ -200,7 +201,7 @@ namespace MANAGIX_FYP_2025.Functions
 
             var tasks = await _unitOfWork.Tasks.GetByMilestoneIdAsync(mid);
             if (tasks != null && tasks.Count > 0)
-                return await BadRequest(req, "Cannot delete milestone: tasks exist under this milestone.");
+                return await BadRequest(req, "Remove or reassign all tasks under this milestone before deleting it.");
 
             _unitOfWork.Milestones.Remove(milestone);
             await _unitOfWork.CompleteAsync();
@@ -219,7 +220,7 @@ namespace MANAGIX_FYP_2025.Functions
 
         [Function("CloseMilestone")]
         public async Task<HttpResponseData> CloseMilestone(
-    [HttpTrigger(AuthorizationLevel.Function, "post", Route = "milestones/{milestoneId}/close")] HttpRequestData req,
+    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "milestones/{milestoneId}/close")] HttpRequestData req,
     string milestoneId)
         {
             if (!Guid.TryParse(milestoneId, out var mid))
@@ -235,6 +236,22 @@ namespace MANAGIX_FYP_2025.Functions
             var p = await _unitOfWork.Projects.GetByIdAsync(milestone.ProjectId);
             if (p != null && p.IsClosed)
                 return await BadRequest(req, "Cannot close milestone: project is closed.");
+
+            if (string.Equals(milestone.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                return await BadRequest(req, "Milestone is already completed.");
+
+            var mTasks = await _unitOfWork.Tasks.GetByMilestoneIdAsync(mid);
+            if (mTasks != null && mTasks.Count > 0)
+            {
+                var incomplete = mTasks.Where(t =>
+                {
+                    var n = TaskWorkflow.Normalize(t.Status);
+                    return n != TaskWorkflow.Approved && n != TaskWorkflow.Done;
+                }).ToList();
+                if (incomplete.Count > 0)
+                    return await BadRequest(req,
+                        $"Cannot complete milestone: {incomplete.Count} task(s) are not finished (must be Done or Approved).");
+            }
 
             milestone.Status = "Completed";
             milestone.CompletedAt = DateTime.UtcNow;
@@ -252,7 +269,7 @@ namespace MANAGIX_FYP_2025.Functions
         // GET /milestones/project/{projectId}
         [Function("GetMilestonesByProject")]
         public async Task<HttpResponseData> GetMilestonesByProject(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "milestones/project/{projectId}")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "milestones/project/{projectId}")] HttpRequestData req,
             string projectId)
         {
             if (!Guid.TryParse(projectId, out Guid projId))

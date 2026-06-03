@@ -74,6 +74,41 @@ namespace MANAGIX_FYP_2025.Functions
             }
         }
 
+        [Function("SuggestTeamOptions")]
+        public async Task<HttpResponseData> SuggestTeamOptions(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "ai/suggest-team-options")] HttpRequestData req)
+        {
+            try
+            {
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                var dto = JsonSerializer.Deserialize<SuggestTeamRequestDto>(body, _jsonOptions);
+                if (dto == null || dto.ProjectId == Guid.Empty)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = "projectId is required" });
+                    return bad;
+                }
+
+                var result = await _aiService.SuggestTeamOptionsAsync(dto.ProjectId);
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                resp.Headers.Add("Content-Type", "application/json");
+                await resp.WriteStringAsync(JsonSerializer.Serialize(result, _jsonOptions));
+                return resp;
+            }
+            catch (InvalidOperationException ex)
+            {
+                var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                await bad.WriteAsJsonAsync(new { message = ex.Message });
+                return bad;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = ex.Message });
+                return err;
+            }
+        }
+
         [Function("SuggestEmployees")]
         public async Task<HttpResponseData> SuggestEmployees(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "ai/suggest-employees")] HttpRequestData req)
@@ -85,10 +120,24 @@ namespace MANAGIX_FYP_2025.Functions
                 string body = await new StreamReader(req.Body).ReadToEndAsync();
                 var dto = JsonSerializer.Deserialize<SuggestEmployeesRequestDto>(body, _jsonOptions);
 
-                if (dto == null || string.IsNullOrWhiteSpace(dto.ProjectDescription))
+                if (dto == null)
                 {
                     var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                    await badResp.WriteAsJsonAsync(new { message = "Invalid request: projectDescription is required" });
+                    await badResp.WriteAsJsonAsync(new { message = "Invalid request body" });
+                    return badResp;
+                }
+
+                if (string.IsNullOrWhiteSpace(dto.ProjectDescription) && dto.ProjectId.HasValue && dto.ProjectId.Value != Guid.Empty)
+                {
+                    var project = await _aiService.ResolveProjectDescriptionAsync(dto.ProjectId.Value);
+                    if (!string.IsNullOrWhiteSpace(project))
+                        dto.ProjectDescription = project;
+                }
+
+                if (string.IsNullOrWhiteSpace(dto.ProjectDescription))
+                {
+                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResp.WriteAsJsonAsync(new { message = "Invalid request: projectDescription or projectId with title is required" });
                     return badResp;
                 }
 
@@ -144,8 +193,11 @@ namespace MANAGIX_FYP_2025.Functions
                     return badResp;
                 }
 
-                Console.WriteLine($"[SuggestTaskAllocation] ProjectId: {dto.ProjectId}");
-                var result = await _aiService.SuggestTaskAllocationAsync(dto.ProjectId);
+                var singleTask = dto.TaskId.HasValue && dto.TaskId.Value != Guid.Empty
+                    ? dto.TaskId
+                    : null;
+                Console.WriteLine($"[SuggestTaskAllocation] ProjectId: {dto.ProjectId}, TaskId: {singleTask}");
+                var result = await _aiService.SuggestTaskAllocationAsync(dto.ProjectId, singleTask);
 
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 resp.Headers.Add("Content-Type", "application/json");
@@ -174,6 +226,60 @@ namespace MANAGIX_FYP_2025.Functions
                 var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
                 await errorResp.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message });
                 return errorResp;
+            }
+        }
+
+        [Function("GetTaskAllocationProjects")]
+        public async Task<HttpResponseData> GetTaskAllocationProjects(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "ai/task-allocation-projects")] HttpRequestData req)
+        {
+            try
+            {
+                Guid? managerId = null;
+                var raw = req.Query["managerId"];
+                if (!string.IsNullOrWhiteSpace(raw) && Guid.TryParse(raw, out var mid))
+                    managerId = mid;
+
+                var list = await _aiService.GetTaskAllocationProjectsAsync(managerId);
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                resp.Headers.Add("Content-Type", "application/json");
+                await resp.WriteStringAsync(JsonSerializer.Serialize(list, _jsonOptions));
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = ex.Message });
+                return err;
+            }
+        }
+
+        [Function("ApplyTaskAssignments")]
+        public async Task<HttpResponseData> ApplyTaskAssignments(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "ai/apply-task-assignments")] HttpRequestData req)
+        {
+            try
+            {
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                var dto = JsonSerializer.Deserialize<ApplyTaskAssignmentsRequestDto>(body, _jsonOptions);
+                if (dto == null || dto.ProjectId == Guid.Empty || dto.TaskAssignments == null)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = "projectId and taskAssignments are required" });
+                    return bad;
+                }
+
+                var result = await _aiService.ApplyTaskAssignmentsAsync(dto.ProjectId, dto.TaskAssignments);
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                resp.Headers.Add("Content-Type", "application/json");
+                await resp.WriteStringAsync(JsonSerializer.Serialize(result, _jsonOptions));
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = ex.Message });
+                return err;
             }
         }
     }

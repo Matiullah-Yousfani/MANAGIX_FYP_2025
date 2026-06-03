@@ -16,6 +16,9 @@ namespace MANAGIX.Models.DTO
         public decimal CurrentLoadHours { get; set; }
         public decimal WeeklyCapacityHours { get; set; } = 40m;
         public double RecentApprovalRate { get; set; } = 0.5;
+        public string EmployeeLevel { get; set; } = "Junior";
+        public decimal? HourlyRate { get; set; }
+        public int CompletedProjectsCount { get; set; }
     }
 
     public class ExperienceInfoDto
@@ -42,6 +45,33 @@ namespace MANAGIX.Models.DTO
     public class SuggestTeamResponseDto
     {
         public List<TeamSuggestionDto> Team { get; set; } = new();
+    }
+
+    public class TeamPoolMemberDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public List<string> Skills { get; set; } = new();
+    }
+
+    public class TeamOptionDto
+    {
+        public string Label { get; set; } = string.Empty;
+        public string SuggestedTeamName { get; set; } = string.Empty;
+        public List<TeamSuggestionDto> Team { get; set; } = new();
+        /// <summary>True for the option best suited to this project (shown in UI).</summary>
+        public bool IsRecommended { get; set; }
+        /// <summary>Deterministic fit score for this lineup (higher = better).</summary>
+        public double FitScore { get; set; }
+    }
+
+    public class SuggestTeamOptionsResponseDto
+    {
+        public List<TeamOptionDto> Options { get; set; } = new();
+        /// <summary>Suggested developer count (always plus exactly 1 QA).</summary>
+        public int SuggestedDeveloperCount { get; set; }
+        public List<TeamPoolMemberDto> AvailableQa { get; set; } = new();
+        public List<TeamPoolMemberDto> AvailableEmployees { get; set; } = new();
     }
 
     // Feature 2: Suggest Employees
@@ -73,6 +103,8 @@ namespace MANAGIX.Models.DTO
     public class SuggestTaskAllocationRequestDto
     {
         public Guid ProjectId { get; set; }
+        /// <summary>When set (e.g. Kanban per-task), suggest for this task even if it already has an assignee.</summary>
+        public Guid? TaskId { get; set; }
     }
 
     public class TaskAssignmentDto
@@ -96,5 +128,18 @@ namespace MANAGIX.Models.DTO
     public class SuggestTaskAllocationResponseDto
     {
         public List<TaskAssignmentDto> TaskAssignments { get; set; } = new();
+    }
+
+    public class ApplyTaskAssignmentsRequestDto
+    {
+        public Guid ProjectId { get; set; }
+        public List<TaskAssignmentDto> TaskAssignments { get; set; } = new();
+    }
+
+    public class ApplyTaskAssignmentsResultDto
+    {
+        public int Applied { get; set; }
+        public int Failed { get; set; }
+        public List<string> Errors { get; set; } = new();
     }
 }

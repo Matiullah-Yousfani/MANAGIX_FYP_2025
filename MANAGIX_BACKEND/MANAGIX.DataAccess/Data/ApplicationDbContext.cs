@@ -49,6 +49,10 @@ namespace MANAGIX.DataAccess.Data
         public DbSet<MeetingParticipant> MeetingParticipants { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<MonitoringSnapshot> MonitoringSnapshots { get; set; }
+        public DbSet<TimeEntry> TimeEntries { get; set; }
+        public DbSet<OvertimeRequest> OvertimeRequests { get; set; }
+        public DbSet<TimesheetPolicySettings> TimesheetPolicySettings { get; set; }
+        public DbSet<DailyTimesheet> DailyTimesheets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -131,6 +135,16 @@ namespace MANAGIX.DataAccess.Data
             modelBuilder.Entity<MonitoringSnapshot>()
                 .HasIndex(ms => new { ms.ProjectId, ms.CapturedAt })
                 .HasDatabaseName("IX_MonitoringSnapshot_Project_Time");
+
+            modelBuilder.Entity<OvertimeRequest>()
+                .HasIndex(o => new { o.UserId, o.WorkDate })
+                .HasDatabaseName("IX_OvertimeRequest_User_WorkDate");
+
+            modelBuilder.Entity<DailyTimesheet>()
+                .HasIndex(d => new { d.UserId, d.WorkDate })
+                .IsUnique()
+                .HasDatabaseName("IX_DailyTimesheet_User_WorkDate");
+
         }
 
     }

@@ -22,6 +22,56 @@ namespace MANAGIX.DataAccess.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MANAGIX.Models.Models.DailyTimesheet", b =>
+                {
+                    b.Property<Guid>("DailyTimesheetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ManagerComment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OvertimeReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TotalHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("WorkDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("DailyTimesheetId");
+
+                    b.HasIndex("UserId", "WorkDate")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DailyTimesheet_User_WorkDate");
+
+                    b.ToTable("DailyTimesheets");
+                });
+
             modelBuilder.Entity("MANAGIX.Models.Models.EmployeePerformance", b =>
                 {
                     b.Property<Guid>("PerformanceId")
@@ -56,6 +106,83 @@ namespace MANAGIX.DataAccess.Migrations
                     b.ToTable("EmployeePerformances");
                 });
 
+            modelBuilder.Entity("MANAGIX.Models.Models.Meeting", b =>
+                {
+                    b.Property<Guid>("MeetingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("JitsiRoomName")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("MeetingLink")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ScheduledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TranscriptText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("MeetingId");
+
+                    b.ToTable("Meetings");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.MeetingParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("MeetingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MeetingId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("MeetingParticipants");
+                });
+
             modelBuilder.Entity("MANAGIX.Models.Models.Milestone", b =>
                 {
                     b.Property<Guid>("MilestoneId")
@@ -88,6 +215,131 @@ namespace MANAGIX.DataAccess.Migrations
                     b.HasKey("MilestoneId");
 
                     b.ToTable("Milestones");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.MonitoringSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<double>("AvgWorkloadHours")
+                        .HasColumnType("float");
+
+                    b.Property<int>("BlockedTaskCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BurndownJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CapturedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("OnTimeRatio")
+                        .HasColumnType("float");
+
+                    b.Property<int>("OverloadedCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId", "CapturedAt")
+                        .HasDatabaseName("IX_MonitoringSnapshot_Project_Time");
+
+                    b.ToTable("MonitoringSnapshots");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.Notification", b =>
+                {
+                    b.Property<Guid>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId", "IsRead", "CreatedAt")
+                        .HasDatabaseName("IX_Notification_User_Read_Time");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.OvertimeRequest", b =>
+                {
+                    b.Property<Guid>("OvertimeRequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ManagerAction")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid?>("ManagerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid?>("TaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalHoursThatDay")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("WorkDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("OvertimeRequestId");
+
+                    b.HasIndex("UserId", "WorkDate")
+                        .HasDatabaseName("IX_OvertimeRequest_User_WorkDate");
+
+                    b.ToTable("OvertimeRequests");
                 });
 
             modelBuilder.Entity("MANAGIX.Models.Models.Project", b =>
@@ -140,6 +392,10 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Property<Guid>("ModelId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Methodology")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("ModelName")
                         .IsRequired()
@@ -302,18 +558,34 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("EstimatedHours")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid?>("MilestoneId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Priority")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RequiredSkillsJson")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("StoryPoints")
+                        .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -335,6 +607,9 @@ namespace MANAGIX.DataAccess.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FilePath")
@@ -395,7 +670,16 @@ namespace MANAGIX.DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("TeamId")
@@ -403,10 +687,74 @@ namespace MANAGIX.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_TeamEmployee_Employee_ActiveProject")
+                        .HasFilter("[IsActive] = 1");
+
                     b.HasIndex("TeamId", "EmployeeId")
                         .IsUnique();
 
                     b.ToTable("TeamEmployees");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.TimeEntry", b =>
+                {
+                    b.Property<Guid>("TimeEntryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntryType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<decimal>("Hours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("TaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TimeEntryId");
+
+                    b.ToTable("TimeEntries");
+                });
+
+            modelBuilder.Entity("MANAGIX.Models.Models.TimesheetPolicySettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("DailyMaxHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OvertimeGraceHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StandardHoursPerDay")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TimesheetPolicySettings");
                 });
 
             modelBuilder.Entity("MANAGIX.Models.Models.User", b =>
@@ -453,11 +801,30 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Property<string>("Bio")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("CompletedProjectsCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("Education")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeLevel")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Experience")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("HourlyRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("LastActiveAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("MonthlySalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OvertimeGraceHours")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
@@ -468,14 +835,26 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Property<string>("ResumeFilePath")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<TimeSpan?>("ShiftEndTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("ShiftStartTime")
+                        .HasColumnType("time");
+
                     b.Property<string>("Skills")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("StandardHoursPerDay")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Summary")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("WeeklyCapacityHours")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ProfileId");
 

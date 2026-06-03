@@ -38,6 +38,10 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         IMeetingParticipantRepository MeetingParticipants { get; }
         INotificationRepository Notifications { get; }
         IMonitoringSnapshotRepository MonitoringSnapshots { get; }
+        ITimeEntryRepository TimeEntries { get; }
+        IOvertimeRequestRepository OvertimeRequests { get; }
+        ITimesheetPolicyRepository TimesheetPolicy { get; }
+        IDailyTimesheetRepository DailyTimesheets { get; }
 
         Task<int> CompleteAsync();
     }
