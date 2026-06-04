@@ -71,6 +71,16 @@ namespace MANAGIX_FYP_2025.Functions
                 await c.WriteAsJsonAsync(new { message = ex.Message });
                 return c;
             }
+            catch (Exception ex) when (IsMissingTimesheetSchema(ex))
+            {
+                return await SchemaErrorAsync(req, ex);
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = ex.Message });
+                return err;
+            }
         }
 
         [Function("TimesheetClockOut")]
@@ -78,10 +88,17 @@ namespace MANAGIX_FYP_2025.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "timesheet/clock-out/{userId:guid}")] HttpRequestData req,
             Guid userId)
         {
-            var result = await _timesheet.ClockOutAsync(userId);
-            var resp = req.CreateResponse(HttpStatusCode.OK);
-            await WriteJsonAsync(req, resp, result);
-            return resp;
+            try
+            {
+                var result = await _timesheet.ClockOutAsync(userId);
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                await WriteJsonAsync(req, resp, result);
+                return resp;
+            }
+            catch (Exception ex) when (IsMissingTimesheetSchema(ex))
+            {
+                return await SchemaErrorAsync(req, ex);
+            }
         }
 
         [Function("TimesheetToday")]
@@ -149,7 +166,7 @@ namespace MANAGIX_FYP_2025.Functions
             var resp = req.CreateResponse(HttpStatusCode.ServiceUnavailable);
             await resp.WriteAsJsonAsync(new
             {
-                message = "Timesheet tables are missing. Run Documentation/ADD_DAILY_TIMESHEET_TABLES.sql or: dotnet ef database update (MANAGIX.DataAccess).",
+                message = "Timesheet database schema is out of date. Run Documentation/FIX_TIMESHEET_SCHEMA_COMPLETE.sql on your SQL database, then restart func start.",
                 detail = ex.Message,
             });
             return resp;

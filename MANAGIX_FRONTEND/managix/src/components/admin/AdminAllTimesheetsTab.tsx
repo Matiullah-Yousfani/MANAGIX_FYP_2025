@@ -3,7 +3,12 @@ import { timesheetService } from '../../api/timesheetService';
 
 const AdminAllTimesheetsTab: React.FC = () => {
   const [sheets, setSheets] = useState<any[]>([]);
-  const [policy, setPolicy] = useState({ standardHoursPerDay: 8, overtimeGraceHours: 2, dailyMaxHours: 12 });
+  const [policy, setPolicy] = useState({
+    standardHoursPerDay: 8,
+    overtimeGraceHours: 2,
+    dailyMaxHours: 12,
+    minimumSubmitHours: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -19,6 +24,7 @@ const AdminAllTimesheetsTab: React.FC = () => {
         standardHoursPerDay: Number(pol?.standardHoursPerDay ?? pol?.StandardHoursPerDay ?? 8),
         overtimeGraceHours: Number(pol?.overtimeGraceHours ?? pol?.OvertimeGraceHours ?? 2),
         dailyMaxHours: Number(pol?.dailyMaxHours ?? pol?.DailyMaxHours ?? 12),
+        minimumSubmitHours: Number(pol?.minimumSubmitHours ?? pol?.MinimumSubmitHours ?? 0),
       });
       setSheets(Array.isArray(allSheets) ? allSheets : []);
     } catch (e: any) {
@@ -27,7 +33,7 @@ const AdminAllTimesheetsTab: React.FC = () => {
       if (status === 503 || status === 500) {
         setLoadError(
           e?.response?.data?.message ||
-            'Timesheet tables missing. Run Documentation/ADD_DAILY_TIMESHEET_TABLES.sql then restart backend.'
+            'Timesheet schema out of date. Run Documentation/FIX_TIMESHEET_SCHEMA_COMPLETE.sql then restart backend.'
         );
       } else {
         setLoadError(e?.response?.data?.message || 'Could not load timesheets.');
@@ -75,7 +81,8 @@ const AdminAllTimesheetsTab: React.FC = () => {
         <h2 className="text-xl font-black uppercase mb-2">Org timesheet rules</h2>
         <p className="text-sm text-gray-500 mb-4">
           {policy.standardHoursPerDay}h shift + {policy.overtimeGraceHours}h grace (reason after {threshold}h), max{' '}
-          {policy.dailyMaxHours}h/day.
+          {policy.dailyMaxHours}h/day. Submit enabled after{' '}
+          <strong>{policy.minimumSubmitHours}h</strong> clocked (0 = no minimum).
         </p>
         <div className="flex flex-wrap gap-4 items-end">
           <label className="text-xs font-bold">
@@ -103,6 +110,17 @@ const AdminAllTimesheetsTab: React.FC = () => {
               className="block border rounded-lg px-3 py-2 mt-1 w-20"
               value={policy.dailyMaxHours}
               onChange={(e) => setPolicy((p) => ({ ...p, dailyMaxHours: Number(e.target.value) }))}
+            />
+          </label>
+          <label className="text-xs font-bold">
+            Min to submit (h)
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              value={policy.minimumSubmitHours}
+              onChange={(e) => setPolicy((p) => ({ ...p, minimumSubmitHours: Number(e.target.value) }))}
             />
           </label>
           <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">

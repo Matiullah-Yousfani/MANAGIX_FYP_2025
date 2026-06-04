@@ -22,6 +22,7 @@ namespace MANAGIX.DataAccess.Repositories
                 StandardHoursPerDay = 8m,
                 OvertimeGraceHours = 2m,
                 DailyMaxHours = 12m,
+                MinimumSubmitHours = 0m,
             };
             await _context.TimesheetPolicySettings.AddAsync(row);
             await _context.SaveChangesAsync();

@@ -34,6 +34,7 @@ export const timesheetService = {
     standardHoursPerDay: number;
     overtimeGraceHours: number;
     dailyMaxHours: number;
+    minimumSubmitHours?: number;
   }) => {
     const r = await api.put('/timesheet/policy', body);
     return r.data;

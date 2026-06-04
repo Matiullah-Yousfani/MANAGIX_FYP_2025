@@ -23,7 +23,7 @@ const DashboardTimesheetCard: React.FC = () => {
       setToday(null);
       const msg = e?.response?.data?.message || e?.response?.data?.detail;
       if (e?.response?.status === 503 || e?.response?.status === 500) {
-        setLoadError(msg || 'Timesheet service unavailable. Run DB migration (ADD_DAILY_TIMESHEET_TABLES.sql).');
+        setLoadError(msg || 'Timesheet schema out of date. Run Documentation/FIX_TIMESHEET_SCHEMA_COMPLETE.sql.');
       }
     }
   };
@@ -43,11 +43,16 @@ const DashboardTimesheetCard: React.FC = () => {
   const max = Number(today?.dailyMaxHours ?? today?.DailyMaxHours ?? 12);
   const threshold = Number(today?.overtimeThresholdHours ?? today?.OvertimeThresholdHours ?? 10);
   const status = today?.dailyTimesheetStatus ?? today?.DailyTimesheetStatus ?? 'Draft';
+  const minSubmit = Number(today?.minimumSubmitHours ?? today?.MinimumSubmitHours ?? 0);
+  const hoursLeft = Number(today?.hoursRemainingToSubmit ?? today?.HoursRemainingToSubmit ?? 0);
   const needsOvertimeReason =
     hours > threshold || hours >= max || Boolean(today?.requiresOvertimeReasonOnSubmit);
-  const canSubmit =
-    status !== 'Submitted' && status !== 'Approved' && hours > 0 && !isClockedIn;
-  const mustSubmitToday = hours > 0 && canSubmit;
+  const canSubmit = Boolean(
+    today?.canSubmitToday ??
+      today?.CanSubmitToday ??
+      (status !== 'Submitted' && status !== 'Approved' && hours > 0 && !isClockedIn && (minSubmit <= 0 || hours >= minSubmit))
+  );
+  const mustSubmitToday = hours > 0 && status !== 'Submitted' && status !== 'Approved';
 
   const clockIn = async () => {
     setBusy(true);
@@ -114,8 +119,13 @@ const DashboardTimesheetCard: React.FC = () => {
             Today {hours.toFixed(1)}h <span className="text-gray-400 font-medium text-lg">/ {standard}h shift</span>
           </h3>
           <p className="text-xs text-gray-500 mt-1">
-            Max {max}h per day · multiple clock sessions allowed ·{' '}
-            <strong className="text-amber-700">submit required daily</strong> (unsubmitted days are cleared)
+            Max {max}h per day · multiple sessions · submit required daily
+            {minSubmit > 0 && (
+              <>
+                {' '}
+                · <strong className="text-amber-700">submit after {minSubmit}h</strong>
+              </>
+            )}
           </p>
           {status !== 'Draft' && (
             <span
@@ -144,6 +154,11 @@ const DashboardTimesheetCard: React.FC = () => {
           >
             <FiSquare size={14} /> Clock out
           </button>
+          {mustSubmitToday && !canSubmit && !isClockedIn && minSubmit > 0 && hours < minSubmit && (
+            <span className="text-[10px] font-black uppercase text-gray-400 px-3 py-2">
+              Submit locked
+            </span>
+          )}
           {canSubmit && (
             <button
               type="button"
@@ -163,7 +178,14 @@ const DashboardTimesheetCard: React.FC = () => {
         </p>
       )}
 
-      {mustSubmitToday && status === 'Draft' && (
+      {minSubmit > 0 && hours > 0 && hours < minSubmit && !isClockedIn && (
+        <p className="mt-4 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+          You can clock in/out freely. Submit unlocks at <strong>{minSubmit}h</strong> —{' '}
+          <strong>{hoursLeft.toFixed(1)}h</strong> remaining ({hours.toFixed(1)}h logged).
+        </p>
+      )}
+
+      {mustSubmitToday && status === 'Draft' && canSubmit && (
         <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
           You have {hours.toFixed(1)}h logged today. Submit your timesheet before end of day.
         </p>

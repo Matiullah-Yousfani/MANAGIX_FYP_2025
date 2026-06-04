@@ -746,6 +746,9 @@ namespace MANAGIX.DataAccess.Migrations
                     b.Property<decimal>("DailyMaxHours")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("MinimumSubmitHours")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("OvertimeGraceHours")
                         .HasColumnType("decimal(18,2)");
 

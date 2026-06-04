@@ -51,6 +51,7 @@ namespace MANAGIX.Services
             if (dto.StandardHoursPerDay > 0) p.StandardHoursPerDay = dto.StandardHoursPerDay;
             if (dto.OvertimeGraceHours >= 0) p.OvertimeGraceHours = dto.OvertimeGraceHours;
             if (dto.DailyMaxHours > 0) p.DailyMaxHours = dto.DailyMaxHours;
+            if (dto.MinimumSubmitHours >= 0) p.MinimumSubmitHours = dto.MinimumSubmitHours;
             _uow.TimesheetPolicy.Update(p);
             await _uow.CompleteAsync();
             return ToPolicyDto(p);
@@ -65,6 +66,14 @@ namespace MANAGIX.Services
             var sheet = await _uow.DailyTimesheets.GetByUserAndDateAsync(userId, today);
             var threshold = policy.StandardHoursPerDay + policy.OvertimeGraceHours;
             var open = await _uow.TimeEntries.GetOpenEntryAsync(userId);
+            var status = sheet?.Status ?? StatusDraft;
+            var minSubmit = policy.MinimumSubmitHours;
+            var meetsMinimum = minSubmit <= 0 || hours >= minSubmit;
+            var canSubmit = meetsMinimum
+                && open == null
+                && hours > 0
+                && status != StatusSubmitted
+                && status != StatusApproved;
 
             return new TimesheetTodayDto
             {
@@ -76,9 +85,12 @@ namespace MANAGIX.Services
                 DailyMaxHours = policy.DailyMaxHours,
                 OvertimeThresholdHours = threshold,
                 DailyLimitHours = policy.DailyMaxHours,
+                MinimumSubmitHours = minSubmit,
+                HoursRemainingToSubmit = minSubmit > 0 ? Math.Max(0m, minSubmit - hours) : 0m,
+                CanSubmitToday = canSubmit,
                 OvertimeTriggered = hours > threshold,
                 RequiresOvertimeReasonOnSubmit = hours > threshold || hours >= policy.DailyMaxHours,
-                DailyTimesheetStatus = sheet?.Status ?? StatusDraft,
+                DailyTimesheetStatus = status,
                 DailyTimesheetId = sheet?.DailyTimesheetId,
             };
         }
@@ -97,6 +109,10 @@ namespace MANAGIX.Services
 
             if (total > policy.DailyMaxHours)
                 throw new InvalidOperationException($"Daily maximum is {policy.DailyMaxHours}h. You have {total:0.#}h.");
+
+            if (policy.MinimumSubmitHours > 0 && total < policy.MinimumSubmitHours)
+                throw new InvalidOperationException(
+                    $"Minimum {policy.MinimumSubmitHours:0.#}h required before submit. You have {total:0.#}h — clock more time first.");
 
             var threshold = policy.StandardHoursPerDay + policy.OvertimeGraceHours;
             if (total >= policy.DailyMaxHours && string.IsNullOrWhiteSpace(dto.OvertimeReason))
@@ -361,6 +377,7 @@ namespace MANAGIX.Services
             StandardHoursPerDay = p.StandardHoursPerDay,
             OvertimeGraceHours = p.OvertimeGraceHours,
             DailyMaxHours = p.DailyMaxHours,
+            MinimumSubmitHours = p.MinimumSubmitHours,
             OvertimeThresholdHours = p.StandardHoursPerDay + p.OvertimeGraceHours,
         };
     }

@@ -40,6 +40,7 @@ namespace MANAGIX.Models.DTO
         public decimal OvertimeGraceHours { get; set; } = 2m;
         public decimal DailyMaxHours { get; set; } = 12m;
         public decimal OvertimeThresholdHours { get; set; } = 10m;
+        public decimal MinimumSubmitHours { get; set; }
     }
 
     public class TimesheetTodayDto
@@ -56,6 +57,9 @@ namespace MANAGIX.Models.DTO
         public string? DailyTimesheetStatus { get; set; }
         public Guid? DailyTimesheetId { get; set; }
         public bool IsClockedIn { get; set; }
+        public decimal MinimumSubmitHours { get; set; }
+        public bool CanSubmitToday { get; set; }
+        public decimal HoursRemainingToSubmit { get; set; }
         public string? ShiftStartTime { get; set; }
         public string? ShiftEndTime { get; set; }
     }
