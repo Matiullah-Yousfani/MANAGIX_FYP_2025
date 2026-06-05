@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { timesheetService } from '../api/timesheetService';
+import { formatHoursHms, formatSecondsHms } from '../utils/timeFormat';
 import { FiPlay, FiSquare, FiSend, FiAlertCircle } from 'react-icons/fi';
 
 /** Clock in/out + daily submit — shown on Dashboard for Employee & Manager only. */
@@ -12,6 +13,9 @@ const DashboardTimesheetCard: React.FC = () => {
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
   const [overtimeReason, setOvertimeReason] = useState('');
   const [note, setNote] = useState('');
+  const [showSubmitReminder, setShowSubmitReminder] = useState(false);
+  const [liveTick, setLiveTick] = useState(0);
+  const [fetchedAt, setFetchedAt] = useState(Date.now());
 
   const refresh = async () => {
     if (!userId) return;
@@ -19,6 +23,7 @@ const DashboardTimesheetCard: React.FC = () => {
     try {
       const t = await timesheetService.today(userId);
       setToday(t);
+      setFetchedAt(Date.now());
     } catch (e: any) {
       setToday(null);
       const msg = e?.response?.data?.message || e?.response?.data?.detail;
@@ -34,6 +39,31 @@ const DashboardTimesheetCard: React.FC = () => {
     const id = setInterval(refresh, 30_000);
     return () => clearInterval(id);
   }, [userId, role]);
+
+  useEffect(() => {
+    const id = setInterval(() => setLiveTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!userId || role === 'admin' || role === 'qa' || !today) return;
+    const check = () => {
+      const h = new Date().getHours();
+      const clocked = Boolean(today?.isClockedIn ?? today?.IsClockedIn);
+      const hrs = Number(today?.todayHours ?? today?.TodayHours ?? 0);
+      const st = today?.dailyTimesheetStatus ?? today?.DailyTimesheetStatus ?? 'Draft';
+      const min = Number(today?.minimumSubmitHours ?? today?.MinimumSubmitHours ?? 0);
+      const can =
+        today?.canSubmitToday ??
+        today?.CanSubmitToday ??
+        (st !== 'Submitted' && st !== 'Approved' && hrs > 0 && !clocked && (min <= 0 || hrs >= min));
+      const must = hrs > 0 && st !== 'Submitted' && st !== 'Approved';
+      if (h >= 17 && must && can) setShowSubmitReminder(true);
+    };
+    check();
+    const id = setInterval(check, 60_000);
+    return () => clearInterval(id);
+  }, [userId, role, today]);
 
   if (!userId || role === 'admin' || role === 'qa') return null;
 
@@ -53,6 +83,19 @@ const DashboardTimesheetCard: React.FC = () => {
       (status !== 'Submitted' && status !== 'Approved' && hours > 0 && !isClockedIn && (minSubmit <= 0 || hours >= minSubmit))
   );
   const mustSubmitToday = hours > 0 && status !== 'Submitted' && status !== 'Approved';
+
+  const openStart = today?.openSessionStartedAt ?? today?.OpenSessionStartedAt;
+  const displaySeconds = (() => {
+    void liveTick;
+    if (isClockedIn && openStart) {
+      const openMs = new Date(openStart).getTime();
+      const elapsedAtFetch = Math.max(0, (fetchedAt - openMs) / 1000);
+      const closedSec = Math.max(0, Math.round(hours * 3600) - elapsedAtFetch);
+      return closedSec + (Date.now() - openMs) / 1000;
+    }
+    return hours * 3600;
+  })();
+  const displayTime = formatSecondsHms(displaySeconds);
 
   const clockIn = async () => {
     setBusy(true);
@@ -116,7 +159,8 @@ const DashboardTimesheetCard: React.FC = () => {
         <div>
           <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Daily timesheet</p>
           <h3 className="text-2xl font-black text-gray-900">
-            Today {hours.toFixed(1)}h <span className="text-gray-400 font-medium text-lg">/ {standard}h shift</span>
+            Today <span className="tabular-nums">{displayTime}</span>{' '}
+            <span className="text-gray-400 font-medium text-lg">/ {standard}h shift</span>
           </h3>
           <p className="text-xs text-gray-500 mt-1">
             Max {max}h per day · multiple sessions · submit required daily
@@ -140,7 +184,7 @@ const DashboardTimesheetCard: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={busy || isClockedIn || hours >= max}
+            disabled={busy || isClockedIn || hours >= max || status === 'Submitted' || status === 'Approved'}
             onClick={clockIn}
             className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs font-black disabled:opacity-40"
           >
@@ -189,6 +233,35 @@ const DashboardTimesheetCard: React.FC = () => {
         <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
           You have {hours.toFixed(1)}h logged today. Submit your timesheet before end of day.
         </p>
+      )}
+
+      {showSubmitReminder && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-black text-gray-900 mb-2">Submit your timesheet</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              You have <strong>{formatHoursHms(hours)}</strong> logged today and have not submitted yet.
+              Submit before end of day so your manager can approve it.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button type="button" onClick={() => setShowSubmitReminder(false)} className="text-xs font-bold text-gray-500">
+                Later
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setShowSubmitReminder(false);
+                  if (needsOvertimeReason) setShowOvertimeModal(true);
+                  else submit();
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black"
+              >
+                Submit now
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showOvertimeModal && (

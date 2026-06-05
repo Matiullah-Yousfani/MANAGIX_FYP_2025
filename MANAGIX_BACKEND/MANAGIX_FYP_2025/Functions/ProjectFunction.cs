@@ -169,6 +169,36 @@ namespace MANAGIX_FYP_2025.Functions
                 }
             }
 
+            var milestoneLookup = milestones.ToDictionary(m => m.MilestoneId, m => m.Title);
+            var creator = project.CreatedBy != Guid.Empty
+                ? await _unitOfWork.Users.GetByIdAsync(project.CreatedBy)
+                : null;
+
+            var assigneeIds = tasks.Where(t => t.AssignedEmployeeId.HasValue).Select(t => t.AssignedEmployeeId!.Value).Distinct();
+            var assigneeNames = new Dictionary<Guid, string>();
+            foreach (var aid in assigneeIds)
+            {
+                var u = await _unitOfWork.Users.GetByIdAsync(aid);
+                if (u != null) assigneeNames[aid] = u.FullName;
+            }
+
+            Team? teamEntity = team;
+            var teamDtos = new List<AdminTeamDetailDto>();
+            if (teamEntity != null)
+            {
+                var tcreator = await _unitOfWork.Users.GetByIdAsync(teamEntity.CreatedBy);
+                var tcount = (await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(teamEntity.TeamId)).Count;
+                teamDtos.Add(new AdminTeamDetailDto
+                {
+                    TeamId = teamEntity.TeamId,
+                    Name = teamEntity.Name,
+                    CreatedBy = teamEntity.CreatedBy,
+                    CreatedByName = tcreator?.FullName,
+                    CreatedAt = teamEntity.CreatedAt,
+                    MemberCount = tcount,
+                });
+            }
+
             var projectDetailDto = new ProjectDetailAdminDto
             {
                 ProjectId = project.ProjectId,
@@ -177,24 +207,36 @@ namespace MANAGIX_FYP_2025.Functions
                 Deadline = project.Deadline,
                 Budget = project.Budget,
                 Status = project.Status,
+                IsClosed = project.IsClosed,
+                ManagerId = project.CreatedBy,
+                ManagerName = creator?.FullName,
+                CreatedBy = project.CreatedBy,
+                CreatedByName = creator?.FullName,
+                CreatedAt = project.CreatedAt,
                 Milestones = milestones.Select(m => new MilestoneDto
                 {
                     MilestoneId = m.MilestoneId,
                     Title = m.Title,
+                    Description = m.Description,
                     Deadline = m.Deadline,
-                    Status = m.Status
+                    BudgetAllocated = m.BudgetAllocated,
+                    Status = m.Status,
+                    CompletedAt = m.CompletedAt,
                 }).ToList(),
-                Tasks = tasks.Select(t => new TaskItemDto
+                Tasks = tasks.Select(t => new AdminTaskDetailDto
                 {
                     TaskId = t.TaskId,
                     Title = t.Title,
+                    Description = t.Description,
                     Status = t.Status,
-                    AssignedEmployeeId = t.AssignedEmployeeId
+                    Priority = t.Priority,
+                    AssignedEmployeeId = t.AssignedEmployeeId,
+                    AssignedEmployeeName = t.AssignedEmployeeId.HasValue && assigneeNames.TryGetValue(t.AssignedEmployeeId.Value, out var nm) ? nm : null,
+                    MilestoneId = t.MilestoneId,
+                    MilestoneTitle = t.MilestoneId.HasValue && milestoneLookup.TryGetValue(t.MilestoneId.Value, out var mt) ? mt : null,
+                    CreatedAt = t.CreatedAt,
                 }).ToList(),
-                Teams = team != null ? new List<TeamDto>
-        {
-            new TeamDto { TeamId = team.TeamId, Name = team.Name }
-        } : new List<TeamDto>(),
+                Teams = teamDtos,
                 Members = members.Select(u => new UserDto
                 {
                     UserId = u.UserId,

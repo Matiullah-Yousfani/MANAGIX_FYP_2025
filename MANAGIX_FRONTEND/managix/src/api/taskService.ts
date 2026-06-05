@@ -24,6 +24,7 @@ export interface TaskUpdateRequest {
   assignedEmployeeId?: string;
   /** Manager/admin: set true to leave task unassigned */
   clearAssignee?: boolean;
+  priority?: string;
 }
 
 /** `TaskSubmissionDto` */

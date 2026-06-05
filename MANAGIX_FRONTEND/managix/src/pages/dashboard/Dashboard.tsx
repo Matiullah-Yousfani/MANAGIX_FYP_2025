@@ -9,6 +9,7 @@ import { adminService } from '../../api/adminService';
 // PHASE 2: methodology-aware dashboard dispatcher.
 import MethodologyDashboard, { type ProjectAggregates } from '../../components/dashboard/MethodologyDashboard';
 import DashboardTimesheetCard from '../../components/DashboardTimesheetCard';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -22,7 +23,8 @@ const Dashboard = () => {
 
   // Modal & Action States
   const [showModal, setShowModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [newProject, setNewProject] = useState({ title: '', description: '' });
@@ -151,19 +153,29 @@ const Dashboard = () => {
   // Open delete confirmation
   const confirmDelete = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    setCurrentProjectId(projectId);
-    setShowDeleteModal(true);
+    setDeleteProjectId(projectId);
   };
 
+  const deleteProjectMeta =
+    projects.find((p) => String(p.projectId || p.ProjectId) === String(deleteProjectId)) ||
+    (selectedProject &&
+    String(selectedProject.ProjectId || selectedProject.projectId) === String(deleteProjectId)
+      ? selectedProject
+      : null);
+
   const handleDeleteProject = async () => {
-    if (!currentProjectId) return;
+    if (!deleteProjectId) return;
+    setDeleteBusy(true);
     try {
-      await projectService.delete(currentProjectId);
-      setShowDeleteModal(false);
+      await projectService.delete(deleteProjectId);
+      setDeleteProjectId(null);
+      setShowModal(false);
       showToast("Project deleted successfully");
       fetchDashboardData(userRole, userId);
     } catch (err) {
       showToast("Error deleting project", "error");
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -363,9 +375,14 @@ const Dashboard = () => {
 
                   <div className="mb-4">
                     <h3 className="font-bold text-lg mb-2">Tasks</h3>
-                    <ul className="list-disc pl-6">
-                      {selectedProject.Tasks.map((t: any) => (
-                        <li key={t.TaskId}>{t.Title} - {t.Status}</li>
+                    <ul className="space-y-2">
+                      {(selectedProject.Tasks ?? selectedProject.tasks ?? []).map((t: any) => (
+                        <li key={t.TaskId ?? t.taskId} className="text-sm flex justify-between bg-gray-50 rounded-lg px-3 py-2">
+                          <span className="font-medium">{t.Title ?? t.title}</span>
+                          <span className="text-gray-500 text-xs">
+                            {t.AssignedEmployeeName ?? t.assignedEmployeeName ?? 'Unassigned'} · {t.Status ?? t.status}
+                          </span>
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -428,23 +445,31 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowDeleteModal(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
-              <h2 className="text-xl font-bold mb-4">Confirm Delete</h2>
-              <p className="mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
-              <div className="flex gap-4">
-                <button onClick={handleDeleteProject} className="flex-1 bg-red-600 text-white py-2 rounded-xl font-bold">Delete</button>
-                <button onClick={() => setShowDeleteModal(false)} className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl font-bold">Cancel</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ConfirmDeleteModal
+        open={Boolean(deleteProjectId)}
+        message={
+          deleteProjectMeta
+            ? `Delete project "${deleteProjectMeta.title || deleteProjectMeta.Title}"? You won't be able to revert this!`
+            : 'Delete this project? You won\'t be able to revert this!'
+        }
+        details={
+          deleteProjectMeta
+            ? [
+                { label: 'Status', value: deleteProjectMeta.status || deleteProjectMeta.Status || '—' },
+                {
+                  label: 'Tasks',
+                  value: String(
+                    (deleteProjectMeta.Tasks ?? deleteProjectMeta.tasks ?? []).length || '—'
+                  ),
+                },
+              ]
+            : []
+        }
+        warning="All milestones, tasks, and team data for this project will be permanently removed."
+        busy={deleteBusy}
+        onConfirm={handleDeleteProject}
+        onCancel={() => !deleteBusy && setDeleteProjectId(null)}
+      />
     </div>
   );
 };

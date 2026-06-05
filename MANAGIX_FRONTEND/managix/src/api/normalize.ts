@@ -36,6 +36,8 @@ export function normalizeWorkloadEntry(raw: any) {
     userId: String(pick(raw, 'userId', 'UserId') ?? ''),
     fullName: pick(raw, 'fullName', 'FullName') ?? 'Unknown',
     activeTaskCount: Number(pick(raw, 'activeTaskCount', 'ActiveTaskCount') ?? 0),
+    assignedTaskCount: Number(pick(raw, 'assignedTaskCount', 'AssignedTaskCount') ?? 0),
+    inProgressTaskCount: Number(pick(raw, 'inProgressTaskCount', 'InProgressTaskCount') ?? 0),
     totalEstimatedHours: Number(pick(raw, 'totalEstimatedHours', 'TotalEstimatedHours') ?? 0),
     capacityHours: Number(pick(raw, 'capacityHours', 'CapacityHours') ?? 40),
     utilizationPct: Number(pick(raw, 'utilizationPct', 'UtilizationPct') ?? 0),
@@ -85,7 +87,37 @@ export function normalizeInsights(raw: any) {
     weeklyCapacityHours: Number(pick(raw, 'weeklyCapacityHours', 'WeeklyCapacityHours') ?? 40),
     activeProjects: projects,
     tasksCompleted: Number(pick(raw, 'tasksCompleted', 'TasksCompleted') ?? 0),
+    tasksInProgress: Number(pick(raw, 'tasksInProgress', 'TasksInProgress') ?? 0),
+    tasksPending: Number(pick(raw, 'tasksPending', 'TasksPending') ?? 0),
     totalTasksAssigned: Number(pick(raw, 'totalTasksAssigned', 'TotalTasksAssigned') ?? 0),
+    fullName: pick(raw, 'fullName', 'FullName') ?? '',
+    teams: (raw.teams ?? raw.Teams ?? []).map((t: any) => ({
+      teamId: pick(t, 'teamId', 'TeamId'),
+      teamName: pick(t, 'teamName', 'TeamName') ?? '',
+      projectTitle: pick(t, 'projectTitle', 'ProjectTitle'),
+      createdByName: pick(t, 'createdByName', 'CreatedByName'),
+      members: (t.members ?? t.Members ?? []).map((m: any) => ({
+        userId: pick(m, 'userId', 'UserId'),
+        fullName: pick(m, 'fullName', 'FullName') ?? '',
+        roleName: pick(m, 'roleName', 'RoleName') ?? 'Employee',
+      })),
+    })),
+    taskDetails: (raw.taskDetails ?? raw.TaskDetails ?? []).map((t: any) => ({
+      taskId: pick(t, 'taskId', 'TaskId'),
+      title: pick(t, 'title', 'Title') ?? '',
+      status: pick(t, 'status', 'Status') ?? '',
+      priority: pick(t, 'priority', 'Priority'),
+      projectTitle: pick(t, 'projectTitle', 'ProjectTitle'),
+      milestoneTitle: pick(t, 'milestoneTitle', 'MilestoneTitle'),
+    })),
+    milestones: (raw.milestones ?? raw.Milestones ?? []).map((m: any) => ({
+      milestoneId: pick(m, 'milestoneId', 'MilestoneId'),
+      title: pick(m, 'title', 'Title') ?? '',
+      status: pick(m, 'status', 'Status') ?? '',
+      deadline: pick(m, 'deadline', 'Deadline'),
+      totalTasks: Number(pick(m, 'totalTasks', 'TotalTasks') ?? 0),
+      completedTasks: Number(pick(m, 'completedTasks', 'CompletedTasks') ?? 0),
+    })),
   };
 }
 

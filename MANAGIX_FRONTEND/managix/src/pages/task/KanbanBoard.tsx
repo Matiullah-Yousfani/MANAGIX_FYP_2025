@@ -5,6 +5,7 @@ import { taskService } from "../../api/taskService";
 import { milestoneService } from "../../api/milestoneService";
 import { projectService } from "../../api/projectService";
 import { teamService } from "../../api/teamService";
+import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
 
 // --- Constants ---
 const KANBAN_COLUMNS = ["Todo", "InProgress", "Done"];
@@ -18,8 +19,35 @@ const STATUS_MAP: Record<string, string> = {
   Approved: "Done",
 };
 
+const priorityNorm = (p?: string) => {
+  const v = (p || "Medium").trim().toLowerCase();
+  if (v === "high") return "High";
+  if (v === "low") return "Low";
+  return "Medium";
+};
+
+const priorityStyle = (p: string) => {
+  if (p === "High") return "bg-red-50 text-red-700 border-red-100";
+  if (p === "Low") return "bg-gray-100 text-gray-500 border-gray-100";
+  return "bg-amber-50 text-amber-700 border-amber-100";
+};
+
 // --- Sub-Component: Task Card ---
-const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; onClick: () => void; role: string | null }) => {
+const TaskCard = ({
+  task,
+  index,
+  onClick,
+  role,
+  assigneeName,
+}: {
+  task: any;
+  index: number;
+  onClick: () => void;
+  role: string | null;
+  assigneeName?: string;
+}) => {
+  const priority = priorityNorm(task.Priority || task.priority);
+  const isHigh = priority === "High";
   const roleNorm = (role || "").toLowerCase();
   const [submission, setSubmission] = useState<any>(null);
   const [submissionLoading, setSubmissionLoading] = useState(false);
@@ -76,7 +104,8 @@ const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; on
         <div
           ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps}
           onClick={onClick}
-          className={`bg-white p-8 rounded-[2.5rem] border border-gray-100 transition-all duration-300 relative overflow-hidden group 
+          className={`bg-white p-8 rounded-[2.5rem] border transition-all duration-300 relative overflow-hidden group 
+            ${isHigh ? 'border-red-200 ring-1 ring-red-100 shadow-red-50/50' : 'border-gray-100'}
             ${!canDrag ? 'cursor-default' : 'hover:-translate-y-2 hover:shadow-2xl cursor-pointer'}`}
         >
           {/* Decorative Ghost Icon */}
@@ -98,13 +127,19 @@ const TaskCard = ({ task, index, onClick, role }: { task: any; index: number; on
             </div>
           )}
 
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${priorityStyle(priority)}`}>
+              {priority}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center gap-2">
             <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl ${getBadgeColor()}`}>
               {getStatusDisplay()}
             </span>
-            <div className="size-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
-                <span className="text-xs">#</span>
-            </div>
+            <span className="text-[10px] font-bold text-gray-500 truncate max-w-[45%]" title={assigneeName}>
+              {assigneeName || "Unassigned"}
+            </span>
           </div>
         </div>
       )}
@@ -140,6 +175,11 @@ const TaskModal = ({
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [assigneeId, setAssigneeId] = useState("");
+  const [priority, setPriority] = useState(
+    priorityNorm(task.Priority || task.priority)
+  );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const roleRaw = localStorage.getItem("roleName") || localStorage.getItem("userRole") || "";
   const roleNorm = roleRaw.toLowerCase();
   const isEmployee = roleNorm === "employee";
@@ -154,7 +194,8 @@ const TaskModal = ({
   useEffect(() => {
     const id = task.AssignedEmployeeId ?? task.assignedEmployeeId;
     setAssigneeId(id ? String(id) : "");
-  }, [task.TaskId, task.taskId, task.AssignedEmployeeId, task.assignedEmployeeId]);
+    setPriority(priorityNorm(task.Priority || task.priority));
+  }, [task.TaskId, task.taskId, task.AssignedEmployeeId, task.assignedEmployeeId, task.Priority, task.priority]);
 
   useEffect(() => {
     if (!isManagerOrAdmin || !projectId) return;
@@ -194,19 +235,14 @@ const TaskModal = ({
       const taskId = task.TaskId || task.taskId;
       const titleStr = task.Title || task.title;
       const descStr = task.Description || task.description;
-      if (!assigneeId) {
-        await taskService.update(String(taskId), {
-          title: titleStr,
-          description: descStr,
-          clearAssignee: true,
-        });
-      } else {
-        await taskService.update(String(taskId), {
-          title: titleStr,
-          description: descStr,
-          assignedEmployeeId: assigneeId,
-        });
-      }
+      const payload: Parameters<typeof taskService.update>[1] = {
+        title: titleStr,
+        description: descStr,
+        priority,
+      };
+      if (!assigneeId) payload.clearAssignee = true;
+      else payload.assignedEmployeeId = assigneeId;
+      await taskService.update(String(taskId), payload);
       onRefresh();
     } catch (e: any) {
       alert(e?.response?.data?.message || e?.message || "Could not update assignee.");
@@ -216,6 +252,27 @@ const TaskModal = ({
   };
 
   const memberLabel = (m: any) => m.FullName || m.fullName || m.Email || m.email || "Member";
+
+  const taskTitle = task.Title || task.title;
+  const assigneeForDelete = members.find(
+    (m) => String(m.Id ?? m.UserId ?? m.userId ?? m.id) === assigneeId
+  );
+  const assigneeName = assigneeForDelete ? memberLabel(assigneeForDelete) : "Unassigned";
+
+  const confirmDeleteTask = async () => {
+    const taskId = task.TaskId || task.taskId;
+    setDeleteBusy(true);
+    try {
+      await taskService.delete(String(taskId));
+      setShowDeleteConfirm(false);
+      onRefresh();
+      onClose();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Could not delete task.");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!isEmployee) {
@@ -338,6 +395,21 @@ const TaskModal = ({
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">
+                    Priority
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">
                     Assign to team member
                   </label>
                   {membersError && (
@@ -367,8 +439,17 @@ const TaskModal = ({
                 </div>
 
                 <p className="text-xs text-gray-400 font-medium px-1 leading-relaxed">
-                  Assign manually here. For AI suggestions across all open tasks, use Team Hub → Smart Task Allocation.
+                  Assign manually here. For AI task allocation, use Milestones → Smart Task Allocation.
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={loading || deleteBusy}
+                  className="w-full py-3 text-red-600 bg-red-50 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-red-100 transition-all"
+                >
+                  Delete task
+                </button>
 
                 <button
                   type="button"
@@ -406,6 +487,23 @@ const TaskModal = ({
           </div>
         )}
       </div>
+
+      <ConfirmDeleteModal
+        open={showDeleteConfirm}
+        message={`Delete task "${taskTitle}"? You won't be able to revert this!`}
+        details={[
+          { label: "Task", value: taskTitle || "—" },
+          { label: "Assigned to", value: assigneeName },
+        ]}
+        warning={
+          assigneeName !== "Unassigned"
+            ? `This task is assigned to ${assigneeName}. Deleting it will remove their assignment.`
+            : undefined
+        }
+        busy={deleteBusy}
+        onConfirm={confirmDeleteTask}
+        onCancel={() => !deleteBusy && setShowDeleteConfirm(false)}
+      />
     </div>
   );
 };
@@ -420,13 +518,52 @@ const KanbanBoard = () => {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState("");
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
   const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
 
   useEffect(() => {
+    api.get('/users')
+      .then((res) => {
+        const map: Record<string, string> = {};
+        (res.data || []).forEach((u: any) => {
+          const id = String(u.userId ?? u.UserId ?? '');
+          if (id) map[id] = u.fullName ?? u.FullName ?? 'User';
+        });
+        setUserNames(map);
+      })
+      .catch(() => setUserNames({}));
+  }, []);
+
+  const resolveAssignee = (t: any) => {
+    const id = t.assignedEmployeeId ?? t.AssignedEmployeeId;
+    return id ? userNames[String(id)] || 'Assigned' : 'Unassigned';
+  };
+
+  const visibleTasks = tasks.filter((t) => {
+    const pr = priorityNorm(t.Priority || t.priority);
+    if (priorityFilter !== 'all' && pr.toLowerCase() !== priorityFilter) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const title = String(t.Title || t.title || '').toLowerCase();
+    const desc = String(t.Description || t.description || '').toLowerCase();
+    const assignee = resolveAssignee(t).toLowerCase();
+    return title.includes(q) || desc.includes(q) || assignee.includes(q);
+  });
+
+  useEffect(() => {
     const id = localStorage.getItem('userId');
-    fetchUserProjects(role, id);
+    const effectiveRole =
+      localStorage.getItem('roleName') || localStorage.getItem('userRole') || role;
+    fetchUserProjects(effectiveRole, id);
   }, [role]);
+
+  const isQaRole = (r: string | null) => {
+    const n = (r || '').toLowerCase();
+    return n === 'qa' || n.includes('quality');
+  };
 
   const fetchUserProjects = async (userRole: string | null, id: string | null) => {
     if (!id || !userRole) {
@@ -443,16 +580,24 @@ const KanbanBoard = () => {
         const res = await api.get(`/projects/manager/${id}`);
         setProjects(Array.isArray(res.data) ? res.data : []);
       }
+      else if (isQaRole(userRole)) {
+        const data = await projectService.getByEmployee(id);
+        setProjects(Array.isArray(data) ? data : []);
+      }
       else if (userRole === 'Employee') {
-        const tasksRes = await api.get('/tasks/assigned-to-me');
-        const assignedTasks = tasksRes.data || [];
-        const projectIds = [...new Set(assignedTasks.map((t: any) => t.projectId || t.ProjectId))].filter(Boolean);
-        
-        if (projectIds.length > 0) {
-          const details = await Promise.all(
-            projectIds.map(pId => api.get(`/projects/${pId}`).then(r => r.data).catch(() => null))
-          );
-          setProjects(details.filter(p => p !== null));
+        const data = await projectService.getByEmployee(id);
+        if (Array.isArray(data) && data.length > 0) {
+          setProjects(data);
+        } else {
+          const tasksRes = await api.get('/tasks/assigned-to-me');
+          const assignedTasks = tasksRes.data || [];
+          const projectIds = [...new Set(assignedTasks.map((t: any) => t.projectId || t.ProjectId))].filter(Boolean);
+          if (projectIds.length > 0) {
+            const details = await Promise.all(
+              projectIds.map(pId => api.get(`/projects/${pId}`).then(r => r.data).catch(() => null))
+            );
+            setProjects(details.filter(p => p !== null));
+          }
         }
       }
     } catch (err) { console.error(err); } finally { setLoadingProjects(false); }
@@ -534,13 +679,27 @@ const KanbanBoard = () => {
            <h1 className="text-4xl font-sans font-black text-gray-900 tracking-tight">Kanban Board</h1>
         </div>
         
-        <div className="relative">
-          <input 
-            type="text" 
-            placeholder="Search tasks..." 
-            className="w-full md:w-96 p-4 pl-12 bg-gray-50 border-none rounded-2xl focus:ring-2 ring-indigo-500/20 font-medium text-sm transition-all"
-          />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="relative">
+            <input
+              type="search"
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full md:w-72 p-4 pl-12 bg-gray-50 border-none rounded-2xl focus:ring-2 ring-indigo-500/20 font-medium text-sm transition-all"
+            />
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+          </div>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="p-4 bg-gray-50 border-none rounded-2xl font-bold text-sm"
+          >
+            <option value="all">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
         </div>
       </header>
 
@@ -605,13 +764,20 @@ const KanbanBoard = () => {
                     <div className="flex items-center justify-between mb-8 px-4">
                         <h3 className="text-[11px] font-black uppercase text-gray-400 tracking-[0.2em]">{col}</h3>
                         <span className="text-[10px] font-black text-indigo-600 bg-white size-6 flex items-center justify-center rounded-lg shadow-sm border border-gray-100">
-                            {tasks.filter(t => STATUS_MAP[t.Status || t.status] === col).length}
+                            {visibleTasks.filter(t => STATUS_MAP[t.Status || t.status] === col).length}
                         </span>
                     </div>
 
                     <div className="space-y-6">
-                      {tasks.filter(t => STATUS_MAP[t.Status || t.status] === col).map((t, i) => (
-                        <TaskCard key={t.TaskId || t.taskId} task={t} index={i} onClick={() => setSelectedTask(t)} role={role} />
+                      {visibleTasks.filter(t => STATUS_MAP[t.Status || t.status] === col).map((t, i) => (
+                        <TaskCard
+                          key={t.TaskId || t.taskId}
+                          task={t}
+                          index={i}
+                          onClick={() => setSelectedTask(t)}
+                          role={role}
+                          assigneeName={resolveAssignee(t)}
+                        />
                       ))}
                       {p.placeholder}
                     </div>

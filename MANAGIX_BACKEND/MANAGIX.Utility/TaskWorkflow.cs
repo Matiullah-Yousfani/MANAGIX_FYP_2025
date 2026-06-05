@@ -113,10 +113,7 @@ namespace MANAGIX.Utility
             }
 
             if (from == InProgress && normalizedTo == Todo)
-            {
-                error = "Invalid transition: cannot move back to Todo.";
-                return false;
-            }
+                return true;
 
             if (from == Done && normalizedTo == InProgress)
             {

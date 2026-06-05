@@ -9,6 +9,8 @@ namespace MANAGIX.Models.DTO
         public Guid UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public int ActiveTaskCount { get; set; }
+        public int InProgressTaskCount { get; set; }
+        public int AssignedTaskCount { get; set; }
         public decimal TotalEstimatedHours { get; set; }
         public decimal CapacityHours { get; set; } = 40m;
 

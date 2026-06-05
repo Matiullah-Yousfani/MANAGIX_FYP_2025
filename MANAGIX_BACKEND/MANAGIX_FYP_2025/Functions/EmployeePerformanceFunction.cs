@@ -54,6 +54,15 @@ namespace MANAGIX_FYP_2025.Functions
             if (!Guid.TryParse(projectId, out var pid))
                 return await BadRequest(req, "Invalid ProjectId");
 
+            try
+            {
+                await _performance.RecalculateProjectAsync(pid);
+            }
+            catch (InvalidOperationException)
+            {
+                /* no team yet — return empty */
+            }
+
             var performances = await _unitOfWork.EmployeePerformances.GetByProjectIdAsync(pid)
                                ?? new System.Collections.Generic.List<MANAGIX.Models.Models.EmployeePerformance>();
 

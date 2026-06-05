@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axiosInstance';
 import { FiBriefcase, FiPlus, FiUploadCloud, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { taskService } from '../api/taskService';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
+import ToastStack, { useToast } from './ToastStack';
 
 const scrollbarStyles = `
   .custom-scroll::-webkit-scrollbar { width: 6px; }
@@ -28,6 +30,39 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
   const [projectTeam, setProjectTeam] = useState<any | null>(null);
   const [editTask, setEditTask] = useState<any>(null);
   const [editForm, setEditForm] = useState({ title: '', description: '', status: '' });
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const { toasts, push: pushToast } = useToast();
+
+  useEffect(() => {
+    api.get('/users')
+      .then((res) => {
+        const map: Record<string, string> = {};
+        (res.data || []).forEach((u: any) => {
+          const id = String(u.userId ?? u.UserId ?? '');
+          if (id) map[id] = u.fullName ?? u.FullName ?? 'User';
+        });
+        setUserNames(map);
+      })
+      .catch(() => setUserNames({}));
+  }, []);
+
+  const milestoneTitle = (milestoneId?: string) => {
+    if (!milestoneId) return '—';
+    const m = (milestones || []).find(
+      (x: any) => String(x.milestoneId ?? x.MilestoneId) === String(milestoneId)
+    );
+    return m?.title ?? m?.Title ?? 'Milestone';
+  };
+
+  const assigneeLabel = (t: any) => {
+    const id = String(t.assignedEmployeeId ?? t.AssignedEmployeeId ?? '');
+    if (!id) return 'Unassigned';
+    return userNames[id] ?? employees.find(
+      (e: any) => String(e.UserId ?? e.userId) === id
+    )?.FullName ?? 'Assigned employee';
+  };
 
   useEffect(() => {
     if (!showTaskModal || role !== 'Manager') return;
@@ -115,13 +150,19 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
     };
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm('Delete this task?')) return;
+  const handleDeleteTask = async () => {
+    if (!deleteTarget) return;
+    const taskId = deleteTarget.taskId || deleteTarget.TaskId;
+    setDeleteBusy(true);
     try {
       await taskService.delete(taskId);
+      setDeleteTarget(null);
+      pushToast('Task deleted successfully', 'success');
       refresh();
-    } catch {
-      alert('Could not delete task.');
+    } catch (err: any) {
+      pushToast(err?.response?.data?.message || 'Could not delete task.', 'error');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -241,7 +282,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteTask(taskId)}
+                        onClick={() => setDeleteTarget(t)}
                         className="p-2 rounded-lg border border-red-100 text-red-600 hover:bg-red-50"
                         title="Delete task"
                       >
@@ -397,6 +438,39 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteTarget)}
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.title || deleteTarget.Title}"? Assigned to ${assigneeLabel(deleteTarget)}. You won't be able to revert this!`
+            : undefined
+        }
+        details={
+          deleteTarget
+            ? [
+                { label: 'Task', value: deleteTarget.title || deleteTarget.Title || '—' },
+                { label: 'Assigned to', value: assigneeLabel(deleteTarget) },
+                { label: 'Status', value: deleteTarget.status || deleteTarget.Status || '—' },
+                {
+                  label: 'Milestone',
+                  value: milestoneTitle(
+                    deleteTarget.milestoneId ?? deleteTarget.MilestoneId
+                  ),
+                },
+              ]
+            : []
+        }
+        warning={
+          assigneeLabel(deleteTarget || {}) !== 'Unassigned'
+            ? `This task is currently assigned to ${assigneeLabel(deleteTarget || {})}. Deleting it will remove their assignment.`
+            : undefined
+        }
+        busy={deleteBusy}
+        onConfirm={handleDeleteTask}
+        onCancel={() => !deleteBusy && setDeleteTarget(null)}
+      />
+      <ToastStack toasts={toasts} />
     </div>
   );
 };

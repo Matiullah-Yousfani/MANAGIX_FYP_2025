@@ -19,10 +19,17 @@ namespace MANAGIX_FYP_2025.Functions
     public class TaskFunction
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly INotificationService _notifications;
+        private readonly IEmployeePerformanceService _performance;
 
-        public TaskFunction(IUnitOfWork unitOfWork)
+        public TaskFunction(
+            IUnitOfWork unitOfWork,
+            INotificationService notifications,
+            IEmployeePerformanceService performance)
         {
             _unitOfWork = unitOfWork;
+            _notifications = notifications;
+            _performance = performance;
         }
 
         private static Guid ResolveCallerUserId(HttpRequestData req)
@@ -175,6 +182,19 @@ namespace MANAGIX_FYP_2025.Functions
                 _unitOfWork.Tasks.Update(taskForSubmit);
 
                 await _unitOfWork.CompleteAsync();
+
+                var submitter = await _unitOfWork.Users.GetByIdAsync(submitterId);
+                var qaIds = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(AppRoles.QualityAssurance);
+                if (qaIds.Count > 0)
+                {
+                    await _notifications.PublishToManyAsync(qaIds, new NotificationCreateDto
+                    {
+                        Type = "TaskSubmittedForReview",
+                        Title = "Task ready for QA review",
+                        Body = $"{submitter?.FullName ?? "Employee"} submitted \"{taskForSubmit.Title}\" on {project.Title}.",
+                        Link = "/task-hub",
+                    });
+                }
 
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 await resp.WriteAsJsonAsync(new { message = "Task submitted successfully" });
@@ -414,6 +434,18 @@ namespace MANAGIX_FYP_2025.Functions
             _unitOfWork.TaskSubmissions.Update(submission);
             await _unitOfWork.CompleteAsync();
 
+            if (taskStatus == TaskWorkflow.Approved && task.AssignedEmployeeId.HasValue)
+            {
+                try
+                {
+                    await _performance.RecalculateProjectAsync(task.ProjectId);
+                }
+                catch
+                {
+                    /* team may not exist yet */
+                }
+            }
+
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(new { message = $"Task {submissionStatus.ToLower()}" });
             return resp;
@@ -544,6 +576,18 @@ namespace MANAGIX_FYP_2025.Functions
                 if (!managerOrAdmin)
                     return await BadRequest(req, "Only a manager can set task deadlines.");
                 task.Deadline = dto.Deadline.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Priority))
+            {
+                if (!managerOrAdmin)
+                    return await BadRequest(req, "Only a manager can set task priority.");
+                var p = dto.Priority.Trim();
+                if (!p.Equals("High", StringComparison.OrdinalIgnoreCase) &&
+                    !p.Equals("Medium", StringComparison.OrdinalIgnoreCase) &&
+                    !p.Equals("Low", StringComparison.OrdinalIgnoreCase))
+                    return await BadRequest(req, "Priority must be High, Medium, or Low.");
+                task.Priority = char.ToUpper(p[0]) + p[1..].ToLower();
             }
 
             _unitOfWork.Tasks.Update(task);

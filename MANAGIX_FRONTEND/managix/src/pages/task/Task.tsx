@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { taskService } from "../../api/taskService";
 import api from '../../api/axiosInstance';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
+import ToastStack, { useToast } from '../../components/ToastStack';
 
 interface Task {
   TaskId: string;
@@ -34,6 +36,15 @@ const Task = () => {
   const [assignedEmployeeId, setAssignedEmployeeId] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [team, setTeam] = useState<any[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const { toasts, push: pushToast } = useToast();
+
+  const assigneeName = (id?: string) => {
+    if (!id) return 'Unassigned';
+    const u = team.find((x: any) => String(x.UserId || x.userId) === String(id));
+    return u?.FullName || u?.fullName || 'Assigned employee';
+  };
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -117,13 +128,18 @@ const Task = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (taskId: string) => {
-    if (!window.confirm("Are you sure you want to delete this task?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
     try {
-      await taskService.delete(taskId);
+      await taskService.delete(deleteTarget.TaskId);
+      setDeleteTarget(null);
+      pushToast('Task deleted successfully', 'success');
       fetchTasks();
-    } catch (err) {
-      console.error("Error deleting task:", err);
+    } catch (err: any) {
+      pushToast(err?.response?.data?.message || 'Error deleting task', 'error');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -304,7 +320,7 @@ const Task = () => {
                                 </button>
                                 <button
                                   className="p-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-90"
-                                  onClick={() => handleDelete(t.TaskId)}
+                                  onClick={() => setDeleteTarget(t)}
                                 >
                                   Delete
                                 </button>
@@ -323,6 +339,28 @@ const Task = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteTarget)}
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.Title}"? Assigned to ${assigneeName(deleteTarget.AssignedEmployeeId)}. You won't be able to revert this!`
+            : undefined
+        }
+        details={
+          deleteTarget
+            ? [
+                { label: 'Task', value: deleteTarget.Title },
+                { label: 'Assigned to', value: assigneeName(deleteTarget.AssignedEmployeeId) },
+                { label: 'Status', value: deleteTarget.Status },
+              ]
+            : []
+        }
+        busy={deleteBusy}
+        onConfirm={handleDelete}
+        onCancel={() => !deleteBusy && setDeleteTarget(null)}
+      />
+      <ToastStack toasts={toasts} />
     </div>
   );
 };

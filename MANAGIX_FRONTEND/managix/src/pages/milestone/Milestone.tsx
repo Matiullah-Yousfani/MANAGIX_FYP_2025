@@ -2,16 +2,22 @@ import React, { useEffect, useState } from 'react';
 import api from '../../api/axiosInstance';
 import { milestoneService } from '../../api/milestoneService';
 import { projectService } from '../../api/projectService';
-import { motion, AnimatePresence } from 'framer-motion'; // Added Framer Motion
+import { taskService } from '../../api/taskService';
+import AiAllocation from '../ai/AiAllocation';
+import { minDateToday } from '../../utils/dateInput';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiCalendar, FiDollarSign, FiTrash2, FiEdit3, 
   FiCheckCircle, FiClock, FiPlus, FiSearch, FiFlag, FiXCircle, FiInfo 
 } from 'react-icons/fi';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 
 const Milestones = () => {
   // --- Existing State ---
   const [projects, setProjects] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [milestoneSearch, setMilestoneSearch] = useState('');
+  const [milestoneStatusFilter, setMilestoneStatusFilter] = useState('all');
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [milestones, setMilestones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,11 +28,15 @@ const Milestones = () => {
   // --- Toast State ---
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'error' | 'success' }[]>([]);
 
+  const [expandedMilestoneId, setExpandedMilestoneId] = useState<string | null>(null);
+  const [milestoneTasks, setMilestoneTasks] = useState<Record<string, any[]>>({});
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     deadline: '',
-    budgetAllocated: 0
+    budgetAllocated: 0,
+    initialTasks: [{ title: '', description: '' }] as { title: string; description: string }[],
   });
 
   const userId = localStorage.getItem('userId');
@@ -48,6 +58,15 @@ const Milestones = () => {
   const filteredProjects = projects.filter(p => {
     const title = (p.title || p.Title || "").toLowerCase();
     return title.includes(searchTerm.toLowerCase());
+  });
+
+  const filteredMilestones = milestones.filter((m) => {
+    const title = String(m.title || m.Title || '').toLowerCase();
+    const status = String(m.status || m.Status || 'pending').toLowerCase();
+    const q = milestoneSearch.trim().toLowerCase();
+    if (milestoneStatusFilter !== 'all' && status !== milestoneStatusFilter) return false;
+    if (q && !title.includes(q)) return false;
+    return true;
   });
 
   const fetchManagerProjects = async () => {
@@ -109,15 +128,72 @@ const Milestones = () => {
     return true;
   };
 
+  const loadUsers = async () => {
+    try {
+      const res = await api.get('/users');
+      const map: Record<string, string> = {};
+      (res.data || []).forEach((u: any) => {
+        const id = String(u.userId ?? u.UserId ?? '');
+        if (id) map[id] = u.fullName ?? u.FullName ?? 'User';
+      });
+      setUserNames(map);
+    } catch {
+      setUserNames({});
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const toggleMilestoneTasks = async (mId: string) => {
+    if (expandedMilestoneId === mId) {
+      setExpandedMilestoneId(null);
+      return;
+    }
+    setExpandedMilestoneId(mId);
+    if (!milestoneTasks[mId]) {
+      try {
+        const tasks = await taskService.getByMilestone(mId);
+        setMilestoneTasks((prev) => ({ ...prev, [mId]: Array.isArray(tasks) ? tasks : [] }));
+      } catch {
+        setMilestoneTasks((prev) => ({ ...prev, [mId]: [] }));
+      }
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateMilestone(formData, false)) return;
+    const validTasks = formData.initialTasks.filter((t) => t.title.trim());
+    if (validTasks.length === 0) {
+      addToast('At least one task is required when creating a milestone.');
+      return;
+    }
     try {
-      await milestoneService.create({ projectId: selectedProjectId, ...formData });
+      const created = await milestoneService.create({
+        projectId: selectedProjectId,
+        title: formData.title,
+        description: formData.description,
+        deadline: formData.deadline,
+        budgetAllocated: formData.budgetAllocated,
+      });
+      const mId = created?.milestoneId ?? created?.MilestoneId;
+      if (mId) {
+        for (const t of validTasks) {
+          await taskService.create({
+            milestoneId: mId,
+            projectId: selectedProjectId,
+            title: t.title.trim(),
+            description: t.description || t.title,
+            status: 'Todo',
+          });
+        }
+      }
       setShowCreateModal(false);
       resetForm();
       fetchMilestones(selectedProjectId);
-      addToast("Milestone created successfully", "success");
+      addToast("Milestone and initial task created", "success");
     } catch (err) {
       addToast("Error creating milestone");
     }
@@ -141,15 +217,27 @@ const Milestones = () => {
     }
   };
 
-  const handleDelete = async (milestone: any) => {
+  const [deleteMilestoneTarget, setDeleteMilestoneTarget] = useState<any>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const handleDelete = (milestone: any) => {
+    setDeleteMilestoneTarget(milestone);
+  };
+
+  const confirmDeleteMilestone = async () => {
+    const milestone = deleteMilestoneTarget;
     const id = milestone?.milestoneId || milestone?.MilestoneId;
-    if (!id || !window.confirm("Are you sure?")) return;
+    if (!id) return;
+    setDeleteBusy(true);
     try {
       await milestoneService.delete(id);
+      setDeleteMilestoneTarget(null);
       fetchMilestones(selectedProjectId);
       addToast("Milestone deleted", "success");
     } catch (err) {
       addToast("Delete failed");
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -190,14 +278,23 @@ const Milestones = () => {
       title: m.title || m.Title || "",
       description: m.description || m.Description || "",
       deadline: deadlineVal ? deadlineVal.split('T')[0] : "",
-      budgetAllocated: m.budgetAllocated ?? m.BudgetAllocated ?? 0
+      budgetAllocated: m.budgetAllocated ?? m.BudgetAllocated ?? 0,
+      initialTasks: [{ title: '', description: '' }],
     });
     setShowEditModal(true);
   };
 
   const resetForm = () => {
-    setFormData({ title: '', description: '', deadline: '', budgetAllocated: 0 });
+    setFormData({
+      title: '',
+      description: '',
+      deadline: '',
+      budgetAllocated: 0,
+      initialTasks: [{ title: '', description: '' }],
+    });
   };
+
+  const assigneeName = (id?: string) => (id ? userNames[id] || 'Unassigned' : 'Unassigned');
 
   const getStatusStyle = (status: string) => {
     const s = status?.toLowerCase();
@@ -274,15 +371,34 @@ const Milestones = () => {
                 <FiFlag className="absolute -bottom-4 -right-4 size-32 opacity-5 text-gray-900 rotate-12" />
               </div>
 
+              <div className="flex flex-wrap gap-3 mb-4">
+                <input
+                  type="search"
+                  placeholder="Filter milestones…"
+                  value={milestoneSearch}
+                  onChange={(e) => setMilestoneSearch(e.target.value)}
+                  className="flex-1 min-w-[180px] p-3 bg-white border border-gray-100 rounded-xl text-sm font-medium"
+                />
+                <select
+                  value={milestoneStatusFilter}
+                  onChange={(e) => setMilestoneStatusFilter(e.target.value)}
+                  className="p-3 bg-white border border-gray-100 rounded-xl text-sm font-bold"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+
               <div className="grid gap-6">
-                {milestones.length === 0 && !loading && (
+                {filteredMilestones.length === 0 && !loading && (
                   <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-gray-200 text-gray-400">
                     <FiClock size={40} className="mx-auto mb-4 opacity-20" />
                     <p className="font-black uppercase tracking-widest text-[10px]">No milestones defined yet</p>
                   </div>
                 )}
                 
-                {milestones.map((m, index) => {
+                {filteredMilestones.map((m, index) => {
                   const mId = m.milestoneId || m.MilestoneId || index;
                   const title = m.title || m.Title || "Untitled";
                   const budget = m.budgetAllocated ?? m.BudgetAllocated ?? 0;
@@ -290,12 +406,15 @@ const Milestones = () => {
                   const status = m.status || m.Status || "Pending";
                   const isCompleted = status.toLowerCase() === 'completed';
 
+                  const isExpanded = expandedMilestoneId === String(mId);
+
                   return (
                     <div 
                       key={mId} 
-                      className={`group bg-white p-8 rounded-[2.5rem] border border-gray-100 flex items-center justify-between transition-all hover:-translate-y-2 hover:shadow-2xl ${isCompleted ? 'opacity-75' : ''}`}
+                      className={`group bg-white p-8 rounded-[2.5rem] border border-gray-100 transition-all ${isCompleted ? 'opacity-75' : ''} ${isExpanded ? 'shadow-lg' : 'hover:shadow-xl'}`}
                     >
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center justify-between gap-4">
+                      <button type="button" onClick={() => toggleMilestoneTasks(String(mId))} className="flex items-center gap-6 text-left flex-1 min-w-0">
                         <div className={`p-4 rounded-3xl ${isCompleted ? 'bg-emerald-50' : 'bg-indigo-50'}`}>
                           <FiFlag className={isCompleted ? 'text-emerald-600' : 'text-indigo-600'} size={24} />
                         </div>
@@ -314,22 +433,42 @@ const Milestones = () => {
                             </span>
                           </div>
                         </div>
-                      </div>
+                      </button>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {!isCompleted && (
-                          <button onClick={() => handleClose(m)} className="p-4 text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-colors" title="Complete when all tasks are Done or Approved"><FiCheckCircle size={20} /></button>
+                          <button type="button" onClick={() => handleClose(m)} className="p-4 text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-colors" title="Complete when all tasks are Done or Approved"><FiCheckCircle size={20} /></button>
                         )}
-                        <button onClick={() => openEditModal(m)} className="p-4 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors" title="Edit"><FiEdit3 size={20} /></button>
-                        <button onClick={() => handleDelete(m)} className="p-4 text-red-600 hover:bg-red-50 rounded-2xl transition-colors" title="Delete (only if no tasks)"><FiTrash2 size={20} /></button>
+                        <button type="button" onClick={() => openEditModal(m)} className="p-4 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors" title="Edit"><FiEdit3 size={20} /></button>
+                        <button type="button" onClick={() => handleDelete(m)} className="p-4 text-red-600 hover:bg-red-50 rounded-2xl transition-colors" title="Delete"><FiTrash2 size={20} /></button>
                         {isCompleted && (
-                          <button onClick={() => handleReopen(m)} className="px-4 py-2 text-xs font-black uppercase text-amber-700 bg-amber-50 rounded-xl">Reopen</button>
+                          <button type="button" onClick={() => handleReopen(m)} className="px-4 py-2 text-xs font-black uppercase text-amber-700 bg-amber-50 rounded-xl">Reopen</button>
                         )}
                       </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="mt-6 pt-6 border-t border-gray-100 space-y-2">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tasks</p>
+                          {(milestoneTasks[String(mId)] || []).length === 0 ? (
+                            <p className="text-sm text-gray-400 italic">No tasks yet.</p>
+                          ) : (
+                            milestoneTasks[String(mId)].map((t: any) => (
+                              <div key={t.taskId || t.TaskId} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl text-sm">
+                                <span className="font-bold text-gray-800">{t.title || t.Title}</span>
+                                <span className="text-xs text-gray-500">
+                                  {assigneeName(t.assignedEmployeeId || t.AssignedEmployeeId)} · {t.status || t.Status}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
+
+              <AiAllocation embedded variant="tasks-only" />
             </div>
           ) : (
             <div className="h-[60vh] flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 text-gray-400 shadow-sm relative overflow-hidden">
@@ -386,6 +525,7 @@ const Milestones = () => {
                     <input
                       type="date" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold text-sm"
                       required value={formData.deadline}
+                      min={minDateToday()}
                       onChange={e => setFormData({ ...formData, deadline: e.target.value })}
                     />
                   </div>
@@ -399,6 +539,64 @@ const Milestones = () => {
                     />
                   </div>
                 </div>
+                {showCreateModal && (
+                  <div className="space-y-3 pt-2 border-t border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Required: tasks</p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            initialTasks: [...formData.initialTasks, { title: '', description: '' }],
+                          })
+                        }
+                        className="text-xs font-black text-indigo-600"
+                      >
+                        + Add task
+                      </button>
+                    </div>
+                    {formData.initialTasks.map((task, idx) => (
+                      <div key={idx} className="space-y-2 p-3 bg-gray-50 rounded-xl">
+                        <input
+                          className="w-full p-3 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-600 font-bold text-sm"
+                          placeholder="Task title *"
+                          value={task.title}
+                          onChange={(e) => {
+                            const next = [...formData.initialTasks];
+                            next[idx] = { ...next[idx], title: e.target.value };
+                            setFormData({ ...formData, initialTasks: next });
+                          }}
+                        />
+                        <textarea
+                          className="w-full p-3 bg-white border-none rounded-xl outline-none font-medium text-sm"
+                          placeholder="Task description"
+                          rows={2}
+                          value={task.description}
+                          onChange={(e) => {
+                            const next = [...formData.initialTasks];
+                            next[idx] = { ...next[idx], description: e.target.value };
+                            setFormData({ ...formData, initialTasks: next });
+                          }}
+                        />
+                        {formData.initialTasks.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                initialTasks: formData.initialTasks.filter((_, i) => i !== idx),
+                              })
+                            }
+                            className="text-xs text-red-600 font-bold"
+                          >
+                            Remove task
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-4 pt-6">
                   <button type="submit" className="flex-[2] bg-indigo-600 text-white p-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all">
                     Save Changes
@@ -441,6 +639,45 @@ const Milestones = () => {
           ))}
         </AnimatePresence>
       </div>
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteMilestoneTarget)}
+        message={
+          deleteMilestoneTarget
+            ? `Delete milestone "${deleteMilestoneTarget.title || deleteMilestoneTarget.Title}" and all linked tasks? You won't be able to revert this!`
+            : undefined
+        }
+        details={
+          deleteMilestoneTarget
+            ? (() => {
+                const id = deleteMilestoneTarget.milestoneId || deleteMilestoneTarget.MilestoneId;
+                const linked = milestoneTasks[id] || [];
+                const base = [
+                  {
+                    label: 'Milestone',
+                    value: deleteMilestoneTarget.title || deleteMilestoneTarget.Title || '—',
+                  },
+                  { label: 'Linked tasks', value: String(linked.length) },
+                ];
+                if (linked[0]) {
+                  base.push({
+                    label: 'Example task',
+                    value: `${linked[0].title || linked[0].Title} → ${
+                      linked[0].assignedEmployeeName ||
+                      linked[0].AssignedEmployeeName ||
+                      'Unassigned'
+                    }`,
+                  });
+                }
+                return base;
+              })()
+            : []
+        }
+        warning="All tasks under this milestone will also be deleted. Assigned employees will lose those tasks."
+        busy={deleteBusy}
+        onConfirm={confirmDeleteMilestone}
+        onCancel={() => !deleteBusy && setDeleteMilestoneTarget(null)}
+      />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

@@ -34,17 +34,11 @@ const PerformanceDashboard = () => {
       setProjectTitle(project?.title ?? "Project Performance");
 
       let rows = await fetchPerformanceRows();
-      if (rows.length === 0) {
-        try {
-          await performanceService.recalculateProject(projectId!);
-          rows = await fetchPerformanceRows();
-        } catch {
-          /* no team yet */
-        }
-      }
       const filtered =
         role === 'Employee' && currentUserId
-          ? rows.filter((r) => r.employeeId === currentUserId)
+          ? rows.filter(
+              (r) => String(r.employeeId).toLowerCase() === String(currentUserId).toLowerCase()
+            )
           : rows;
       setPerformanceData(filtered);
     } catch (err) {

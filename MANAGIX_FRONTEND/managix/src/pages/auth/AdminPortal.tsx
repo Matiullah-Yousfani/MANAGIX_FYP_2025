@@ -7,6 +7,7 @@ import AdminProjectsTab from '../../components/admin/AdminProjectsTab';
 import AdminHourlyRatesTab from '../../components/admin/AdminHourlyRatesTab';
 import AdminAllTimesheetsTab from '../../components/admin/AdminAllTimesheetsTab';
 import MonitoringPanel from '../admin/MonitoringPanel';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 
 const ADMIN_TABS = ['overview', 'users', 'all-users', 'projects', 'monitoring', 'payroll', 'all-timesheets'] as const;
 type AdminTab = (typeof ADMIN_TABS)[number];
@@ -41,6 +42,8 @@ const AdminPortal = () => {
   
   // Custom Notification State
   const [notification, setNotification] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [deleteUserTarget, setDeleteUserTarget] = useState<{ userId: string; displayName: string; email?: string; role?: string } | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const triggerNotify = (msg: string, type: 'success' | 'error' = 'success') => {
     setNotification({ msg, type });
@@ -123,19 +126,25 @@ const AdminPortal = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string, displayName: string) => {
+  const handleDeleteUser = (userId: string, displayName: string, email?: string, role?: string) => {
     const selfId = localStorage.getItem('userId');
     if (selfId && selfId === userId) {
       triggerNotify('You cannot delete your own account from this panel.', 'error');
       return;
     }
-    if (!window.confirm(`Permanently delete ${displayName}? This cannot be undone.`)) return;
+    setDeleteUserTarget({ userId, displayName, email, role });
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteUserTarget) return;
+    setDeleteBusy(true);
     try {
-      const data = await adminService.deleteUser(userId);
+      const data = await adminService.deleteUser(deleteUserTarget.userId);
       if (data && data.success === false && data.message) {
         triggerNotify(data.message, 'error');
         return;
       }
+      setDeleteUserTarget(null);
       triggerNotify('User removed from directory.');
       fetchData();
     } catch (err: unknown) {
@@ -145,6 +154,8 @@ const AdminPortal = () => {
         ax.response?.data?.detail ??
         'Delete failed';
       triggerNotify(msg, 'error');
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -196,7 +207,7 @@ const AdminPortal = () => {
               ['all-users', 'Directory'],
               ['projects', 'Projects'],
               ['monitoring', 'Monitoring'],
-              ['payroll', 'Payroll'],
+              ['payroll', 'Compensation'],
               ['all-timesheets', 'Timesheets'],
             ] as [AdminTab, string][]).map(([id, label]) => (
               <button
@@ -243,14 +254,14 @@ const AdminPortal = () => {
                 Monitoring
               </button>
               <button type="button" onClick={() => setTab('payroll')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700">
-                Payroll
+                Compensation
               </button>
               <button type="button" onClick={() => setTab('all-timesheets')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700">
                 All timesheets
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-6">
-              Set <strong>hourly rates</strong> under <strong>Payroll</strong> and view <strong>all timesheets</strong> in the Timesheets tab above.
+              Set <strong>hourly rates</strong> under <strong>Compensation</strong> and view <strong>all timesheets</strong> in the Timesheets tab above.
               Project creation stays on the main Dashboard; use Projects here for oversight and Gantt timelines.
             </p>
           </div>
@@ -337,7 +348,10 @@ const AdminPortal = () => {
                                 <button onClick={() => handleApprove(id, u.RoleId)} className="bg-black text-white px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#1A1A1A] transition-all active:scale-90 shadow-lg">Change Role</button>
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteUser(String(id), displayName)}
+                                  onClick={() => {
+                                    const roleName = roles.find((r) => r.RoleId === u.RoleId)?.RoleName;
+                                    handleDeleteUser(String(id), displayName, displayEmail, roleName);
+                                  }}
                                   className="bg-white border border-[#E5E7EB] text-red-600 px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-red-50 hover:border-red-200 transition-all active:scale-90"
                                 >
                                   Delete
@@ -361,6 +375,28 @@ const AdminPortal = () => {
         </div>
         )}
       </div>
+
+      <ConfirmDeleteModal
+        open={Boolean(deleteUserTarget)}
+        message={
+          deleteUserTarget
+            ? `Permanently delete ${deleteUserTarget.displayName}? You won't be able to revert this!`
+            : undefined
+        }
+        details={
+          deleteUserTarget
+            ? [
+                { label: 'Name', value: deleteUserTarget.displayName },
+                ...(deleteUserTarget.email ? [{ label: 'Email', value: deleteUserTarget.email }] : []),
+                ...(deleteUserTarget.role ? [{ label: 'Role', value: deleteUserTarget.role }] : []),
+              ]
+            : []
+        }
+        warning="This removes the user from the directory and cannot be undone."
+        busy={deleteBusy}
+        onConfirm={confirmDeleteUser}
+        onCancel={() => !deleteBusy && setDeleteUserTarget(null)}
+      />
     </div>
   );
 };

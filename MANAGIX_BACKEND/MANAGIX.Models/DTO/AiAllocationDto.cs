@@ -72,6 +72,8 @@ namespace MANAGIX.Models.DTO
         public int SuggestedDeveloperCount { get; set; }
         public List<TeamPoolMemberDto> AvailableQa { get; set; } = new();
         public List<TeamPoolMemberDto> AvailableEmployees { get; set; } = new();
+        /// <summary>Why fewer than 3 options or pool constraints (unassigned-only).</summary>
+        public string? AvailabilityMessage { get; set; }
     }
 
     // Feature 2: Suggest Employees

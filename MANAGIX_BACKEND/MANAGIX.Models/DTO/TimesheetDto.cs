@@ -57,6 +57,8 @@ namespace MANAGIX.Models.DTO
         public string? DailyTimesheetStatus { get; set; }
         public Guid? DailyTimesheetId { get; set; }
         public bool IsClockedIn { get; set; }
+        /// <summary>UTC start of open clock-in session (for live H:M:S display).</summary>
+        public DateTime? OpenSessionStartedAt { get; set; }
         public decimal MinimumSubmitHours { get; set; }
         public bool CanSubmitToday { get; set; }
         public decimal HoursRemainingToSubmit { get; set; }
@@ -70,6 +72,8 @@ namespace MANAGIX.Models.DTO
         public Guid UserId { get; set; }
         public string? FullName { get; set; }
         public string? Email { get; set; }
+        /// <summary>Primary role of submitter (e.g. Manager) — manager rows need admin approval.</summary>
+        public string? SubmitterRole { get; set; }
         public DateTime WorkDate { get; set; }
         public decimal TotalHours { get; set; }
         public string Status { get; set; } = "Draft";

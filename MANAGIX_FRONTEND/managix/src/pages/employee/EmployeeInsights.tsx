@@ -14,6 +14,7 @@ const EmployeeInsights: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [timesheet, setTimesheet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [projectFilter, setProjectFilter] = useState('all');
 
   useEffect(() => {
     if (isEmployee) {
@@ -118,6 +119,21 @@ const EmployeeInsights: React.FC = () => {
             />
           </div>
 
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+              <p className="text-[10px] font-black text-gray-400 uppercase">Pending</p>
+              <p className="text-2xl font-black text-amber-600 mt-1">{data.tasksPending ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+              <p className="text-[10px] font-black text-gray-400 uppercase">In progress</p>
+              <p className="text-2xl font-black text-indigo-600 mt-1">{data.tasksInProgress ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+              <p className="text-[10px] font-black text-gray-400 uppercase">Completed</p>
+              <p className="text-2xl font-black text-emerald-600 mt-1">{data.tasksCompleted ?? 0}</p>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-black text-gray-900 mb-4">Workload</h2>
             <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
@@ -142,27 +158,127 @@ const EmployeeInsights: React.FC = () => {
           )}
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="font-black text-gray-900 mb-4">
-              {isManager ? 'Your projects (for this employee)' : 'Active projects'}
-            </h2>
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+              <h2 className="font-black text-gray-900">
+                {isManager ? 'Your projects (for this employee)' : 'Active projects'}
+              </h2>
+              {(data.activeProjects || []).length > 1 && (
+                <select
+                  value={projectFilter}
+                  onChange={(e) => setProjectFilter(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold"
+                >
+                  <option value="all">All projects</option>
+                  {(data.activeProjects || []).map((p: any) => (
+                    <option key={p.projectId} value={p.projectId}>
+                      {p.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <ul className="space-y-2">
-              {(data.activeProjects || []).length === 0 ? (
-                <li className="text-sm text-gray-400">No active projects.</li>
+              {(data.activeProjects || []).filter((p: any) =>
+                projectFilter === 'all' || String(p.projectId) === projectFilter
+              ).length === 0 ? (
+                <li className="text-sm text-gray-400">No active projects for this team member yet.</li>
               ) : (
-                (data.activeProjects || []).map((p: any) => (
+                (data.activeProjects || [])
+                  .filter((p: any) => projectFilter === 'all' || String(p.projectId) === projectFilter)
+                  .map((p: any) => {
+                  const pending = Math.max(0, (p.assignedTasks ?? 0) - (p.completedTasks ?? 0));
+                  return (
                   <li
                     key={p.projectId}
-                    className="flex justify-between text-sm border-b border-gray-50 py-2"
+                    className="flex justify-between items-center text-sm border-b border-gray-50 py-3"
                   >
                     <span className="font-bold">{p.title}</span>
-                    <span className="text-gray-500">
-                      {p.completedTasks}/{p.assignedTasks} tasks
+                    <span className="text-gray-500 text-xs text-right">
+                      <span className="block">{p.completedTasks}/{p.assignedTasks} done</span>
+                      <span className="text-amber-600 font-bold">{pending} active</span>
                     </span>
                   </li>
-                ))
+                );})
               )}
             </ul>
           </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="font-black text-gray-900 mb-4">Teams & members</h2>
+            {(data.teams || []).length === 0 ? (
+              <p className="text-sm text-gray-400">No team data available.</p>
+            ) : (
+              <ul className="space-y-4">
+                {data.teams.map((t: any) => (
+                  <li key={t.teamId} className="border border-gray-100 rounded-xl p-4">
+                    <div className="flex justify-between gap-2 mb-2">
+                      <span className="font-bold">{t.teamName}</span>
+                      <span className="text-gray-500 text-xs text-right">
+                        {t.projectTitle || 'No project'}
+                        {t.createdByName && <span className="block text-indigo-600">Manager: {t.createdByName}</span>}
+                      </span>
+                    </div>
+                    {(t.members || []).length > 0 ? (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {t.members.map((m: any) => (
+                          <span
+                            key={m.userId}
+                            className={`text-[10px] font-bold px-2 py-1 rounded-lg ${
+                              m.roleName === 'Manager'
+                                ? 'bg-indigo-100 text-indigo-700'
+                                : m.roleName?.includes('Quality') || m.roleName === 'QA'
+                                  ? 'bg-violet-100 text-violet-700'
+                                  : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {m.fullName} · {m.roleName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">Member list not loaded.</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {(data.milestones || []).length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="font-black text-gray-900 mb-4">Milestones</h2>
+              <ul className="space-y-2">
+                {data.milestones.map((m: any) => (
+                  <li key={m.milestoneId} className="text-sm border-b border-gray-50 py-2">
+                    <div className="flex justify-between font-bold">
+                      <span>{m.title}</span>
+                      <span className="text-indigo-600 text-xs">{m.status}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Deadline {String(m.deadline || '').slice(0, 10)} · {m.completedTasks}/{m.totalTasks} tasks done
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {(data.taskDetails || []).length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="font-black text-gray-900 mb-4">All tasks</h2>
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {data.taskDetails.map((t: any) => (
+                  <div key={t.taskId} className="text-sm flex justify-between bg-gray-50 rounded-lg px-3 py-2">
+                    <div>
+                      <p className="font-bold">{t.title}</p>
+                      <p className="text-xs text-gray-500">{t.projectTitle} · {t.milestoneTitle}</p>
+                    </div>
+                    <span className="text-xs font-bold text-amber-700">{t.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -35,6 +35,8 @@ namespace MANAGIX.Services
                 tasks = tasks.Where(t => t.ProjectId == projectId.Value).ToList();
 
             var active = tasks.Where(t => IsActiveTask(t.Status)).ToList();
+            var inProgressCount = tasks.Count(t => TaskWorkflow.Normalize(t.Status) == TaskWorkflow.InProgress);
+            var assignedCount = tasks.Count;
             var totalHours = active.Sum(t => t.EstimatedHours ?? 4m);
             var capacity = profile?.WeeklyCapacityHours ?? 40m;
             var distinctProjects = active.Select(t => t.ProjectId).Distinct().Count();
@@ -49,6 +51,8 @@ namespace MANAGIX.Services
                 UserId = userId,
                 FullName = user?.FullName ?? "(unknown)",
                 ActiveTaskCount = active.Count,
+                InProgressTaskCount = inProgressCount,
+                AssignedTaskCount = assignedCount,
                 TotalEstimatedHours = totalHours,
                 CapacityHours = capacity,
                 UtilizationPct = capacity > 0m ? (double)(utilizationBase / capacity) : 0,

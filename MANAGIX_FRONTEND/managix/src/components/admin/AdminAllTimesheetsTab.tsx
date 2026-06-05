@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { timesheetService } from '../../api/timesheetService';
 
 const AdminAllTimesheetsTab: React.FC = () => {
@@ -11,6 +11,8 @@ const AdminAllTimesheetsTab: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const load = async () => {
     setLoading(true);
@@ -46,6 +48,18 @@ const AdminAllTimesheetsTab: React.FC = () => {
   useEffect(() => {
     load();
   }, []);
+
+  const filteredSheets = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sheets.filter((s) => {
+      const st = String(s.status ?? s.Status ?? '').toLowerCase();
+      if (statusFilter !== 'all' && st !== statusFilter) return false;
+      if (!q) return true;
+      const name = String(s.fullName ?? s.FullName ?? '').toLowerCase();
+      const date = String(s.workDate ?? s.WorkDate ?? '').slice(0, 10);
+      return name.includes(q) || date.includes(q);
+    });
+  }, [sheets, search, statusFilter]);
 
   const savePolicy = async () => {
     try {
@@ -131,13 +145,36 @@ const AdminAllTimesheetsTab: React.FC = () => {
 
       <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
         <h2 className="text-xl font-black uppercase mb-4">All users — daily timesheets</h2>
-        {sheets.length === 0 ? (
-          <p className="text-gray-400 italic text-sm">No submissions yet.</p>
+        <div className="flex flex-wrap gap-3 mb-4">
+          <input
+            type="search"
+            placeholder="Search name or date…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border rounded-lg px-3 py-2 text-sm font-bold"
+          >
+            <option value="all">All</option>
+            <option value="submitted">Submitted</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        {filteredSheets.length === 0 ? (
+          <p className="text-gray-400 italic text-sm">No submissions match your filters.</p>
         ) : (
           <div className="space-y-3 max-h-[32rem] overflow-y-auto">
-            {sheets.map((s) => (
+            {filteredSheets.map((s) => (
               <div key={s.dailyTimesheetId ?? s.DailyTimesheetId} className="border rounded-xl p-4 text-sm">
-                <strong>{s.fullName ?? s.FullName}</strong> — {String(s.workDate ?? s.WorkDate).slice(0, 10)} —{' '}
+                <strong>{s.fullName ?? s.FullName}</strong>
+                {(s.submitterRole ?? s.SubmitterRole) && (
+                  <span className="text-indigo-600 text-xs ml-2">({s.submitterRole ?? s.SubmitterRole})</span>
+                )}
+                {' '}— {String(s.workDate ?? s.WorkDate).slice(0, 10)} —{' '}
                 {s.totalHours ?? s.TotalHours}h — <span className="uppercase font-bold">{s.status ?? s.Status}</span>
                 {s.overtimeReason && (
                   <p className="text-amber-700 mt-1 text-xs">Overtime: {s.overtimeReason}</p>

@@ -80,6 +80,7 @@ namespace MANAGIX.Services
                 UserId = userId,
                 TodayHours = hours,
                 IsClockedIn = open != null,
+                OpenSessionStartedAt = open?.StartedAt,
                 StandardHoursPerDay = policy.StandardHoursPerDay,
                 OvertimeGraceHours = policy.OvertimeGraceHours,
                 DailyMaxHours = policy.DailyMaxHours,
@@ -170,6 +171,12 @@ namespace MANAGIX.Services
                 throw new InvalidOperationException("Only submitted timesheets can be reviewed.");
 
             var isAdmin = await IsAdminAsync(dto.ActingUserId);
+            var submitter = await _uow.Users.GetByIdAsync(sheet.UserId);
+            var submitterIsManager = submitter?.UserRoles?.Any(ur => ur.Role?.RoleName == "Manager") == true;
+
+            if (submitterIsManager && !isAdmin)
+                throw new UnauthorizedAccessException("Manager timesheets must be approved by admin.");
+
             if (!isAdmin)
             {
                 var managerId = await ResolveManagerForEmployeeAsync(sheet.UserId);
@@ -286,12 +293,17 @@ namespace MANAGIX.Services
         private async Task<DailyTimesheetDto> ToDtoAsync(DailyTimesheet sheet, bool includeEntries)
         {
             var u = await _uow.Users.GetByIdAsync(sheet.UserId);
+            var primaryRole = u?.UserRoles?
+                .Select(ur => ur.Role?.RoleName)
+                .FirstOrDefault(r => !string.IsNullOrWhiteSpace(r));
+
             var dto = new DailyTimesheetDto
             {
                 DailyTimesheetId = sheet.DailyTimesheetId,
                 UserId = sheet.UserId,
                 FullName = u?.FullName,
                 Email = u?.Email,
+                SubmitterRole = primaryRole,
                 WorkDate = sheet.WorkDate,
                 TotalHours = sheet.TotalHours,
                 Status = sheet.Status,
@@ -308,14 +320,32 @@ namespace MANAGIX.Services
 
         private async Task NotifyManagerForSubmitAsync(DailyTimesheet sheet)
         {
+            var submitter = await _uow.Users.GetByIdAsync(sheet.UserId);
+            var isManager = submitter?.UserRoles?.Any(ur => ur.Role?.RoleName == "Manager") == true;
+
+            if (isManager)
+            {
+                var adminIds = await _uow.Users.GetUserIdsByRoleNameAsync("Admin");
+                foreach (var adminId in adminIds.Distinct())
+                {
+                    await _notifications.PublishAsync(adminId, new NotificationCreateDto
+                    {
+                        Type = "TimesheetSubmitted",
+                        Title = "Manager timesheet needs approval",
+                        Body = $"{submitter?.FullName ?? "Manager"} submitted {sheet.TotalHours:0.#}h for {sheet.WorkDate:yyyy-MM-dd}.",
+                        Link = "/timesheets",
+                    });
+                }
+                return;
+            }
+
             var managerId = await ResolveManagerForEmployeeAsync(sheet.UserId);
-            if (managerId == Guid.Empty) return;
-            var employee = await _uow.Users.GetByIdAsync(sheet.UserId);
+            if (managerId == Guid.Empty || managerId == sheet.UserId) return;
             await _notifications.PublishAsync(managerId, new NotificationCreateDto
             {
                 Type = "TimesheetSubmitted",
                 Title = "Timesheet submitted for approval",
-                Body = $"{employee?.FullName ?? "Employee"} submitted {sheet.TotalHours:0.#}h for {sheet.WorkDate:yyyy-MM-dd}.",
+                Body = $"{submitter?.FullName ?? "Employee"} submitted {sheet.TotalHours:0.#}h for {sheet.WorkDate:yyyy-MM-dd}.",
                 Link = "/timesheets",
             });
         }

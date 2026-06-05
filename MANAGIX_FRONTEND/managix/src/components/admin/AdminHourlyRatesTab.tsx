@@ -85,7 +85,7 @@ const AdminHourlyRatesTab: React.FC = () => {
   return (
     <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-2xl overflow-hidden">
       <div className="px-10 py-8 border-b border-[#F3F4F6]">
-        <h2 className="text-xl font-black uppercase tracking-tight">Payroll — hourly rates</h2>
+        <h2 className="text-xl font-black uppercase tracking-tight">Compensation — hourly rates</h2>
         <p className="text-sm text-[#9CA3AF] mt-1 font-medium">
           Set $/hr for every user. Used when calculating payroll from approved timesheets.
         </p>

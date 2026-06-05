@@ -136,7 +136,12 @@ function LoadingOverlay() {
   );
 }
 
-export type AiAllocationProps = { embedded?: boolean; onTeamApplied?: () => void | Promise<void> };
+export type AiAllocationProps = {
+  embedded?: boolean;
+  onTeamApplied?: () => void | Promise<void>;
+  /** team-only = Team Setup; tasks-only = Milestones page */
+  variant?: 'full' | 'team-only' | 'tasks-only';
+};
 
 type TeamOptionCard = TeamOption & {
   id: string;
@@ -148,12 +153,13 @@ type TeamOptionCard = TeamOption & {
 // ======================================================================
 // Main Component (full page or embedded in Team Setup)
 // ======================================================================
-const AiAllocation = ({ embedded = false, onTeamApplied }: AiAllocationProps) => {
+const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiAllocationProps) => {
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [assignedProjectIds, setAssignedProjectIds] = useState<Set<string>>(new Set());
   const [taskAllocationProjects, setTaskAllocationProjects] = useState<any[]>([]);
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>('team');
+  const [activeTab, setActiveTab] = useState<TabKey>(variant === 'tasks-only' ? 'tasks' : 'team');
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -287,6 +293,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied }: AiAllocationProps) =>
         return;
       }
       setSuggestedDevCount(res.suggestedDeveloperCount ?? null);
+      setAvailabilityMessage(res.availabilityMessage ?? res.AvailabilityMessage ?? null);
       setTeamCards(
         opts.map((opt, i) => ({
           ...opt,
@@ -384,6 +391,11 @@ const AiAllocation = ({ embedded = false, onTeamApplied }: AiAllocationProps) =>
 
       for (const member of card.team) {
         await teamService.addEmployeeToTeam(teamId, member.userId);
+      }
+      try {
+        await teamService.addEmployeeToTeam(teamId, userId);
+      } catch {
+        /* manager may already be on team */
       }
 
       const ok = await validateTeamComposition(teamId);
@@ -554,12 +566,15 @@ const AiAllocation = ({ embedded = false, onTeamApplied }: AiAllocationProps) =>
         <div>
           <h3 className="text-lg font-bold text-gray-900">AI Team Formation</h3>
           <p className="text-sm text-gray-400 mt-0.5">
-            Up to 3 stable options — always 1 QA plus{' '}
+            Suggests up to 3 teams from <strong>unassigned</strong> employees only (not on other project teams).
+            Each team: 1 QA +{' '}
             {suggestedDevCount != null
               ? `${suggestedDevCount} developer${suggestedDevCount === 1 ? '' : 's'}`
-              : '2–4 developers based on project scope'}
-            . Regenerating keeps the same &quot;best fit&quot; pick. Adjust members later via Assign Member above.
+              : '2–4 developers based on scope'}.
           </p>
+          {availabilityMessage && (
+            <p className="text-sm text-amber-700 mt-2 font-medium">{availabilityMessage}</p>
+          )}
         </div>
         <button
           onClick={handleSuggestTeam}
@@ -756,11 +771,18 @@ const AiAllocation = ({ embedded = false, onTeamApplied }: AiAllocationProps) =>
     </div>
   );
 
+  const visibleTabs =
+    variant === 'tasks-only'
+      ? TABS.filter((t) => t.key === 'tasks')
+      : variant === 'team-only'
+        ? TABS.filter((t) => t.key === 'team')
+        : TABS;
+
   const tabsCard = (
         <div className={`bg-white rounded-2xl shadow-sm ${embedded ? 'border border-gray-100' : ''}`}>
           {/* Tab Bar */}
           <div className="flex border-b border-gray-100 overflow-hidden rounded-t-2xl">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}

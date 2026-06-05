@@ -1,5 +1,6 @@
 using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
+using MANAGIX.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,9 +60,12 @@ namespace MANAGIX.Services
                     memberIds.Add(te.EmployeeId);
             }
 
+            var managerIds = (await _uow.Users.GetUserIdsByRoleNameAsync(AppRoles.Manager)).ToHashSet();
             var result = new List<ManagerTeamMemberDto>();
             foreach (var id in memberIds.OrderBy(x => x))
             {
+                if (managerIds.Contains(id) || id == managerId)
+                    continue;
                 var user = await _uow.Users.GetByIdAsync(id);
                 if (user != null)
                 {

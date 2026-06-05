@@ -47,6 +47,7 @@ export interface SuggestTeamOptionsResponse {
   suggestedDeveloperCount?: number;
   availableQa?: TeamPoolMember[];
   availableEmployees?: TeamPoolMember[];
+  availabilityMessage?: string;
 }
 
 export interface SuggestEmployeesResponse {

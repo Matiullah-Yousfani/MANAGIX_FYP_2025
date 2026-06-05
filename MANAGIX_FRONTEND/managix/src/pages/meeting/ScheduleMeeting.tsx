@@ -4,6 +4,7 @@ import { FiCalendar, FiVideo, FiUsers } from 'react-icons/fi';
 import { projectService } from '../../api/projectService';
 import { meetingService } from '../../api/meetingService';
 import type { Project } from '../../types';
+import { minDateToday } from '../../utils/dateInput';
 
 const ScheduleMeeting: React.FC = () => {
   const navigate = useNavigate();
@@ -150,6 +151,7 @@ const ScheduleMeeting: React.FC = () => {
             </label>
             <input
               type="date"
+              min={minDateToday()}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3"

@@ -152,7 +152,13 @@ const ProjectGantt: React.FC<Props> = ({
       </div>
       <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-6">
         <div
-          className="h-full bg-indigo-600 rounded-full transition-all"
+          className={`h-full rounded-full transition-all duration-500 ${
+            data.overallProgressPct >= 100
+              ? 'bg-emerald-500'
+              : data.overallProgressPct >= 50
+                ? 'bg-indigo-500'
+                : 'bg-indigo-400'
+          }`}
           style={{ width: `${Math.min(100, data.overallProgressPct)}%` }}
         />
       </div>
@@ -162,19 +168,29 @@ const ProjectGantt: React.FC<Props> = ({
             const done = isMilestoneCompleted(m.status);
             const pendingReview = Boolean(m.hasPendingReview);
             const flexGrow = Math.max(m.widthPct || 8, 8) / totalFlex;
-            const barColor = done
+            const pct = Math.min(100, Number(m.progressPct ?? 0));
+            const fillColor = done
               ? 'bg-emerald-500'
               : pendingReview
                 ? 'bg-amber-400'
-                : 'bg-indigo-500';
+                : pct >= 50
+                  ? 'bg-indigo-500'
+                  : 'bg-indigo-400';
+            const trackColor = done ? 'bg-emerald-100' : pendingReview ? 'bg-amber-100' : 'bg-indigo-100';
             return (
               <div
                 key={m.milestoneId}
-                className={`flex items-center justify-center px-1 min-w-0 text-white text-[10px] font-bold ${barColor}`}
+                className={`relative flex items-center justify-center px-1 min-w-0 text-[10px] font-bold overflow-hidden ${trackColor}`}
                 style={{ flex: flexGrow }}
-                title={`${m.title} (${m.progressPct}%)`}
+                title={`${m.title} (${pct}%)`}
               >
-                <span className="truncate">{m.title}</span>
+                <div
+                  className={`absolute inset-y-0 left-0 transition-all duration-500 ${fillColor}`}
+                  style={{ width: `${pct}%` }}
+                />
+                <span className={`relative z-10 truncate px-1 ${pct > 40 ? 'text-white' : 'text-gray-700'}`}>
+                  {m.title}
+                </span>
               </div>
             );
           })}

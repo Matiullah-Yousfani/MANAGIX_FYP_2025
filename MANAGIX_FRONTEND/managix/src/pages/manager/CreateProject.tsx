@@ -6,6 +6,7 @@ import { taskService } from '../../api/taskService';
 import { aiService } from '../../api/aiService';
 import { validateProjectStep2 } from '../../utils/formValidation';
 import { formatLocalDateYmd, parseYmdLocal, compareYmd } from '../../utils/dateOnlyLocal';
+import { minDateToday } from '../../utils/dateInput';
 import {
   FiCalendar,
   FiDollarSign,
@@ -442,6 +443,7 @@ const CreateProject = () => {
                     <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="date"
+                      min={minDateToday()}
                       className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
                       value={formData.deadline}
                       onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
@@ -568,6 +570,7 @@ const CreateProject = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="date"
+                      min={minDateToday()}
                       className="p-3 bg-white border-none rounded-xl shadow-sm outline-none text-sm"
                       value={currentMilestone.deadline}
                       onChange={(e) =>
@@ -653,6 +656,7 @@ const CreateProject = () => {
                         <label className="text-[10px] uppercase text-gray-400 font-bold">Deadline</label>
                         <input
                           type="date"
+                          min={minDateToday()}
                           className="w-full p-2 bg-gray-50 rounded-lg text-sm outline-none mt-1"
                           value={m.deadline}
                           onChange={(e) => updateMilestone(i, { deadline: e.target.value })}

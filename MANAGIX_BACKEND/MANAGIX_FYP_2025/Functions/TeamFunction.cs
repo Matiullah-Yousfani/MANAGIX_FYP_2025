@@ -12,6 +12,7 @@ using System.IO;
 using System.Text.Json;
 using MANAGIX.Models.DTO;
 using MANAGIX.Services;
+using MANAGIX.Utility;
 using Microsoft.EntityFrameworkCore;
 
 namespace MANAGIX_FYP_2025.Functions
@@ -291,6 +292,17 @@ namespace MANAGIX_FYP_2025.Functions
             if (dto == null || dto.EmployeeId == Guid.Empty)
                 return await BadRequest(req, "Invalid EmployeeId");
 
+            var team = await _unitOfWork.Teams.GetByIdAsync(tid);
+            if (team == null)
+                return await BadRequest(req, "Team not found");
+
+            if (dto.EmployeeId == team.CreatedBy)
+            {
+                var block = req.CreateResponse(HttpStatusCode.Conflict);
+                await block.WriteAsJsonAsync(new { message = "Cannot remove the team manager (creator)." });
+                return block;
+            }
+
             var teamEmployee = await _unitOfWork.TeamEmployees.GetAsync(tid, dto.EmployeeId);
             if (teamEmployee == null)
                 return await BadRequest(req, "Employee not in team");
@@ -331,6 +343,11 @@ namespace MANAGIX_FYP_2025.Functions
             if (team == null)
                 return await BadRequest(req, "Team not found");
 
+            var assignment = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
+            var project = assignment != null
+                ? await _unitOfWork.Projects.GetByIdAsync(assignment.ProjectId)
+                : null;
+            var creator = await _unitOfWork.Users.GetByIdAsync(team.CreatedBy);
             var employees = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(tid);
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
@@ -339,6 +356,10 @@ namespace MANAGIX_FYP_2025.Functions
                 team.TeamId,
                 team.Name,
                 team.CreatedAt,
+                team.CreatedBy,
+                createdByName = creator?.FullName ?? "Manager",
+                projectId = assignment?.ProjectId,
+                projectTitle = project?.Title,
                 Employees = employees.Select(e => e.EmployeeId)
             });
             return resp;
@@ -358,15 +379,30 @@ namespace MANAGIX_FYP_2025.Functions
             // 2. Extract just the Guids (EmployeeId/UserId)
             var employeeIds = teamEmployeeMappings.Select(te => te.EmployeeId).ToList();
 
-            // 3. Fetch all users and filter for those whose ID is in our list
-            var allUsers = await _unitOfWork.Users.GetAllAsync();
-            var members = allUsers
-                .Where(u => employeeIds.Contains(u.UserId))
-                .Select(u => new {
+            var team = await _unitOfWork.Teams.GetByIdAsync(tid);
+            var members = new List<object>();
+            foreach (var eid in employeeIds)
+            {
+                var u = await _unitOfWork.Users.GetByIdAsync(eid);
+                if (u == null) continue;
+                var roleName = u.UserRoles?
+                    .Select(ur => ur.Role?.RoleName)
+                    .FirstOrDefault(r => !string.IsNullOrWhiteSpace(r)) ?? "Employee";
+                var isCreator = team != null && u.UserId == team.CreatedBy;
+                if (isCreator)
+                    roleName = AppRoles.Manager;
+                else if (AppRoles.IsQualityAssurance(roleName))
+                    roleName = AppRoles.QualityAssurance;
+
+                members.Add(new
+                {
                     u.UserId,
                     u.FullName,
-                    u.Email
-                }).ToList();
+                    u.Email,
+                    roleName,
+                    isTeamCreator = isCreator,
+                });
+            }
 
             var resp = req.CreateResponse(HttpStatusCode.OK);
             await resp.WriteAsJsonAsync(members);
@@ -409,12 +445,14 @@ namespace MANAGIX_FYP_2025.Functions
 
                 var memberCount = (await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(t.TeamId)).Count;
 
+                var creator = await _unitOfWork.Users.GetByIdAsync(t.CreatedBy);
                 resultList.Add(new
                 {
                     t.TeamId,
                     t.Name,
                     t.CreatedAt,
                     t.CreatedBy,
+                    createdByName = creator?.FullName ?? "Unknown",
                     projectId = assignment?.ProjectId,
                     ProjectTitle = projectForTeam?.Title ?? "N/A - Unassigned",
                     memberCount,
@@ -439,19 +477,20 @@ namespace MANAGIX_FYP_2025.Functions
                 return await BadRequest(req, "Team not found");
 
             var mappings = await _unitOfWork.TeamEmployees.GetEmployeesByTeamIdAsync(tid);
-            if (mappings.Count > 0)
+            var removable = mappings.Where(m => m.EmployeeId != team.CreatedBy).ToList();
+            if (removable.Count > 0)
             {
                 var assigned = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
                 if (assigned != null)
                 {
                     var projectTasks = await _unitOfWork.Tasks.GetByProjectIdAsync(assigned.ProjectId);
-                    var memberIds = mappings.Select(m => m.EmployeeId).ToHashSet();
+                    var memberIds = removable.Select(m => m.EmployeeId).ToHashSet();
                     if (projectTasks.Any(t => t.AssignedEmployeeId.HasValue && memberIds.Contains(t.AssignedEmployeeId.Value)))
                     {
                         var block = req.CreateResponse(HttpStatusCode.Conflict);
                         await block.WriteAsJsonAsync(new
                         {
-                            message = "Cannot delete team: members still have tasks on the assigned project. Unassign tasks first."
+                            message = "Cannot delete team: employees/QA still have tasks assigned. Unassign or reassign tasks first."
                         });
                         return block;
                     }
@@ -460,7 +499,7 @@ namespace MANAGIX_FYP_2025.Functions
                 var conflict = req.CreateResponse(HttpStatusCode.Conflict);
                 await conflict.WriteAsJsonAsync(new
                 {
-                    message = "Remove all team members before deleting this team."
+                    message = "Remove all employees and QA from the team first. The manager stays until the team is deleted."
                 });
                 return conflict;
             }
@@ -468,6 +507,9 @@ namespace MANAGIX_FYP_2025.Functions
             var projectLink = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
             if (projectLink != null)
                 await TeamProjectGuards.ReleaseTeamFromProjectAsync(_unitOfWork, projectLink.ProjectId);
+
+            foreach (var m in mappings)
+                _unitOfWork.TeamEmployees.Remove(m);
 
             _unitOfWork.Teams.Remove(team);
             await _unitOfWork.CompleteAsync();

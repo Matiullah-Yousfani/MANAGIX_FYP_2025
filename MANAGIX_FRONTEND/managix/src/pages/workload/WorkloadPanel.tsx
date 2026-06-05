@@ -17,6 +17,7 @@ const WorkloadPanel: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectLoad, setProjectLoad] = useState<ProjectWorkload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [memberSearch, setMemberSearch] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -72,6 +73,16 @@ const WorkloadPanel: React.FC = () => {
 
   const teamLabel = isAdmin ? 'All employees' : 'Your project teams';
 
+  const filterMembers = (list: WorkloadEntry[]) => {
+    const q = memberSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((e) => e.fullName.toLowerCase().includes(q));
+  };
+
+  const filteredTeamLoad = filterMembers(teamLoad);
+  const filteredOverloaded = filterMembers(overloaded);
+  const filteredProjectMembers = projectLoad ? filterMembers(projectLoad.members) : [];
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
       <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
@@ -90,6 +101,14 @@ const WorkloadPanel: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 space-y-12">
+        <input
+          type="search"
+          placeholder="Search team members…"
+          value={memberSearch}
+          onChange={(e) => setMemberSearch(e.target.value)}
+          className="w-full max-w-md border border-gray-200 rounded-xl px-4 py-3 font-medium text-sm"
+        />
+
         {isManager && projects.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -111,9 +130,9 @@ const WorkloadPanel: React.FC = () => {
                 </option>
               ))}
             </select>
-            {projectLoad && projectLoad.members.length > 0 ? (
+            {projectLoad && filteredProjectMembers.length > 0 ? (
               <div className="space-y-3">
-                {projectLoad.members.map((e) => (
+                {filteredProjectMembers.map((e) => (
                   <UtilizationRow key={e.userId} entry={e} />
                 ))}
               </div>
@@ -147,12 +166,12 @@ const WorkloadPanel: React.FC = () => {
           <Kpi
             icon={<FiAlertTriangle />}
             label="Over 90%"
-            value={overloaded.length.toString()}
+            value={filteredOverloaded.length.toString()}
             accent={overloaded.length > 0 ? 'orange' : 'emerald'}
           />
         </div>
 
-        {overloaded.length > 0 && (
+        {filteredOverloaded.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -162,7 +181,7 @@ const WorkloadPanel: React.FC = () => {
               <FiAlertTriangle /> Capacity alerts
             </h2>
             <div className="space-y-3">
-              {overloaded.map((e) => (
+              {filteredOverloaded.map((e) => (
                 <UtilizationRow key={e.userId} entry={e} />
               ))}
             </div>
@@ -178,13 +197,13 @@ const WorkloadPanel: React.FC = () => {
           <p className="text-sm text-gray-500 mb-6">
             Total active workload across all assigned tasks (company-wide for each person).
           </p>
-          {teamLoad.length === 0 ? (
+          {filteredTeamLoad.length === 0 ? (
             <p className="text-gray-400 italic">
               No team members yet. Assign teams to your projects in Team Hub.
             </p>
           ) : (
             <div className="space-y-3">
-              {teamLoad.map((e) => (
+              {filteredTeamLoad.map((e) => (
                 <UtilizationRow key={e.userId} entry={e} />
               ))}
             </div>
@@ -237,12 +256,23 @@ const UtilizationRow: React.FC<{ entry: WorkloadEntry }> = ({ entry }) => {
     emerald: 'text-emerald-600',
   }[tier];
 
+  const isFree = (entry.activeTaskCount ?? 0) === 0;
+
   return (
-    <div className="flex items-center gap-6 p-4 rounded-2xl border border-gray-100 bg-gray-50">
+    <div className={`flex items-center gap-6 p-4 rounded-2xl border ${
+      isFree ? 'border-emerald-200 bg-emerald-50/80 ring-1 ring-emerald-100' : 'border-gray-100 bg-gray-50'
+    }`}>
       <div className="w-44 shrink-0">
-        <div className="font-bold text-gray-900">{entry.fullName}</div>
-        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          {entry.activeTaskCount} active · {entry.projectsAssigned} projects
+        <div className="font-bold text-gray-900 flex items-center gap-2">
+          {entry.fullName}
+          {isFree && (
+            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">Free</span>
+          )}
+        </div>
+        <div className={`text-[10px] font-black uppercase tracking-widest ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
+          {isFree
+            ? 'No active tasks — available for assignment'
+            : `${entry.assignedTaskCount ?? 0} assigned - ${entry.inProgressTaskCount ?? entry.activeTaskCount ?? 0} active`}
           {entry.usesClockedHours && (
             <span className="block text-indigo-600">
               {entry.clockedHoursThisWeek?.toFixed(1)}h clocked this week

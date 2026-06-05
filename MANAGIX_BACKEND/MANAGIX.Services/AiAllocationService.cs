@@ -133,8 +133,8 @@ namespace MANAGIX.Services
 
         private async Task<(List<EmployeeInfoDto> Employees, List<EmployeeInfoDto> Qas)> GetAvailableTeamPoolsAsync(Guid projectId) =>
             (
-                await GetAvailablePoolByRoleAsync(AppRoles.Employee, projectId, filterBusy: false, requireSkillsOrResume: false),
-                await GetAvailablePoolByRoleAsync(AppRoles.QualityAssurance, projectId, filterBusy: false, requireSkillsOrResume: false)
+                await GetAvailablePoolByRoleAsync(AppRoles.Employee, projectId, filterBusy: true, requireSkillsOrResume: false),
+                await GetAvailablePoolByRoleAsync(AppRoles.QualityAssurance, projectId, filterBusy: true, requireSkillsOrResume: false)
             );
 
         /// <summary>2–4 developers based on scope signals; 1 QA is always added separately.</summary>
@@ -326,7 +326,6 @@ namespace MANAGIX.Services
             foreach (var te in teamEmployees)
             {
                 if (!employeeRoleIds.Contains(te.EmployeeId)) continue;
-                if (!await IsEligibleForAiSuggestionsAsync(te.EmployeeId)) continue;
                 var user = await _unitOfWork.Users.GetByIdAsync(te.EmployeeId);
                 if (user != null)
                     list.Add(await GetEmployeeInfoAsync(user.UserId, user.FullName));
@@ -470,13 +469,13 @@ namespace MANAGIX.Services
             if (employees.Count == 0 || qas.Count == 0)
             {
                 throw new InvalidOperationException(
-                    $"Cannot suggest teams: {employees.Count} employee(s) and {qas.Count} Quality Assurance user(s) found. " +
-                    "Assign the Quality Assurance role (not a duplicate 'QA' role) and at least one Employee.");
+                    $"Not enough unassigned people to suggest a team. Found {employees.Count} available employee(s) and {qas.Count} available QA(s). " +
+                    "People already on another active project team are excluded. Free them or add more users.");
             }
 
             var projectKeywords = ExtractProjectKeywords(project.Title, project.Description);
-            var devCount = Math.Min(SuggestedDeveloperCount(project.Title, project.Description), employees.Count);
-            devCount = Math.Max(1, devCount);
+            var idealDevCount = SuggestedDeveloperCount(project.Title, project.Description);
+            var devCount = Math.Max(1, Math.Min(idealDevCount, employees.Count));
 
             var rankedEmps = employees
                 .Select(e => (Member: e, Score: ScoreMemberForProject(projectKeywords, e)))
@@ -492,34 +491,35 @@ namespace MANAGIX.Services
                 .Select(x => x.Member)
                 .ToList();
 
+            var maxTeams = Math.Min(3, Math.Min(rankedQas.Count, employees.Count / devCount));
+            if (maxTeams < 1 && employees.Count >= 1)
+                maxTeams = 1;
+
+            if (maxTeams < 1)
+            {
+                throw new InvalidOperationException(
+                    $"Not enough available employees for even one team (need 1 QA + 1 developer). {employees.Count} employee(s), {qas.Count} QA(s) unassigned.");
+            }
+
             var options = new List<TeamOptionDto>();
-            var usedSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var shortTitle = project.Title.Length > 24 ? project.Title[..24] + "…" : project.Title;
 
-            var variantPlans = new (int QaOffset, int EmpOffset)[]
+            for (int t = 0; t < maxTeams; t++)
             {
-                (0, 0),
-                (1, 1),
-                (0, devCount),
-            };
-
-            foreach (var (qaOffset, empOffset) in variantPlans)
-            {
-                if (options.Count >= 3) break;
-
-                var qa = rankedQas[qaOffset % rankedQas.Count];
+                var qa = rankedQas[t % rankedQas.Count];
                 var devs = new List<EmployeeInfoDto>();
                 for (int d = 0; d < devCount; d++)
-                    devs.Add(rankedEmps[(empOffset + d) % rankedEmps.Count]);
-
-                var sig = string.Join("|", devs.Select(x => x.UserId).Append(qa.UserId).OrderBy(x => x));
-                if (!usedSignatures.Add(sig))
-                    continue;
+                {
+                    var idx = t * devCount + d;
+                    if (idx >= rankedEmps.Count) break;
+                    devs.Add(rankedEmps[idx]);
+                }
+                if (devs.Count == 0) break;
 
                 var fit = ScoreTeamOption(projectKeywords, qa, devs);
                 var isFirst = options.Count == 0;
                 options.Add(BuildTeamOption(
-                    isFirst ? "Best fit" : $"Alternative {options.Count}",
+                    isFirst ? "Best fit" : $"Option {options.Count + 1}",
                     isFirst ? $"{shortTitle} Core Team" : $"{shortTitle} Squad {options.Count + 1}",
                     qa,
                     devs,
@@ -527,26 +527,23 @@ namespace MANAGIX.Services
                     fit));
             }
 
-            if (options.Count == 0)
+            ApplyRecommendedByFitScore(options);
+
+            string? availabilityMessage = null;
+            if (options.Count < 3)
             {
-                var qa = rankedQas[0];
-                var devs = rankedEmps.Take(devCount).ToList();
-                options.Add(BuildTeamOption(
-                    "Best fit",
-                    $"{project.Title} Core Team",
-                    qa,
-                    devs,
-                    project.Title,
-                    ScoreTeamOption(projectKeywords, qa, devs)));
+                availabilityMessage =
+                    $"Showing {options.Count} team option(s) from {employees.Count} unassigned employee(s) " +
+                    $"(up to {devCount} devs per team). Users on other project teams are not included.";
             }
 
-            ApplyRecommendedByFitScore(options);
             return new SuggestTeamOptionsResponseDto
             {
                 Options = options,
                 SuggestedDeveloperCount = devCount,
                 AvailableQa = ToPoolDtos(rankedQas),
                 AvailableEmployees = ToPoolDtos(rankedEmps),
+                AvailabilityMessage = availabilityMessage,
             };
         }
 
@@ -696,6 +693,7 @@ namespace MANAGIX.Services
             var capacityByMember = teamMembers.ToDictionary(m => m.UserId, m => m.WeeklyCapacityHours);
             var approvalByMember = teamMembers.ToDictionary(m => m.UserId, m => m.RecentApprovalRate);
             var baselineHours = teamMembers.ToDictionary(m => m.UserId, m => m.CurrentLoadHours);
+            var batchAssignmentCount = teamMembers.ToDictionary(m => m.UserId, _ => 0);
 
             foreach (var task in pendingTasks.OrderBy(t => t.TaskId))
             {
@@ -707,7 +705,12 @@ namespace MANAGIX.Services
                     capacityByMember,
                     approvalByMember);
 
-                var top = ranked.First();
+                // Spread tasks across the team: prefer members with fewest assignments this batch, then best score.
+                var top = ranked
+                    .OrderBy(r => batchAssignmentCount.GetValueOrDefault(r.Member.UserId, 0))
+                    .ThenByDescending(r => r.Score)
+                    .First();
+                batchAssignmentCount[top.Member.UserId] = batchAssignmentCount.GetValueOrDefault(top.Member.UserId, 0) + 1;
                 var assignment = new TaskAssignmentDto
                 {
                     TaskId = task.TaskId.ToString(),

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../api/axiosInstance';
 import { userService } from '../../api/userService';
 import { resumeService, ResumeParsedDataDto, ResumeSaveProfileDto, EducationDto, ProjectDto, ExperienceDto } from '../../api/resumeService';
 import { User, FileText, Shield, Upload, CheckCircle, Edit3, X, Brain, Plus, Save } from 'lucide-react';
@@ -33,13 +34,12 @@ const Profile = () => {
     
     // Aligned with your backend JSON structure
     const [editForm, setEditForm] = useState({ 
-        fullName: localStorage.getItem('userName') || '', 
-        email: localStorage.getItem('userEmail') || '',
+        fullName: '', 
+        email: '',
         bio: '', 
         skills: '',
         phone: '',
         address: '',
-        hourlyRate: '',
     });
     
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -59,22 +59,26 @@ const Profile = () => {
         }
     }, [userId]);
 
+    const mapToEditForm = (profile: any, user: any) => ({
+        fullName: user?.fullName ?? user?.FullName ?? localStorage.getItem('userName') ?? '',
+        email: user?.email ?? user?.Email ?? localStorage.getItem('userEmail') ?? '',
+        bio: profile?.bio ?? profile?.Bio ?? profile?.summary ?? profile?.Summary ?? '',
+        skills: profile?.skills ?? profile?.Skills ?? '',
+        phone: profile?.phone ?? profile?.Phone ?? '',
+        address: profile?.address ?? profile?.Address ?? '',
+    });
+
     const fetchProfile = async () => {
         if (!userId) return;
         try {
-            const data = await userService.getProfile(userId);
-            setUserProfile(data);
-            
-            // Map backend JSON to edit form
-            setEditForm({
-                fullName: localStorage.getItem('userName') || '',
-                email: localStorage.getItem('userEmail') || '',
-                bio: (data.bio ?? data.Bio) || '',
-                skills: (data.skills ?? data.Skills) || '',
-                phone: (data.phone ?? data.Phone) || '',
-                address: (data.address ?? data.Address) || '',
-                hourlyRate: String(data.hourlyRate ?? data.HourlyRate ?? ''),
-            });
+            const [userRes, profileData] = await Promise.all([
+                api.get(`/users/${userId}`).catch(() => ({ data: null })),
+                userService.getProfile(userId).catch(() => null),
+            ]);
+            const user = userRes?.data;
+            const data = profileData ?? {};
+            setUserProfile({ ...data, ...user });
+            setEditForm(mapToEditForm(data, user));
 
             // Try to load resume data if exists
             try {
@@ -93,13 +97,11 @@ const Profile = () => {
         if (!userId) return;
         try {
             // Sends the updated Bio, Skills, Phone, Address to [PUT] /api/profile/{userId}
-            const rate = editForm.hourlyRate.trim() ? parseFloat(editForm.hourlyRate) : undefined;
             await userService.updateProfile(userId, {
                 bio: editForm.bio,
-                skills: editForm.skills,
+                skills: userProfile?.skills ?? userProfile?.Skills ?? editForm.skills,
                 phone: editForm.phone,
                 address: editForm.address,
-                hourlyRate: rate,
             });
             setMessage({ type: 'success', text: 'Profile updated successfully!' });
             setIsEditing(false);
@@ -326,7 +328,10 @@ const Profile = () => {
                 </div>
                 {!isEditing && !showParsedForm && (
                     <button 
-                        onClick={() => setIsEditing(true)}
+                        onClick={() => {
+                            setEditForm(mapToEditForm(userProfile, userProfile));
+                            setIsEditing(true);
+                        }}
                         className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-black text-xs transition border border-gray-200"
                     >
                         <Edit3 size={14} /> EDIT DETAILS
@@ -576,16 +581,7 @@ const Profile = () => {
                                             placeholder="Briefly describe your experience..."
                                         />
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Skills (Comma Separated)</label>
-                                        <input 
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
-                                            value={editForm.skills}
-                                            onChange={e => setEditForm({...editForm, skills: e.target.value})}
-                                            placeholder="React, C#, SQL..."
-                                        />
-                                    </div>
-                                    <div>
+                                    <div className="md:col-span-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Phone Number</label>
                                         <input 
                                             className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
@@ -593,20 +589,6 @@ const Profile = () => {
                                             onChange={e => setEditForm({...editForm, phone: e.target.value})}
                                         />
                                     </div>
-                                    {(appRole === 'Employee' || appRole === 'Manager') && (
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Hourly rate (USD, for AI & payroll hints)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
-                                            value={editForm.hourlyRate}
-                                            onChange={e => setEditForm({...editForm, hourlyRate: e.target.value})}
-                                            placeholder="e.g. 25"
-                                        />
-                                    </div>
-                                    )}
                                 </div>
                                 <div className="flex gap-3 pt-4">
                                     <button type="submit" className="bg-black text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-gray-800 transition">Save Profile</button>

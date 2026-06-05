@@ -14,6 +14,8 @@ import type { NotificationItem, MeetingJoinStatus } from '../types';
 
 const POLL_MS = 30_000;
 
+type Toast = { id: number; title: string; body?: string };
+
 type Props = {
   onOvertimeClick?: (requestId: string, asManager: boolean) => void;
 };
@@ -24,8 +26,16 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const prevUnreadRef = useRef(0);
   const userId = localStorage.getItem('userId');
   const ref = useRef<HTMLDivElement>(null);
+
+  const pushToast = (title: string, body?: string) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev.slice(-2), { id, title, body }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
+  };
 
   // PHASE 4: poll unread badge. Cheap endpoint — single COUNT query.
   useEffect(() => {
@@ -34,7 +44,14 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
     const tick = async () => {
       try {
         const n = await notificationService.unreadCount(userId);
-        if (!cancelled) setUnread(n);
+        if (cancelled) return;
+        if (n > prevUnreadRef.current) {
+          const list = await notificationService.list(userId, 3);
+          const newest = list.find((x) => !x.isRead) ?? list[0];
+          if (newest) pushToast(newest.title, newest.body ?? undefined);
+        }
+        prevUnreadRef.current = n;
+        setUnread(n);
       } catch {
         /* swallow — keep last known count */
       }
@@ -126,6 +143,23 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
   if (!userId) return null; // not logged in
 
   return (
+    <>
+    <div className="fixed top-6 right-24 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+      <AnimatePresence>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            className="pointer-events-auto bg-white border border-indigo-100 shadow-lg rounded-2xl px-4 py-3"
+          >
+            <p className="text-sm font-black text-gray-900">{t.title}</p>
+            {t.body && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t.body}</p>}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
     <div className="fixed top-6 right-6 z-40" ref={ref}>
       <button
         onClick={() => (open ? setOpen(false) : openPanel())}
@@ -184,6 +218,7 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 };
 
@@ -191,7 +226,7 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
 const NotifIcon: React.FC<{ type: string }> = ({ type }) => {
   const t = type?.toLowerCase() || '';
   if (t.includes('meeting')) return <span className="bg-blue-50 text-blue-600 rounded-xl p-2"><FiVideo /></span>;
-  if (t.includes('taskassigned') || t.includes('extracted')) return <span className="bg-indigo-50 text-indigo-600 rounded-xl p-2"><FiUserCheck /></span>;
+  if (t.includes('tasksubmitted') || t.includes('taskassigned') || t.includes('extracted')) return <span className="bg-indigo-50 text-indigo-600 rounded-xl p-2"><FiUserCheck /></span>;
   if (t.includes('workload')) return <span className="bg-orange-50 text-orange-600 rounded-xl p-2"><FiAlertTriangle /></span>;
   if (t.includes('milestone')) return <span className="bg-emerald-50 text-emerald-600 rounded-xl p-2"><FiFlag /></span>;
   if (t.includes('overtime')) return <span className="bg-rose-50 text-rose-600 rounded-xl p-2"><FiAlertTriangle /></span>;

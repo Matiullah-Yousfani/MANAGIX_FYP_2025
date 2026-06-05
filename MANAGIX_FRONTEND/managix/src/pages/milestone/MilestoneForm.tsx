@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { milestoneService } from "../../api/milestoneService";
+import { minDateToday } from "../../utils/dateInput";
 
 interface Props {
   projectId: string;
@@ -65,6 +66,7 @@ const MilestoneForm: React.FC<Props> = ({
 
       <input
         type="date"
+        min={minDateToday()}
         className="form-control mb-2"
         value={deadline}
         onChange={e => setDeadline(e.target.value)}

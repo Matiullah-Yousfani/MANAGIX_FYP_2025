@@ -4,8 +4,9 @@ import { projectService } from '../../api/projectService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiPlus, FiEdit3, FiTrash2, FiCheckCircle, 
-  FiAlertTriangle, FiArrowRight, FiBriefcase, FiXCircle, FiSearch 
+  FiArrowRight, FiBriefcase, FiXCircle, FiSearch 
 } from 'react-icons/fi';
+import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 
 const Projects = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -13,7 +14,8 @@ const Projects = () => {
   
   // UI States
   const [showModal, setShowModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteProjectTarget, setDeleteProjectTarget] = useState<any>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'error' | 'success' }[]>([]);
   
   // Logic States
@@ -77,21 +79,23 @@ const Projects = () => {
     }
   };
 
-  const confirmDelete = (projectId: string) => {
-    setCurrentProjectId(projectId);
-    setShowDeleteModal(true);
+  const confirmDelete = (project: any) => {
+    setDeleteProjectTarget(project);
   };
 
   const handleDeleteProject = async () => {
-    if (!currentProjectId) return;
+    const pId = deleteProjectTarget?.projectId || deleteProjectTarget?.ProjectId;
+    if (!pId) return;
+    setDeleteBusy(true);
     try {
-      await projectService.delete(currentProjectId);
-      setShowDeleteModal(false);
-      setCurrentProjectId(null);
+      await projectService.delete(pId);
+      setDeleteProjectTarget(null);
       fetchProjects();
       addToast("Project permanently deleted", "success");
     } catch (err) {
       addToast("Failed to delete project", "error");
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -216,7 +220,7 @@ const Projects = () => {
                           <FiEdit3 size={18} />
                         </button>
                         <button 
-                          onClick={() => confirmDelete(pId)}
+                          onClick={() => confirmDelete(p)}
                           className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                         >
                           <FiTrash2 size={18} />
@@ -311,34 +315,25 @@ const Projects = () => {
         )}
       </AnimatePresence>
 
-      {/* DELETE MODAL */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" 
-              onClick={() => setShowDeleteModal(false)} 
-            />
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl text-center"
-            >
-              <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <FiAlertTriangle size={32} />
-              </div>
-              <h2 className="text-2xl font-black text-gray-900 mb-2">Delete Project?</h2>
-              <p className="font-medium italic text-gray-500 mb-10">This action is permanent and cannot be undone.</p>
-              <div className="flex gap-4">
-                <button onClick={handleDeleteProject} className="flex-1 bg-red-600 text-white p-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-red-100 hover:-translate-y-1 transition-all">
-                  Delete
-                </button>
-                <button onClick={() => setShowDeleteModal(false)} className="flex-1 bg-gray-100 text-gray-500 p-5 rounded-2xl font-black text-sm uppercase tracking-widest">
-                  Cancel
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ConfirmDeleteModal
+        open={Boolean(deleteProjectTarget)}
+        message={
+          deleteProjectTarget
+            ? `Delete project "${deleteProjectTarget.title || deleteProjectTarget.Title}"? All milestones, tasks, and team links will be removed. You won't be able to revert this!`
+            : undefined
+        }
+        details={
+          deleteProjectTarget
+            ? [
+                { label: 'Status', value: deleteProjectTarget.status || deleteProjectTarget.Status || 'Active' },
+              ]
+            : []
+        }
+        warning="This permanently deletes the project and cannot be undone."
+        busy={deleteBusy}
+        onConfirm={handleDeleteProject}
+        onCancel={() => !deleteBusy && setDeleteProjectTarget(null)}
+      />
 
       {/* Toast Notification Container */}
       <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 pointer-events-none">

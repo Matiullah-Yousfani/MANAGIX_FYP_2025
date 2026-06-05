@@ -14,6 +14,7 @@ namespace MANAGIX.Models.DTO
         public Guid? AssignedEmployeeId { get; set; }
         /** When true (manager/admin), clears assignee so the task is unassigned. */
         public bool ClearAssignee { get; set; }
-        public DateTime? Deadline { get; set; } // optional, if you want deadline
+        public DateTime? Deadline { get; set; }
+        public string? Priority { get; set; } // High / Medium / Low
     }
 }
