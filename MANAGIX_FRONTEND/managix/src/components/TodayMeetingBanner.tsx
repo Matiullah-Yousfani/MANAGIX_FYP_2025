@@ -38,11 +38,11 @@ const TodayMeetingBanner: React.FC = () => {
       }
     };
     load();
-    const id = setInterval(load, 60_000);
+    const id = setInterval(load, joinState === 'BeforeStart' || joinState === 'Active' ? 10_000 : 60_000);
     return () => clearInterval(id);
-  }, [userId]);
+  }, [userId, joinState]);
 
-  if (!todayMeeting || dismissed || joinState === 'Expired') return null;
+  if (!todayMeeting || dismissed || joinState === 'Expired' || joinState === 'LinkDisabled') return null;
 
   const timeLabel = new Date(todayMeeting.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -54,7 +54,9 @@ const TodayMeetingBanner: React.FC = () => {
           <p className="font-black text-sm uppercase tracking-wider">Meeting today</p>
           <p className="text-indigo-100 text-sm">
             {todayMeeting.title} at {timeLabel}
-            {joinState === 'BeforeStart' ? ' — join opens at start time' : ' — you can join now'}
+            {joinState === 'BeforeStart'
+              ? ' — join opens exactly at start time (10 min window)'
+              : ' — you can join now'}
           </p>
         </div>
       </div>

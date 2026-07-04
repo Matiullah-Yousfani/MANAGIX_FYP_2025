@@ -8,6 +8,7 @@ import ClosureReportModal from '../../components/ClosureReportModal';
 import { normalizeProject } from '../../api/normalize';
 import { projectService } from '../../api/projectService';
 import { teamService } from '../../api/teamService';
+import ProjectMeetingHistory from '../../components/ProjectMeetingHistory';
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
@@ -179,6 +180,8 @@ const fetchProjectData = async () => {
           </>
         )}
       </div>
+
+      {projectId && <ProjectMeetingHistory projectId={projectId} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Side: Tasks (Takes more space) */}

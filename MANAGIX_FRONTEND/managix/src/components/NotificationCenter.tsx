@@ -112,6 +112,19 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
       onOvertimeClick(oid, t.includes('manager'));
       return;
     }
+    const mid = parseMeetingId(n.link);
+    if (mid && t.includes('meeting')) {
+      try {
+        const st = await meetingService.joinStatus(mid, userId);
+        if (!st.canJoin) {
+          setOpen(false);
+          navigate(n.link!);
+          return;
+        }
+      } catch {
+        /* fall through */
+      }
+    }
     if (n.link) {
       setOpen(false);
       navigate(n.link);
@@ -245,13 +258,18 @@ const MeetingNotificationRow: React.FC<{
 
   React.useEffect(() => {
     if (!isMeeting || !meetingId) return;
-    meetingService.joinStatus(meetingId, userId).then(setJoinState).catch(() => setJoinState(null));
-  }, [isMeeting, meetingId, userId]);
+    const tick = () => meetingService.joinStatus(meetingId, userId).then(setJoinState).catch(() => setJoinState(null));
+    tick();
+    const ms = joinState?.joinState === 'BeforeStart' || joinState?.joinState === 'Active' ? 10_000 : 30_000;
+    const id = setInterval(tick, ms);
+    return () => clearInterval(id);
+  }, [isMeeting, meetingId, userId, joinState?.joinState]);
 
   const joinDisabled = !joinState?.canJoin;
   const joinLabel =
-    joinState?.joinState === 'Expired' ? 'Expired' :
-    joinState?.joinState === 'BeforeStart' ? 'Join (soon)' :
+    joinState?.joinState === 'Expired' ? 'Link removed' :
+    joinState?.joinState === 'LinkDisabled' ? 'Window closed' :
+    joinState?.joinState === 'BeforeStart' ? 'Join at meeting time' :
     joinState?.canJoin ? 'Join meeting' : 'Join';
 
   return (

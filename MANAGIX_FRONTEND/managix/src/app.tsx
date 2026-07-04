@@ -20,6 +20,8 @@ import TaskHub from './pages/task/TaskHub';
 import KanbanBoard from './pages/task/KanbanBoard';
 import Meeting from './pages/meeting/Meeting';
 import ScheduleMeeting from './pages/meeting/ScheduleMeeting';
+import MeetingSummaries from './pages/meeting/MeetingSummaries';
+import MeetingTranscripts from './pages/meeting/MeetingTranscripts';
 // PHASE 3: Workload panel.
 import WorkloadPanel from './pages/workload/WorkloadPanel';
 import EmployeeInsights from './pages/employee/EmployeeInsights';
@@ -50,6 +52,8 @@ function App() {
         <Route path="/profile" element={<Layout><Profile /></Layout>} />
         <Route path="/meeting" element={<Layout><Meeting /></Layout>} />
         <Route path="/meeting/schedule" element={<Layout><ScheduleMeeting /></Layout>} />
+        <Route path="/meeting/summaries" element={<Layout><MeetingSummaries /></Layout>} />
+        <Route path="/meeting/transcripts" element={<Layout><MeetingTranscripts /></Layout>} />
 
         {/* Manager Section */}
         <Route path="/create-project" element={<Layout><CreateProject /></Layout>} />

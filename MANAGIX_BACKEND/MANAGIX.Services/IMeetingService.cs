@@ -12,17 +12,24 @@ namespace MANAGIX.Services
         Task<MeetingDto?> GetAsync(Guid meetingId);
         Task<List<MeetingDto>> GetByProjectAsync(Guid projectId);
         Task<List<MeetingDto>> GetUpcomingForUserAsync(Guid userId);
+        Task<List<MeetingDto>> GetActiveForUserAsync(Guid userId);
+        Task<List<MeetingDto>> GetHistoryForUserAsync(Guid userId);
+        Task<List<MeetingDto>> GetConductedForManagerAsync(Guid managerId);
+        Task<SprintPreviewDto> GetSprintPreviewAsync(Guid projectId, DateTime scheduledAt);
 
-        // Saves the transcript and flips status to Completed.
+        Task<bool> SaveParticipantTranscriptAsync(Guid meetingId, Guid userId, string transcriptText);
+        Task<List<MeetingParticipantTranscriptDto>> GetParticipantTranscriptsAsync(Guid meetingId);
+
         Task<bool> CompleteWithTranscriptAsync(Guid meetingId, string transcriptText);
-
-        // Calls the AI extractor (Python service) on the saved transcript and returns suggestions.
-        // The caller (frontend) then confirms which to convert into real tasks.
         Task<ExtractTasksResponseDto> ExtractTasksAsync(Guid meetingId);
+        Task<MeetingAnalysisResponseDto> AnalyzeMeetingAsync(Guid meetingId, Guid requestedBy);
+        Task<MeetingAnalysisResponseDto?> TryFinalizeMeetingAsync(Guid meetingId, Guid requestedBy);
 
         Task<List<Guid>> ResolveProjectParticipantIdsAsync(Guid projectId);
 
         Task<MeetingJoinStatusDto?> GetJoinStatusAsync(Guid meetingId, Guid userId);
+        Task<bool> VerifyJoinCodeAsync(Guid meetingId, Guid userId, string joinCode);
+        Task<List<MeetingParticipantDetailDto>> GetParticipantRosterAsync(Guid meetingId);
 
         Task<int> ExpirePastMeetingsAsync();
     }

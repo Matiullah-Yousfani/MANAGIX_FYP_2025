@@ -47,6 +47,7 @@ namespace MANAGIX.DataAccess.Data
         // PHASE 0 / PHASE 4-5: New domain tables for meetings, notifications, monitoring.
         public DbSet<Meeting> Meetings { get; set; }
         public DbSet<MeetingParticipant> MeetingParticipants { get; set; }
+        public DbSet<MeetingParticipantTranscript> MeetingParticipantTranscripts { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<MonitoringSnapshot> MonitoringSnapshots { get; set; }
         public DbSet<TimeEntry> TimeEntries { get; set; }
@@ -124,6 +125,10 @@ namespace MANAGIX.DataAccess.Data
             // PHASE 0 / PHASE 4: MeetingParticipant — one row per (Meeting, User).
             modelBuilder.Entity<MeetingParticipant>()
                 .HasIndex(mp => new { mp.MeetingId, mp.UserId })
+                .IsUnique();
+
+            modelBuilder.Entity<MeetingParticipantTranscript>()
+                .HasIndex(t => new { t.MeetingId, t.UserId })
                 .IsUnique();
 
             // PHASE 0 / PHASE 4: Notification fast unread query → composite covering index.

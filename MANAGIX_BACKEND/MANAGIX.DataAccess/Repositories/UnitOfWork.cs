@@ -42,6 +42,7 @@ namespace MANAGIX.DataAccess.Repositories
             // PHASE 4 / PHASE 5: New domain repos.
             Meetings = new MeetingRepository(_context);
             MeetingParticipants = new MeetingParticipantRepository(_context);
+            MeetingParticipantTranscripts = new MeetingParticipantTranscriptRepository(_context);
             Notifications = new NotificationRepository(_context);
             MonitoringSnapshots = new MonitoringSnapshotRepository(_context);
             TimeEntries = new TimeEntryRepository(_context);
@@ -78,6 +79,7 @@ namespace MANAGIX.DataAccess.Repositories
         // PHASE 4 / PHASE 5: Meetings, notifications, monitoring.
         public IMeetingRepository Meetings { get; private set; }
         public IMeetingParticipantRepository MeetingParticipants { get; private set; }
+        public IMeetingParticipantTranscriptRepository MeetingParticipantTranscripts { get; private set; }
         public INotificationRepository Notifications { get; private set; }
         public IMonitoringSnapshotRepository MonitoringSnapshots { get; private set; }
         public ITimeEntryRepository TimeEntries { get; private set; }

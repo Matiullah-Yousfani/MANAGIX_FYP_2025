@@ -619,6 +619,232 @@ def _call_groq_extract(req: ExtractTasksRequest) -> dict:
     return data
 
 
+class ParticipantTranscriptRef(BaseModel):
+    userId: str = ""
+    userName: str = ""
+    transcript: str = ""
+
+class AnalyzeMeetingRequest(BaseModel):
+    transcript: str = ""
+    meetingTitle: Optional[str] = None
+    projectId: Optional[str] = None
+    teamMembers: List[TeamMemberRef] = []
+    participantTranscripts: List[ParticipantTranscriptRef] = []
+
+class SpeedUpAlert(BaseModel):
+    userId: Optional[str] = None
+    userName: Optional[str] = None
+    message: str = ""
+    reason: Optional[str] = None
+
+class BacklogItem(BaseModel):
+    title: str = ""
+    description: Optional[str] = None
+    priority: Optional[str] = "Medium"
+    suggestedAssigneeUserId: Optional[str] = None
+    suggestedAssigneeName: Optional[str] = None
+
+class MeetingAnalysisResponse(BaseModel):
+    combinedSummary: Optional[str] = None
+    meetingNotes: Optional[str] = None
+    combinedTranscript: Optional[str] = None
+    backlogItems: List[BacklogItem] = []
+    participantTranscripts: List[ParticipantTranscriptRef] = []
+    tasks: List[ExtractedTask] = []
+    speedUpAlerts: List[SpeedUpAlert] = []
+    finalized: bool = False
+
+
+def _build_analyze_prompt(req: AnalyzeMeetingRequest) -> str:
+    member_lines = []
+    for m in req.teamMembers[:25]:
+        skills = ", ".join(m.skills[:8]) if m.skills else "(no listed skills)"
+        member_lines.append(f"- {m.name} (id={m.userId}) — skills: {skills}")
+    members_block = "\n".join(member_lines) if member_lines else "(no project team provided)"
+
+    per_participant = ""
+    if req.participantTranscripts:
+        blocks = []
+        for p in req.participantTranscripts[:20]:
+            blocks.append(
+                f"Participant: {p.userName or p.userId}\n{p.transcript[:4000]}"
+            )
+        per_participant = "\n\n--- Per-participant transcripts ---\n" + "\n\n".join(blocks)
+
+    return f"""You are a project-management assistant analyzing a team meeting.
+
+Read the combined transcript and per-participant transcripts (with speaker names and timestamps).
+Produce:
+1) combinedSummary — 2-4 sentence executive overview of the meeting
+2) meetingNotes — bullet-style meeting notes (key decisions, blockers, follow-ups) as plain text with newlines
+3) tasks — concrete action items when people discussed creating work (same schema as task extraction)
+4) backlogItems — product backlog items discussed (features, improvements, tech debt) not yet scheduled as tasks
+5) speedUpAlerts — when someone is asked to speed up, work faster, catch up, or meet a deadline urgently.
+   Each alert must name the employee (userId from team list) and a short notification message.
+
+Team members (use ONLY these userIds for assignments and speed-up alerts):
+{members_block}
+
+Meeting title: {req.meetingTitle or "(untitled)"}
+
+Combined transcript:
+\"\"\"
+{req.transcript[:12000]}
+\"\"\"
+{per_participant}
+
+Respond with ONLY JSON:
+{{
+  "combinedSummary": "string",
+  "meetingNotes": "string with bullet points",
+  "backlogItems": [
+    {{
+      "title": "string",
+      "description": "string",
+      "priority": "Low|Medium|High|Critical",
+      "suggestedAssigneeUserId": "uuid or null",
+      "suggestedAssigneeName": "string or null"
+    }}
+  ],
+  "tasks": [
+    {{
+      "title": "string",
+      "description": "string",
+      "suggestedAssigneeUserId": "uuid or null",
+      "suggestedAssigneeName": "string or null",
+      "estimatedHours": 4,
+      "priority": "Medium",
+      "requiredSkills": ["skill"]
+    }}
+  ],
+  "speedUpAlerts": [
+    {{
+      "userId": "uuid from team list",
+      "userName": "name",
+      "message": "short notification text for the employee",
+      "reason": "why they should speed up"
+    }}
+  ]
+}}
+"""
+
+
+@app.post("/analyze-meeting", response_model=MeetingAnalysisResponse)
+async def analyze_meeting(request: AnalyzeMeetingRequest):
+    """Full meeting analysis: summary, tasks, speed-up alerts."""
+    try:
+        if not request.transcript or not request.transcript.strip():
+            if not request.participantTranscripts:
+                return MeetingAnalysisResponse()
+            request.transcript = "\n\n".join(
+                f"=== {p.userName or p.userId} ===\n{p.transcript}"
+                for p in request.participantTranscripts
+            )
+
+        if not GROQ_API_KEY:
+            print("[WARN] GROQ_API_KEY missing; returning empty analysis.")
+            return MeetingAnalysisResponse(combinedSummary=request.transcript[:500])
+
+        prompt = _build_analyze_prompt(request)
+        body = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": "You output strict JSON for meeting analysis."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"},
+        }
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        resp = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            json=body, headers=headers, timeout=90,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["choices"][0]["message"]["content"]
+        try:
+            data = json.loads(raw)
+        except Exception:
+            match = re.search(r"\{[\s\S]*\}", raw)
+            data = json.loads(match.group(0)) if match else {}
+
+        valid_ids = {m.userId for m in request.teamMembers if m.userId}
+        clean_tasks: list[ExtractedTask] = []
+        for t in (data.get("tasks") or [])[:25]:
+            if not isinstance(t, dict):
+                continue
+            title = (t.get("title") or "").strip()
+            if not title:
+                continue
+            assignee_id = t.get("suggestedAssigneeUserId")
+            if assignee_id and assignee_id not in valid_ids:
+                assignee_id = None
+            clean_tasks.append(ExtractedTask(
+                title=title[:160],
+                description=(t.get("description") or "")[:1000] or None,
+                suggestedAssigneeUserId=assignee_id,
+                suggestedAssigneeName=(t.get("suggestedAssigneeName") or None),
+                estimatedHours=t.get("estimatedHours"),
+                priority=(t.get("priority") or "Medium")[:16],
+                requiredSkills=[s for s in (t.get("requiredSkills") or []) if isinstance(s, str)][:10],
+            ))
+
+        clean_alerts: list[SpeedUpAlert] = []
+        for a in (data.get("speedUpAlerts") or [])[:15]:
+            if not isinstance(a, dict):
+                continue
+            msg = (a.get("message") or "").strip()
+            if not msg:
+                continue
+            uid = a.get("userId")
+            if uid and uid not in valid_ids:
+                uid = None
+            clean_alerts.append(SpeedUpAlert(
+                userId=uid,
+                userName=(a.get("userName") or None),
+                message=msg[:500],
+                reason=(a.get("reason") or "")[:500] or None,
+            ))
+
+        clean_backlog: list[BacklogItem] = []
+        for b in (data.get("backlogItems") or [])[:20]:
+            if not isinstance(b, dict):
+                continue
+            title = (b.get("title") or "").strip()
+            if not title:
+                continue
+            assignee_id = b.get("suggestedAssigneeUserId")
+            if assignee_id and assignee_id not in valid_ids:
+                assignee_id = None
+            clean_backlog.append(BacklogItem(
+                title=title[:160],
+                description=(b.get("description") or "")[:1000] or None,
+                priority=(b.get("priority") or "Medium")[:16],
+                suggestedAssigneeUserId=assignee_id,
+                suggestedAssigneeName=(b.get("suggestedAssigneeName") or None),
+            ))
+
+        return MeetingAnalysisResponse(
+            combinedSummary=(data.get("combinedSummary") or "")[:2000] or None,
+            meetingNotes=(data.get("meetingNotes") or "")[:8000] or None,
+            backlogItems=clean_backlog,
+            participantTranscripts=request.participantTranscripts,
+            tasks=clean_tasks,
+            speedUpAlerts=clean_alerts,
+            finalized=True,
+        )
+    except requests.HTTPError as e:
+        print(f"[ERROR] Groq HTTP error: {e}")
+        raise HTTPException(status_code=502, detail=f"Groq error: {e}")
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] analyze_meeting failed: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/extract-tasks", response_model=ExtractTasksResponse)
 async def extract_tasks_from_meeting(request: ExtractTasksRequest):
     """PHASE 4: Action-item extraction from a meeting transcript."""

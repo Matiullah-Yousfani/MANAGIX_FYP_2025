@@ -34,6 +34,7 @@ builder.Services.AddScoped<IManagerScopeService, ManagerScopeService>();
 builder.Services.AddScoped<IWorkloadService, WorkloadService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddSingleton<IWebRtcSignalingService, WebRtcSignalingService>();
 builder.Services.AddScoped<IMonitoringService, MonitoringService>();
 builder.Services.AddScoped<IProjectClosureReportService, ProjectClosureReportService>();
 builder.Services.AddScoped<IProjectTimelineService, ProjectTimelineService>();

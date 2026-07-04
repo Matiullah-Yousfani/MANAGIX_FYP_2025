@@ -23,6 +23,9 @@ namespace MANAGIX.Models.Models
 
         public int DurationMinutes { get; set; } = 30;
 
+        /// <summary>Auto-derived from project week — persisted when DB column exists.</summary>
+        public int SprintNumber { get; set; } = 1;
+
         // In-app join route or external URL shown in notifications (cleared when expired).
         [MaxLength(512)]
         public string? MeetingLink { get; set; }
@@ -30,6 +33,10 @@ namespace MANAGIX.Models.Models
         // Identifier passed to Jitsi when the room is opened. We store it so the same meeting can be re-joined.
         [MaxLength(128)]
         public string? JitsiRoomName { get; set; }
+
+        /// <summary>6-character code required to enter the meeting room.</summary>
+        [MaxLength(8)]
+        public string? JoinCode { get; set; }
 
         [Required]
         public Guid CreatedBy { get; set; } // Manager / scheduler UserId
@@ -40,6 +47,13 @@ namespace MANAGIX.Models.Models
 
         // Captured on completion — fed to AI extractor to suggest action-item tasks.
         public string? TranscriptText { get; set; }
+
+        public string? SummaryText { get; set; }
+
+        public string? MeetingNotesText { get; set; }
+
+        /// <summary>JSON array of backlog items suggested by AI.</summary>
+        public string? BacklogJson { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

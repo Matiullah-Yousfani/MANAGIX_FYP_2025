@@ -1,0 +1,16 @@
+# Optional multi-tunnel config for ngrok PAID plans only.
+# Free plan: use start-ngrok.ps1 (single tunnel on 5173 + Vite /api proxy).
+#
+# Ngrok v3 uses authtoken from: ngrok config add-authtoken <token>
+# or NGROK_AUTHTOKEN environment variable.
+
+version: "3"
+
+agent:
+  authtoken: ${NGROK_AUTHTOKEN}
+
+endpoints:
+  - name: frontend
+    url: ""
+    upstream:
+      url: http://127.0.0.1:5173

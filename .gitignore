@@ -6,6 +6,8 @@ local.settings.json
 
 # Environment files with secrets
 .env
+ngrok.local.env
+
 
 # User-specific files
 *.suo

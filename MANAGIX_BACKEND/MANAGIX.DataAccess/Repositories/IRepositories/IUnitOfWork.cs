@@ -36,6 +36,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         // PHASE 4 / PHASE 5: New domain repos.
         IMeetingRepository Meetings { get; }
         IMeetingParticipantRepository MeetingParticipants { get; }
+        IMeetingParticipantTranscriptRepository MeetingParticipantTranscripts { get; }
         INotificationRepository Notifications { get; }
         IMonitoringSnapshotRepository MonitoringSnapshots { get; }
         ITimeEntryRepository TimeEntries { get; }

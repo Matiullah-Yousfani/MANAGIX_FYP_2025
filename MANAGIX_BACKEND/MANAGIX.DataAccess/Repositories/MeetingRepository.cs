@@ -43,15 +43,82 @@ namespace MANAGIX.DataAccess.Repositories
             ).Distinct().ToListAsync();
         }
 
+        public async Task<List<Meeting>> GetActiveForUserAsync(Guid userId, DateTime utcNow) =>
+            await (
+                from m in _context.Meetings
+                join p in _context.MeetingParticipants on m.MeetingId equals p.MeetingId
+                where p.UserId == userId
+                   && m.MeetingLink != null
+                   && m.Status != "Cancelled"
+                   && m.Status != "Completed"
+                   && m.Status != "Expired"
+                   && m.ScheduledAt <= utcNow
+                   && m.ScheduledAt.AddMinutes(m.DurationMinutes > 0 ? m.DurationMinutes : 60) > utcNow
+                orderby m.ScheduledAt
+                select m
+            ).Distinct().ToListAsync();
+
+        public async Task<List<Meeting>> GetHistoryForUserAsync(Guid userId) =>
+            await (
+                from m in _context.Meetings
+                join p in _context.MeetingParticipants on m.MeetingId equals p.MeetingId
+                where p.UserId == userId
+                   && (m.Status == "Completed" || m.TranscriptText != null)
+                orderby m.ScheduledAt descending
+                select m
+            ).Distinct().ToListAsync();
+
+        public async Task<List<Meeting>> GetConductedForManagerAsync(Guid managerId) =>
+            await (
+                from m in _context.Meetings
+                join pr in _context.Projects on m.ProjectId equals pr.ProjectId
+                where pr.CreatedBy == managerId
+                   && (m.Status == "Completed" || m.SummaryText != null || m.TranscriptText != null)
+                orderby m.ScheduledAt descending
+                select m
+            ).Distinct().ToListAsync();
+
         public async Task<List<Meeting>> GetPastScheduledAsync(DateTime utcNow) =>
             await _context.Meetings
                 .Where(m =>
-                    (m.Status == "Scheduled" || m.Status == "Live") &&
-                    m.ScheduledAt.AddMinutes(m.DurationMinutes) < utcNow)
+                    (m.Status == "Scheduled" || m.Status == "Live" || m.Status == "LinkDisabled") &&
+                    m.MeetingLink != null)
+                .ToListAsync();
+
+        public async Task<List<Meeting>> GetMeetingsNeedingExpirationAsync(DateTime utcNow) =>
+            await _context.Meetings
+                .Where(m =>
+                    m.MeetingLink != null &&
+                    m.Status != "Completed" &&
+                    m.Status != "Cancelled" &&
+                    m.Status != "Expired" &&
+                    m.ScheduledAt.AddMinutes(m.DurationMinutes > 0 ? m.DurationMinutes : 30) <= utcNow)
                 .ToListAsync();
 
         public void Update(Meeting meeting) => _context.Meetings.Update(meeting);
         public void Remove(Meeting meeting) => _context.Meetings.Remove(meeting);
+    }
+
+    public class MeetingParticipantTranscriptRepository : IMeetingParticipantTranscriptRepository
+    {
+        private readonly ApplicationDbContext _context;
+        public MeetingParticipantTranscriptRepository(ApplicationDbContext context) => _context = context;
+
+        public async Task AddAsync(MeetingParticipantTranscript row) =>
+            await _context.MeetingParticipantTranscripts.AddAsync(row);
+
+        public async Task<MeetingParticipantTranscript?> GetAsync(Guid meetingId, Guid userId) =>
+            await _context.MeetingParticipantTranscripts
+                .FirstOrDefaultAsync(t => t.MeetingId == meetingId && t.UserId == userId);
+
+        public async Task<List<MeetingParticipantTranscript>> GetByMeetingAsync(Guid meetingId) =>
+            await _context.MeetingParticipantTranscripts
+                .Where(t => t.MeetingId == meetingId)
+                .OrderBy(t => t.CreatedAt)
+                .ToListAsync();
+
+        public void Update(MeetingParticipantTranscript row) =>
+            _context.MeetingParticipantTranscripts.Update(row);
     }
 
     // PHASE 4: MeetingParticipant persistence.

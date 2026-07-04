@@ -1,20 +1,11 @@
 // PHASE 4: Modal that turns a meeting transcript into reviewable task suggestions.
-//
-// Flow:
-//   1. Open modal (transcript already captured in Meeting.tsx).
-//   2. User picks a target project.
-//   3. Component creates a Meeting record, posts the transcript, calls extract-tasks.
-//   4. Suggestions render — user toggles which to keep, can edit fields inline.
-//   5. Confirm → each kept suggestion is POSTed via taskService.create.
-//
-// Theme: matches the MANAGIX modal pattern from Dashboard.tsx (rounded-[2.5rem], gray-900/60 backdrop, indigo CTA).
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiCheckCircle, FiZap, FiClock, FiFlag } from 'react-icons/fi';
+import { FiX, FiCheckCircle, FiZap, FiClock, FiFlag, FiAlertTriangle } from 'react-icons/fi';
 import { meetingService } from '../api/meetingService';
 import { projectService } from '../api/projectService';
 import api from '../api/axiosInstance';
-import type { ExtractedTaskSuggestion } from '../types';
+import type { ExtractedTaskSuggestion, SpeedUpAlert } from '../types';
 
 interface Props {
   open: boolean;
@@ -22,29 +13,55 @@ interface Props {
   transcript: string;
   meetingTitle?: string;
   jitsiRoomName?: string;
+  /** When set, uses the scheduled meeting record instead of creating a duplicate. */
+  meetingId?: string | null;
+  projectId?: string | null;
 }
 
 interface EditableSuggestion extends ExtractedTaskSuggestion {
   keep: boolean;
 }
 
-const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meetingTitle, jitsiRoomName }) => {
+const MeetingTaskExtractor: React.FC<Props> = ({
+  open,
+  onClose,
+  transcript,
+  meetingTitle,
+  jitsiRoomName,
+  meetingId,
+  projectId: projectIdProp,
+}) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [projectId, setProjectId] = useState<string>('');
   const [phase, setPhase] = useState<'pick' | 'extracting' | 'review' | 'creating' | 'done' | 'error'>('pick');
   const [suggestions, setSuggestions] = useState<EditableSuggestion[]>([]);
+  const [speedAlerts, setSpeedAlerts] = useState<SpeedUpAlert[]>([]);
+  const [combinedSummary, setCombinedSummary] = useState<string>('');
+  const [meetingNotes, setMeetingNotes] = useState<string>('');
+  const [backlogItems, setBacklogItems] = useState<Array<{ title: string; description?: string; priority?: string }>>([]);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [createdCount, setCreatedCount] = useState(0);
+  const [resolvedMeetingId, setResolvedMeetingId] = useState<string | null>(null);
 
   const userId = localStorage.getItem('userId') || '';
   const userRole = localStorage.getItem('userRole') || '';
 
-  // Load projects the user can target — manager → own, admin → all, employee → assigned.
   useEffect(() => {
     if (!open || !userId) return;
     setPhase('pick');
     setSuggestions([]);
+    setSpeedAlerts([]);
+    setCombinedSummary('');
+    setMeetingNotes('');
+    setBacklogItems([]);
     setErrorMsg('');
+    setResolvedMeetingId(meetingId ?? null);
+
+    if (projectIdProp) {
+      setProjectId(projectIdProp);
+      return;
+    }
+
     (async () => {
       try {
         let list: any[] = [];
@@ -65,33 +82,42 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
         console.error('Project load failed', e);
       }
     })();
-  }, [open, userId, userRole]);
+  }, [open, userId, userRole, meetingId, projectIdProp]);
 
   const runExtraction = async () => {
-    if (!projectId || !transcript.trim() || !userId) {
+    const pid = projectIdProp || projectId;
+    if (!pid || !transcript.trim() || !userId) {
       setErrorMsg('Pick a project first.');
       return;
     }
     setPhase('extracting');
     setErrorMsg('');
     try {
-      // 1. Create the meeting record.
-      const meeting = await meetingService.create({
-        projectId,
-        title: meetingTitle || 'Meeting',
-        scheduledAt: new Date().toISOString(),
-        durationMinutes: 30,
-        jitsiRoomName: jitsiRoomName || null,
-        createdBy: userId,
-        participantUserIds: [userId],
-      });
+      let mid = meetingId ?? resolvedMeetingId;
 
-      // 2. Persist the transcript + flip status to Completed.
-      await meetingService.completeWithTranscript(meeting.meetingId, transcript);
+      if (mid) {
+        await meetingService.saveParticipantTranscript(mid, userId, transcript);
+      } else {
+        const meeting = await meetingService.create({
+          projectId: pid,
+          title: meetingTitle || 'Meeting',
+          scheduledAt: new Date().toISOString(),
+          durationMinutes: 10,
+          jitsiRoomName: jitsiRoomName || null,
+          createdBy: userId,
+          participantUserIds: [userId],
+        });
+        mid = meeting.meetingId ?? (meeting as any).MeetingId;
+        await meetingService.saveParticipantTranscript(mid!, userId, transcript);
+        setResolvedMeetingId(mid!);
+      }
 
-      // 3. Ask the AI to extract action items.
-      const result = await meetingService.extractTasks(meeting.meetingId);
-      const tasks = result?.tasks ?? [];
+      const analysis = await meetingService.analyzeMeeting(mid!, userId);
+      const tasks = analysis?.tasks ?? [];
+      setCombinedSummary(analysis?.combinedSummary ?? '');
+      setMeetingNotes(analysis?.meetingNotes ?? '');
+      setBacklogItems(analysis?.backlogItems ?? []);
+      setSpeedAlerts(analysis?.speedUpAlerts ?? []);
 
       if (tasks.length === 0) {
         setSuggestions([]);
@@ -99,7 +125,7 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
         return;
       }
 
-      setSuggestions(tasks.map((t) => ({ ...t, keep: true })));
+      setSuggestions(tasks.map((t: ExtractedTaskSuggestion) => ({ ...t, keep: true })));
       setPhase('review');
     } catch (e: any) {
       console.error('Extraction failed', e);
@@ -111,12 +137,13 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
   const persistSelected = async () => {
     const keep = suggestions.filter((s) => s.keep);
     if (keep.length === 0) return;
+    const pid = projectIdProp || projectId;
     setPhase('creating');
     let created = 0;
     for (const s of keep) {
       try {
         await api.post('/tasks', {
-          projectId,
+          projectId: pid,
           milestoneId: null,
           assignedEmployeeId: s.suggestedAssigneeUserId || null,
           title: s.title,
@@ -154,30 +181,33 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
           </button>
 
           <h2 className="text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
-            <FiZap className="text-indigo-600" /> AI Task Extraction
+            <FiZap className="text-indigo-600" /> AI Meeting Analysis
           </h2>
           <p className="text-gray-500 italic mb-8">
-            We'll read the transcript, suggest action-item tasks, and let you confirm before creating any.
+            Per-participant transcripts are combined, then AI suggests tasks and speed-up notifications.
           </p>
 
           {phase === 'pick' && (
             <div className="space-y-6">
-              <div>
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Target project</label>
-                <select
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                >
-                  {projects.length === 0 && <option value="">No projects available</option>}
-                  {projects.map((p) => {
-                    const pid = p.projectId || p.ProjectId;
-                    return <option key={pid} value={pid}>{p.title || p.Title}</option>;
-                  })}
-                </select>
-              </div>
+              {!projectIdProp && (
+                <div>
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Target project</label>
+                  <select
+                    value={projectId}
+                    onChange={(e) => setProjectId(e.target.value)}
+                    className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  >
+                    {projects.length === 0 && <option value="">No projects available</option>}
+                    {projects.map((p) => {
+                      const pid = p.projectId || p.ProjectId;
+                      return <option key={pid} value={pid}>{p.title || p.Title}</option>;
+                    })}
+                  </select>
+                </div>
+              )}
               <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs font-bold text-indigo-700">
-                Transcript length: {transcript.length.toLocaleString()} characters
+                Your transcript: {transcript.length.toLocaleString()} characters
+                {meetingId && <span className="block mt-1">Linked to scheduled meeting</span>}
               </div>
               {errorMsg && (
                 <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-xs font-bold text-red-700">{errorMsg}</div>
@@ -185,10 +215,10 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
               <div className="flex gap-3">
                 <button
                   onClick={runExtraction}
-                  disabled={!projectId || !transcript.trim()}
+                  disabled={!(projectIdProp || projectId) || !transcript.trim()}
                   className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50"
                 >
-                  Generate suggestions
+                  Analyze & suggest tasks
                 </button>
                 <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold">Cancel</button>
               </div>
@@ -198,12 +228,50 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
           {phase === 'extracting' && (
             <div className="py-16 text-center">
               <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-500 font-bold italic">Reading transcript and drafting tasks…</p>
+              <p className="text-gray-500 font-bold italic">Combining transcripts and analyzing with AI…</p>
             </div>
           )}
 
           {phase === 'review' && (
             <>
+              {combinedSummary && (
+                <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-gray-100">
+                  <p className="text-xs font-black uppercase text-gray-400 mb-1">Meeting summary</p>
+                  {combinedSummary}
+                </div>
+              )}
+              {meetingNotes && (
+                <div className="bg-amber-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-amber-100">
+                  <p className="text-xs font-black uppercase text-amber-600 mb-1">Meeting notes</p>
+                  <pre className="whitespace-pre-wrap font-sans">{meetingNotes}</pre>
+                </div>
+              )}
+              {backlogItems.length > 0 && (
+                <div className="bg-indigo-50 rounded-2xl p-4 mb-4 border border-indigo-100">
+                  <p className="text-xs font-black uppercase text-indigo-500 mb-2">Backlog</p>
+                  <ul className="space-y-2 text-sm">
+                    {backlogItems.map((b, i) => (
+                      <li key={i} className="bg-white rounded-lg px-3 py-2 border border-indigo-50">
+                        <span className="font-bold">{b.title}</span>
+                        {b.priority && <span className="ml-2 text-xs text-indigo-600">{b.priority}</span>}
+                        {b.description && <p className="text-gray-600 mt-1">{b.description}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {speedAlerts.length > 0 && (
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 space-y-2">
+                  <p className="text-xs font-black uppercase text-amber-700 flex items-center gap-1">
+                    <FiAlertTriangle /> Speed-up notifications sent
+                  </p>
+                  {speedAlerts.map((a, i) => (
+                    <p key={i} className="text-sm text-amber-900">
+                      <strong>{a.userName ?? 'Team member'}:</strong> {a.message}
+                    </p>
+                  ))}
+                </div>
+              )}
               {suggestions.length === 0 ? (
                 <div className="bg-gray-50 rounded-2xl p-8 text-center">
                   <p className="text-gray-500 font-bold italic">No clear action items found in the transcript.</p>
@@ -268,7 +336,6 @@ const MeetingTaskExtractor: React.FC<Props> = ({ open, onClose, transcript, meet
   );
 };
 
-// Single editable suggestion card.
 const SuggestionCard: React.FC<{
   suggestion: EditableSuggestion;
   onToggle: (keep: boolean) => void;
@@ -296,7 +363,6 @@ const SuggestionCard: React.FC<{
             className="w-full bg-transparent text-sm text-gray-600 outline-none resize-none focus:bg-white focus:px-2 focus:py-1 focus:rounded-lg transition-all"
             rows={2}
           />
-
           <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
             {suggestion.suggestedAssigneeName && (
               <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">

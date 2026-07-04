@@ -65,14 +65,23 @@ export interface Meeting {
   scheduledAt: string;
   endsAt?: string;
   durationMinutes: number;
+  sprintNumber?: number;
+  linkExpiresAt?: string;
+  linkVisible?: boolean;
+  participantTranscriptCount?: number;
+  joinCode?: string | null;
   meetingLink?: string | null;
   jitsiRoomName?: string | null;
   createdBy: string;
   status: 'Scheduled' | 'Live' | 'Completed' | 'Cancelled' | 'Expired' | string;
   transcriptText?: string | null;
+  summaryText?: string | null;
+  meetingNotesText?: string | null;
+  backlogItems?: BacklogItem[];
   participants?: string[];
-  joinState?: 'BeforeStart' | 'Active' | 'Expired' | string;
+  joinState?: 'BeforeStart' | 'Active' | 'LinkDisabled' | 'Expired' | string;
   canJoin?: boolean;
+  linkVisible?: boolean;
 }
 
 export interface MeetingJoinStatus {
@@ -80,12 +89,41 @@ export interface MeetingJoinStatus {
   title: string;
   scheduledAt: string;
   endsAt: string;
+  linkExpiresAt?: string;
+  sprintNumber?: number;
   status: string;
-  joinState: 'BeforeStart' | 'Active' | 'Expired' | string;
+  joinState: 'BeforeStart' | 'Active' | 'LinkDisabled' | 'Expired' | string;
   canJoin: boolean;
+  linkVisible?: boolean;
   isParticipant: boolean;
   meetingLink?: string | null;
   jitsiRoomName?: string | null;
+}
+
+export interface SpeedUpAlert {
+  userId?: string;
+  userName?: string;
+  message: string;
+  reason?: string;
+}
+
+export interface BacklogItem {
+  title: string;
+  description?: string;
+  priority?: string;
+  suggestedAssigneeUserId?: string;
+  suggestedAssigneeName?: string;
+}
+
+export interface MeetingAnalysisResult {
+  combinedSummary?: string;
+  meetingNotes?: string;
+  combinedTranscript?: string;
+  backlogItems?: BacklogItem[];
+  participantTranscripts?: Array<{ userId: string; userName?: string; transcriptText: string }>;
+  tasks: ExtractedTaskSuggestion[];
+  speedUpAlerts?: SpeedUpAlert[];
+  finalized?: boolean;
 }
 
 // PHASE 4: shape returned by the meeting-task-extraction endpoint (one row per suggested task).
