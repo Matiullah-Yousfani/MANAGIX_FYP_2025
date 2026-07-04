@@ -298,24 +298,24 @@ const Milestones = () => {
 
   const getStatusStyle = (status: string) => {
     const s = status?.toLowerCase();
-    if (s === 'completed') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (s === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
-    return 'bg-gray-100 text-gray-500 border-gray-200';
+    if (s === 'completed') return 'bg-success-soft text-success border-success/25';
+    if (s === 'pending') return 'bg-warning-soft text-warning border-warning/25';
+    return 'bg-surface-2 text-fg-muted border-line';
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-bg">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-black tracking-tight text-gray-900">Welcome</h1>
+      <header className="sticky top-0 z-30 bg-surface border-b border-line px-8 py-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-fg">Welcome</h1>
         <div className="relative w-96">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input 
+          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle" />
+          <input
             type="text"
             placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 transition-all leading-relaxed"
+            className="w-full pl-12 pr-4 py-3 bg-surface-2 border border-line rounded-lg text-sm text-fg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all leading-relaxed"
           />
         </div>
       </header>
@@ -323,11 +323,11 @@ const Milestones = () => {
       <main className="p-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <aside className="w-full md:w-72">
-          <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm sticky top-24">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 block">
+          <div className="bg-surface p-6 rounded-xl border border-line shadow-e1 sticky top-24">
+            <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest mb-6 block">
               Available Projects
             </label>
-            
+
             <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
               {filteredProjects.map(p => {
                 const pId = p.projectId || p.ProjectId;
@@ -336,10 +336,10 @@ const Milestones = () => {
                   <button
                     key={pId}
                     onClick={() => fetchMilestones(pId)}
-                    className={`w-full text-left px-5 py-4 rounded-2xl text-sm font-bold transition-all transform active:scale-95 ${
-                      isActive 
-                      ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-200' 
-                      : 'text-gray-500 hover:bg-gray-50 border border-transparent'
+                    className={`w-full text-left px-5 py-4 rounded-lg text-sm font-bold transition-all transform active:scale-95 ${
+                      isActive
+                      ? 'bg-primary text-primary-fg shadow-e2'
+                      : 'text-fg-muted hover:bg-surface-2 border border-transparent'
                     }`}
                   >
                     {p.title || p.Title}
@@ -354,21 +354,21 @@ const Milestones = () => {
         <section className="flex-1">
           {selectedProjectId ? (
             <div className="space-y-8">
-              <div className="relative overflow-hidden bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="relative overflow-hidden bg-surface p-10 rounded-xl border border-line shadow-e1">
                 <div className="relative z-10 flex justify-between items-end">
                   <div>
-                    <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 block">Active Project</label>
-                    <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-2">{selectedProject?.title || selectedProject?.Title}</h2>
-                    <p className="font-medium italic text-gray-500">Manage and track individual project milestones and budget allocation.</p>
+                    <label className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 block">Active Project</label>
+                    <h2 className="text-2xl font-bold text-fg tracking-tight mb-2">{selectedProject?.title || selectedProject?.Title}</h2>
+                    <p className="font-medium text-fg-muted">Manage and track individual project milestones and budget allocation.</p>
                   </div>
                   <button
                     onClick={() => { resetForm(); setShowCreateModal(true); }}
-                    className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 hover:-translate-y-1"
+                    className="bg-primary text-primary-fg px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-primary-hover transition-all shadow-e2 hover:-translate-y-1"
                   >
                     <FiPlus strokeWidth={3} /> Add Milestone
                   </button>
                 </div>
-                <FiFlag className="absolute -bottom-4 -right-4 size-32 opacity-5 text-gray-900 rotate-12" />
+                <FiFlag className="absolute -bottom-4 -right-4 size-32 opacity-5 text-fg rotate-12" />
               </div>
 
               <div className="flex flex-wrap gap-3 mb-4">
@@ -377,12 +377,12 @@ const Milestones = () => {
                   placeholder="Filter milestones…"
                   value={milestoneSearch}
                   onChange={(e) => setMilestoneSearch(e.target.value)}
-                  className="flex-1 min-w-[180px] p-3 bg-white border border-gray-100 rounded-xl text-sm font-medium"
+                  className="flex-1 min-w-[180px] p-3 bg-surface border border-line rounded-lg text-sm font-medium text-fg"
                 />
                 <select
                   value={milestoneStatusFilter}
                   onChange={(e) => setMilestoneStatusFilter(e.target.value)}
-                  className="p-3 bg-white border border-gray-100 rounded-xl text-sm font-bold"
+                  className="p-3 bg-surface border border-line rounded-lg text-sm font-bold text-fg"
                 >
                   <option value="all">All statuses</option>
                   <option value="pending">Pending</option>
@@ -392,9 +392,9 @@ const Milestones = () => {
 
               <div className="grid gap-6">
                 {filteredMilestones.length === 0 && !loading && (
-                  <div className="text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-gray-200 text-gray-400">
+                  <div className="text-center py-24 bg-surface rounded-xl border border-dashed border-line text-fg-subtle">
                     <FiClock size={40} className="mx-auto mb-4 opacity-20" />
-                    <p className="font-black uppercase tracking-widest text-[10px]">No milestones defined yet</p>
+                    <p className="font-bold uppercase tracking-widest text-[10px]">No milestones defined yet</p>
                   </div>
                 )}
                 
@@ -411,24 +411,24 @@ const Milestones = () => {
                   return (
                     <div 
                       key={mId} 
-                      className={`group bg-white p-8 rounded-[2.5rem] border border-gray-100 transition-all ${isCompleted ? 'opacity-75' : ''} ${isExpanded ? 'shadow-lg' : 'hover:shadow-xl'}`}
+                      className={`group bg-surface p-8 rounded-xl border border-line transition-all ${isCompleted ? 'opacity-75' : ''} ${isExpanded ? 'shadow-e2' : 'hover:shadow-e2'}`}
                     >
                       <div className="flex items-center justify-between gap-4">
                       <button type="button" onClick={() => toggleMilestoneTasks(String(mId))} className="flex items-center gap-6 text-left flex-1 min-w-0">
-                        <div className={`p-4 rounded-3xl ${isCompleted ? 'bg-emerald-50' : 'bg-indigo-50'}`}>
-                          <FiFlag className={isCompleted ? 'text-emerald-600' : 'text-indigo-600'} size={24} />
+                        <div className={`p-4 rounded-xl ${isCompleted ? 'bg-success-soft' : 'bg-primary-soft'}`}>
+                          <FiFlag className={isCompleted ? 'text-success' : 'text-primary'} size={24} />
                         </div>
                         <div>
                           <div className="flex items-center gap-3 mb-2">
-                            <h4 className="text-lg font-black text-gray-900 tracking-tight">{title}</h4>
-                            <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border ${getStatusStyle(status)}`}>
+                            <h4 className="text-lg font-bold text-fg tracking-tight">{title}</h4>
+                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest border ${getStatusStyle(status)}`}>
                               {status}
                             </span>
                           </div>
-                          <div className="flex items-center gap-6 text-sm text-gray-500 leading-relaxed font-medium">
-                            <span className="flex items-center gap-2"><FiCalendar className="text-indigo-600" /> {deadline ? new Date(deadline).toLocaleDateString() : 'N/A'}</span>
-                            <span className="flex items-center gap-2 font-black text-gray-900">
-                              <FiDollarSign className="text-emerald-600" /> 
+                          <div className="flex items-center gap-6 text-sm text-fg-muted leading-relaxed font-medium">
+                            <span className="flex items-center gap-2"><FiCalendar className="text-primary" /> {deadline ? new Date(deadline).toLocaleDateString() : 'N/A'}</span>
+                            <span className="flex items-center gap-2 font-bold text-fg">
+                              <FiDollarSign className="text-success" />
                               {budget.toLocaleString()}
                             </span>
                           </div>
@@ -437,25 +437,25 @@ const Milestones = () => {
 
                       <div className="flex items-center gap-2 shrink-0">
                         {!isCompleted && (
-                          <button type="button" onClick={() => handleClose(m)} className="p-4 text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-colors" title="Complete when all tasks are Done or Approved"><FiCheckCircle size={20} /></button>
+                          <button type="button" onClick={() => handleClose(m)} className="p-4 text-success hover:bg-success-soft rounded-lg transition-colors" title="Complete when all tasks are Done or Approved"><FiCheckCircle size={20} /></button>
                         )}
-                        <button type="button" onClick={() => openEditModal(m)} className="p-4 text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors" title="Edit"><FiEdit3 size={20} /></button>
-                        <button type="button" onClick={() => handleDelete(m)} className="p-4 text-red-600 hover:bg-red-50 rounded-2xl transition-colors" title="Delete"><FiTrash2 size={20} /></button>
+                        <button type="button" onClick={() => openEditModal(m)} className="p-4 text-primary hover:bg-primary-soft rounded-lg transition-colors" title="Edit"><FiEdit3 size={20} /></button>
+                        <button type="button" onClick={() => handleDelete(m)} className="p-4 text-danger hover:bg-danger-soft rounded-lg transition-colors" title="Delete"><FiTrash2 size={20} /></button>
                         {isCompleted && (
-                          <button type="button" onClick={() => handleReopen(m)} className="px-4 py-2 text-xs font-black uppercase text-amber-700 bg-amber-50 rounded-xl">Reopen</button>
+                          <button type="button" onClick={() => handleReopen(m)} className="px-4 py-2 text-xs font-bold uppercase text-warning bg-warning-soft rounded-lg">Reopen</button>
                         )}
                       </div>
                       </div>
                       {isExpanded && (
-                        <div className="mt-6 pt-6 border-t border-gray-100 space-y-2">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tasks</p>
+                        <div className="mt-6 pt-6 border-t border-line space-y-2">
+                          <p className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest mb-2">Tasks</p>
                           {(milestoneTasks[String(mId)] || []).length === 0 ? (
-                            <p className="text-sm text-gray-400 italic">No tasks yet.</p>
+                            <p className="text-sm text-fg-subtle">No tasks yet.</p>
                           ) : (
                             milestoneTasks[String(mId)].map((t: any) => (
-                              <div key={t.taskId || t.TaskId} className="flex justify-between items-center p-4 bg-gray-50 rounded-xl text-sm">
-                                <span className="font-bold text-gray-800">{t.title || t.Title}</span>
-                                <span className="text-xs text-gray-500">
+                              <div key={t.taskId || t.TaskId} className="flex justify-between items-center p-4 bg-surface-2 rounded-lg text-sm">
+                                <span className="font-bold text-fg">{t.title || t.Title}</span>
+                                <span className="text-xs text-fg-muted">
                                   {assigneeName(t.assignedEmployeeId || t.AssignedEmployeeId)} · {t.status || t.Status}
                                 </span>
                               </div>
@@ -471,9 +471,9 @@ const Milestones = () => {
               <AiAllocation embedded variant="tasks-only" />
             </div>
           ) : (
-            <div className="h-[60vh] flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 text-gray-400 shadow-sm relative overflow-hidden">
+            <div className="h-[60vh] flex flex-col items-center justify-center bg-surface rounded-xl border border-line text-fg-subtle shadow-e1 relative overflow-hidden">
               <FiClock size={64} className="mb-6 opacity-10" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">Select a project from the sidebar</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Select a project from the sidebar</p>
               <FiFlag className="absolute -bottom-10 -right-10 size-64 opacity-[0.02] -rotate-12" />
             </div>
           )}
@@ -488,32 +488,32 @@ const Milestones = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" 
-              onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} 
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => { setShowCreateModal(false); setShowEditModal(false); }}
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white p-10 rounded-[2.5rem] w-full max-w-lg shadow-2xl"
+              className="relative bg-surface p-10 rounded-xl w-full max-w-lg shadow-e3"
             >
-              <h2 className="text-3xl font-black tracking-tight mb-8 text-gray-900">
+              <h2 className="text-2xl font-bold tracking-tight mb-8 text-fg">
                 {showCreateModal ? 'New Milestone' : 'Edit Milestone'}
               </h2>
               <form onSubmit={showCreateModal ? handleCreate : handleUpdate} className="space-y-5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Milestone Title</label>
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-1">Milestone Title</label>
                   <input
-                    className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 font-bold"
+                    className="w-full p-4 bg-surface-2 border border-line rounded-lg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary font-bold text-fg"
                     placeholder="Enter title..." required
                     value={formData.title}
                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Description</label>
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-1">Description</label>
                   <textarea
-                    className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 font-medium"
+                    className="w-full p-4 bg-surface-2 border border-line rounded-lg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary font-medium text-fg"
                     placeholder="What needs to be achieved?" rows={3}
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -521,18 +521,18 @@ const Milestones = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Deadline</label>
+                    <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-1">Deadline</label>
                     <input
-                      type="date" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-bold text-sm"
+                      type="date" className="w-full p-4 bg-surface-2 border border-line rounded-lg outline-none font-bold text-sm text-fg"
                       required value={formData.deadline}
                       min={minDateToday()}
                       onChange={e => setFormData({ ...formData, deadline: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Allocated Budget</label>
+                    <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-1">Allocated Budget</label>
                     <input
-                      type="text" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none font-black text-indigo-600"
+                      type="text" className="w-full p-4 bg-surface-2 border border-line rounded-lg outline-none font-bold text-primary"
                       placeholder="$ 0.00"
                       value={formData.budgetAllocated || ""}
                       onChange={e => setFormData({ ...formData, budgetAllocated: parseFloat(e.target.value.replace(/[^0-9.]/g, '')) || 0 })}
@@ -540,9 +540,9 @@ const Milestones = () => {
                   </div>
                 </div>
                 {showCreateModal && (
-                  <div className="space-y-3 pt-2 border-t border-gray-100">
+                  <div className="space-y-3 pt-2 border-t border-line">
                     <div className="flex justify-between items-center">
-                      <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Required: tasks</p>
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Required: tasks</p>
                       <button
                         type="button"
                         onClick={() =>
@@ -551,15 +551,15 @@ const Milestones = () => {
                             initialTasks: [...formData.initialTasks, { title: '', description: '' }],
                           })
                         }
-                        className="text-xs font-black text-indigo-600"
+                        className="text-xs font-bold text-primary"
                       >
                         + Add task
                       </button>
                     </div>
                     {formData.initialTasks.map((task, idx) => (
-                      <div key={idx} className="space-y-2 p-3 bg-gray-50 rounded-xl">
+                      <div key={idx} className="space-y-2 p-3 bg-surface-2 rounded-lg">
                         <input
-                          className="w-full p-3 bg-white border-none rounded-xl outline-none focus:ring-2 focus:ring-indigo-600 font-bold text-sm"
+                          className="w-full p-3 bg-surface border border-line rounded-lg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary font-bold text-sm text-fg"
                           placeholder="Task title *"
                           value={task.title}
                           onChange={(e) => {
@@ -569,7 +569,7 @@ const Milestones = () => {
                           }}
                         />
                         <textarea
-                          className="w-full p-3 bg-white border-none rounded-xl outline-none font-medium text-sm"
+                          className="w-full p-3 bg-surface border border-line rounded-lg outline-none font-medium text-sm text-fg"
                           placeholder="Task description"
                           rows={2}
                           value={task.description}
@@ -588,7 +588,7 @@ const Milestones = () => {
                                 initialTasks: formData.initialTasks.filter((_, i) => i !== idx),
                               })
                             }
-                            className="text-xs text-red-600 font-bold"
+                            className="text-xs text-danger font-bold"
                           >
                             Remove task
                           </button>
@@ -598,10 +598,10 @@ const Milestones = () => {
                   </div>
                 )}
                 <div className="flex gap-4 pt-6">
-                  <button type="submit" className="flex-[2] bg-indigo-600 text-white p-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all">
+                  <button type="submit" className="flex-[2] bg-primary text-primary-fg p-5 rounded-lg font-bold text-sm uppercase tracking-widest shadow-e2 transition-all">
                     Save Changes
                   </button>
-                  <button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} className="flex-1 bg-gray-100 text-gray-500 p-5 rounded-2xl font-black text-sm uppercase tracking-widest">
+                  <button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} className="flex-1 bg-surface-2 text-fg-muted p-5 rounded-lg font-bold text-sm uppercase tracking-widest">
                     Cancel
                   </button>
                 </div>
@@ -620,20 +620,20 @@ const Milestones = () => {
               initial={{ opacity: 0, x: 50, scale: 0.9 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-              className={`pointer-events-auto flex items-center gap-3 px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] bg-white border-l-4 min-w-[300px] ${
-                toast.type === 'error' ? 'border-red-500' : 'border-emerald-500'
+              className={`pointer-events-auto flex items-center gap-3 px-6 py-4 rounded-xl shadow-e3 bg-surface border-l-4 min-w-[300px] ${
+                toast.type === 'error' ? 'border-danger' : 'border-success'
               }`}
             >
               {toast.type === 'error' ? (
-                <FiXCircle className="text-red-500 text-xl shrink-0" />
+                <FiXCircle className="text-danger text-xl shrink-0" />
               ) : (
-                <FiCheckCircle className="text-emerald-500 text-xl shrink-0" />
+                <FiCheckCircle className="text-success text-xl shrink-0" />
               )}
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-fg-subtle">
                   {toast.type === 'error' ? 'Validation Error' : 'Success'}
                 </span>
-                <span className="text-sm font-bold text-gray-700">{toast.message}</span>
+                <span className="text-sm font-bold text-fg">{toast.message}</span>
               </div>
             </motion.div>
           ))}

@@ -165,10 +165,10 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 40 }}
-            className="pointer-events-auto bg-white border border-indigo-100 shadow-lg rounded-2xl px-4 py-3"
+            className="pointer-events-auto bg-surface border border-line shadow-e2 rounded-xl px-4 py-3"
           >
-            <p className="text-sm font-black text-gray-900">{t.title}</p>
-            {t.body && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t.body}</p>}
+            <p className="text-sm font-bold text-fg">{t.title}</p>
+            {t.body && <p className="text-xs text-fg-muted mt-0.5 line-clamp-2">{t.body}</p>}
           </motion.div>
         ))}
       </AnimatePresence>
@@ -176,12 +176,12 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
     <div className="fixed top-6 right-6 z-40" ref={ref}>
       <button
         onClick={() => (open ? setOpen(false) : openPanel())}
-        className="relative bg-white border border-gray-100 shadow-sm rounded-2xl p-3 hover:shadow-md transition-all"
+        className="relative bg-surface border border-line shadow-e1 rounded-xl p-3 hover:shadow-e2 transition-all"
         title="Notifications"
       >
-        <FiBell className="text-gray-700" />
+        <FiBell className="text-fg-muted" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 size-5 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 size-5 bg-danger text-primary-fg text-[10px] font-bold rounded-full flex items-center justify-center">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -193,15 +193,15 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="absolute right-0 mt-3 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+            className="absolute right-0 mt-3 w-96 bg-surface rounded-xl shadow-e3 border border-line overflow-hidden"
           >
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-line flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Notifications</h3>
-                <p className="text-[10px] font-bold text-gray-400">{unread} unread</p>
+                <h3 className="text-sm font-bold text-fg uppercase tracking-widest">Notifications</h3>
+                <p className="text-[10px] font-bold text-fg-subtle">{unread} unread</p>
               </div>
               {items.some((i) => !i.isRead) && (
-                <button onClick={onMarkAll} className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                <button onClick={onMarkAll} className="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1">
                   <FiCheck /> Mark all read
                 </button>
               )}
@@ -209,11 +209,11 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
 
             <div className="max-h-96 overflow-y-auto">
               {loading ? (
-                <div className="p-8 text-center text-gray-400 italic">Loading…</div>
+                <div className="p-8 text-center text-fg-subtle">Loading…</div>
               ) : items.length === 0 ? (
                 <div className="p-8 text-center">
-                  <FiBell className="mx-auto text-gray-200 mb-3" size={32} />
-                  <p className="text-sm font-bold text-gray-400 italic">You're all caught up.</p>
+                  <FiBell className="mx-auto text-fg-subtle mb-3" size={32} />
+                  <p className="text-sm font-bold text-fg-subtle">You're all caught up.</p>
                 </div>
               ) : (
                 items.map((n) => (
@@ -238,12 +238,12 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
 // PHASE 4: small icon mapping per notification type — keeps the panel scannable.
 const NotifIcon: React.FC<{ type: string }> = ({ type }) => {
   const t = type?.toLowerCase() || '';
-  if (t.includes('meeting')) return <span className="bg-blue-50 text-blue-600 rounded-xl p-2"><FiVideo /></span>;
-  if (t.includes('tasksubmitted') || t.includes('taskassigned') || t.includes('extracted')) return <span className="bg-indigo-50 text-indigo-600 rounded-xl p-2"><FiUserCheck /></span>;
-  if (t.includes('workload')) return <span className="bg-orange-50 text-orange-600 rounded-xl p-2"><FiAlertTriangle /></span>;
-  if (t.includes('milestone')) return <span className="bg-emerald-50 text-emerald-600 rounded-xl p-2"><FiFlag /></span>;
-  if (t.includes('overtime')) return <span className="bg-rose-50 text-rose-600 rounded-xl p-2"><FiAlertTriangle /></span>;
-  return <span className="bg-gray-50 text-gray-600 rounded-xl p-2"><FiZap /></span>;
+  if (t.includes('meeting')) return <span className="bg-info-soft text-info rounded-xl p-2"><FiVideo /></span>;
+  if (t.includes('tasksubmitted') || t.includes('taskassigned') || t.includes('extracted')) return <span className="bg-primary-soft text-primary rounded-xl p-2"><FiUserCheck /></span>;
+  if (t.includes('workload')) return <span className="bg-warning-soft text-warning rounded-xl p-2"><FiAlertTriangle /></span>;
+  if (t.includes('milestone')) return <span className="bg-success-soft text-success rounded-xl p-2"><FiFlag /></span>;
+  if (t.includes('overtime')) return <span className="bg-danger-soft text-danger rounded-xl p-2"><FiAlertTriangle /></span>;
+  return <span className="bg-surface-2 text-fg-muted rounded-xl p-2"><FiZap /></span>;
 };
 
 const MeetingNotificationRow: React.FC<{
@@ -275,13 +275,13 @@ const MeetingNotificationRow: React.FC<{
   return (
     <button
       onClick={onRowClick}
-      className={`w-full text-left px-5 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!n.isRead ? 'bg-indigo-50/40' : ''}`}
+      className={`w-full text-left px-5 py-3 border-b border-line hover:bg-surface-2 transition-colors flex gap-3 ${!n.isRead ? 'bg-primary-soft' : ''}`}
     >
       <NotifIcon type={n.type} />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold text-gray-900 truncate">{n.title}</div>
-        {n.body && <div className="text-xs text-gray-500 line-clamp-2">{n.body}</div>}
-        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+        <div className="text-sm font-bold text-fg truncate">{n.title}</div>
+        {n.body && <div className="text-xs text-fg-muted line-clamp-2">{n.body}</div>}
+        <div className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest mt-1">
           {new Date(n.createdAt).toLocaleString()}
         </div>
         {isMeeting && meetingId && (
@@ -289,15 +289,15 @@ const MeetingNotificationRow: React.FC<{
             type="button"
             disabled={joinDisabled}
             onClick={onJoin}
-            className={`mt-2 text-xs font-black px-3 py-1.5 rounded-lg ${
-              joinDisabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            className={`mt-2 text-xs font-bold px-3 py-1.5 rounded-lg ${
+              joinDisabled ? 'bg-surface-3 text-fg-subtle cursor-not-allowed' : 'bg-primary text-primary-fg hover:bg-primary-hover'
             }`}
           >
             {joinLabel}
           </button>
         )}
       </div>
-      {!n.isRead && <span className="size-2 bg-indigo-600 rounded-full self-start mt-2 shrink-0" />}
+      {!n.isRead && <span className="size-2 bg-primary rounded-full self-start mt-2 shrink-0" />}
     </button>
   );
 };

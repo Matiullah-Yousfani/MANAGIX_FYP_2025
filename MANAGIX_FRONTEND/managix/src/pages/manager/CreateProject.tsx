@@ -360,11 +360,11 @@ const CreateProject = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="bg-white px-8 pt-8 pb-4">
-          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Create Project</h2>
-          <p className="text-gray-500 text-sm mt-1">
+    <div className="min-h-screen bg-bg py-12 px-4">
+      <div className="max-w-2xl mx-auto bg-surface rounded-xl shadow-e1 border border-line overflow-hidden">
+        <div className="bg-surface px-8 pt-8 pb-4">
+          <h2 className="text-2xl font-bold text-fg tracking-tight">Create Project</h2>
+          <p className="text-fg-muted text-sm mt-1">
             Describe the project; methodology and milestones are suggested by AI on the last step (editable).
           </p>
         </div>
@@ -376,17 +376,17 @@ const CreateProject = () => {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                     step >= s
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                      : 'bg-gray-100 text-gray-400'
+                      ? 'bg-primary text-primary-fg shadow-e2'
+                      : 'bg-surface-2 text-fg-subtle'
                   }`}
                 >
                   {step > s ? <FiCheckCircle size={16} /> : s}
                 </div>
               </div>
             ))}
-            <div className="absolute top-4 left-0 w-full h-[2px] bg-gray-100 -z-0">
+            <div className="absolute top-4 left-0 w-full h-[2px] bg-surface-3 -z-0">
               <div
-                className="h-full bg-indigo-600 transition-all duration-500"
+                className="h-full bg-primary transition-all duration-500"
                 style={{ width: `${(step - 1) * 50}%` }}
               ></div>
             </div>
@@ -397,12 +397,12 @@ const CreateProject = () => {
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-fg-subtle uppercase tracking-wider mb-2">
                   Project Title
                 </label>
                 <input
                   type="text"
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-gray-800 font-medium"
+                  className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all outline-none text-fg font-medium"
                   placeholder="Enter a catchy title..."
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -410,12 +410,12 @@ const CreateProject = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-fg-subtle uppercase tracking-wider mb-2">
                   Description
                 </label>
                 <textarea
                   rows={5}
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-gray-800"
+                  className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all outline-none text-fg"
                   placeholder="What is this project about? AI uses this to suggest methodology, milestones, and tasks."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -425,7 +425,7 @@ const CreateProject = () => {
               <button
                 onClick={() => setStep(2)}
                 disabled={!formData.title.trim() || !formData.description.trim()}
-                className="w-full bg-indigo-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                className="w-full bg-primary text-primary-fg p-4 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-primary-hover transition-all disabled:opacity-50"
               >
                 Continue <FiChevronRight />
               </button>
@@ -436,30 +436,30 @@ const CreateProject = () => {
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="grid grid-cols-1 gap-6">
                 <div className="relative">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-fg-subtle uppercase tracking-wider mb-2">
                     Target Deadline
                   </label>
                   <div className="relative">
-                    <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle" />
                     <input
                       type="date"
                       min={minDateToday()}
-                      className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full pl-12 p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-fg"
                       value={formData.deadline}
                       onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="relative">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-fg-subtle uppercase tracking-wider mb-2">
                     Total Budget
                   </label>
                   <div className="relative">
-                    <FiDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <FiDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle" />
                     <input
                       type="text"
                       inputMode="numeric"
-                      className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-indigo-600"
+                      className="w-full pl-12 p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none font-bold text-primary"
                       placeholder="0.00"
                       value={formData.budget === 0 ? '' : formData.budget}
                       onChange={(e) => {
@@ -474,7 +474,7 @@ const CreateProject = () => {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 bg-gray-100 text-gray-600 p-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                  className="flex-1 bg-surface-2 text-fg-muted p-4 rounded-lg font-bold flex items-center justify-center gap-2"
                 >
                   <FiChevronLeft /> Back
                 </button>
@@ -489,7 +489,7 @@ const CreateProject = () => {
                     if (milestones.length === 0) setShouldAutoPlan(true);
                     setStep(3);
                   }}
-                  className="flex-1 bg-indigo-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                  className="flex-1 bg-primary text-primary-fg p-4 rounded-lg font-bold flex items-center justify-center gap-2"
                 >
                   Next Step <FiChevronRight />
                 </button>
@@ -499,13 +499,13 @@ const CreateProject = () => {
 
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="bg-gradient-to-r from-violet-50 to-indigo-50 p-5 rounded-3xl border border-indigo-100">
+              <div className="bg-primary-soft p-5 rounded-xl border border-primary-border">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-2">
+                    <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
                       <FiZap className="inline" /> AI planning
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-fg-muted mt-1">
                       We run AI when you open this step (if milestones are empty). Regenerate anytime; edit any field
                       before launch.
                     </p>
@@ -514,25 +514,25 @@ const CreateProject = () => {
                     type="button"
                     onClick={() => void runAiPlanner()}
                     disabled={aiPlanning}
-                    className="shrink-0 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="shrink-0 bg-primary text-primary-fg px-5 py-3 rounded-lg font-bold text-sm hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     <FiZap />
                     {aiPlanning ? 'Planning…' : 'Regenerate with AI'}
                   </button>
                 </div>
                 {methodologyNote ? (
-                  <p className="text-xs text-indigo-900 mt-3 leading-relaxed border-t border-indigo-100 pt-3">
+                  <p className="text-xs text-fg mt-3 leading-relaxed border-t border-primary-border pt-3">
                     {methodologyNote}
                   </p>
                 ) : null}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <FiLayers className="text-gray-400" /> Project methodology
+                <label className="block text-xs font-bold text-fg-subtle uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <FiLayers className="text-fg-subtle" /> Project methodology
                 </label>
                 <select
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 font-medium"
+                  className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-fg font-medium"
                   value={formData.modelId}
                   onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
                 >
@@ -543,24 +543,24 @@ const CreateProject = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-fg-subtle mt-1">
                   Pre-filled when AI runs; you can override before launch.
                 </p>
               </div>
 
-              <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100">
-                <h3 className="text-indigo-900 font-bold mb-4 flex items-center gap-2">
+              <div className="bg-primary-soft p-6 rounded-xl border border-primary-border">
+                <h3 className="text-fg font-bold mb-4 flex items-center gap-2">
                   <FiPlus /> Add milestone manually
                 </h3>
                 <div className="space-y-3">
                   <input
-                    className="w-full p-3 bg-white border-none rounded-xl shadow-sm outline-none"
+                    className="w-full p-3 bg-surface border border-line rounded-lg shadow-e1 outline-none text-fg"
                     placeholder="Milestone Name"
                     value={currentMilestone.title}
                     onChange={(e) => setCurrentMilestone({ ...currentMilestone, title: e.target.value })}
                   />
                   <input
-                    className="w-full p-3 bg-white border-none rounded-xl shadow-sm outline-none text-sm"
+                    className="w-full p-3 bg-surface border border-line rounded-lg shadow-e1 outline-none text-sm text-fg"
                     placeholder="Description (optional)"
                     value={currentMilestone.description}
                     onChange={(e) =>
@@ -571,7 +571,7 @@ const CreateProject = () => {
                     <input
                       type="date"
                       min={minDateToday()}
-                      className="p-3 bg-white border-none rounded-xl shadow-sm outline-none text-sm"
+                      className="p-3 bg-surface border border-line rounded-lg shadow-e1 outline-none text-sm text-fg"
                       value={currentMilestone.deadline}
                       onChange={(e) =>
                         setCurrentMilestone({ ...currentMilestone, deadline: e.target.value })
@@ -579,7 +579,7 @@ const CreateProject = () => {
                     />
                     <input
                       type="text"
-                      className="p-3 bg-white border-none rounded-xl shadow-sm outline-none text-sm font-bold text-indigo-600"
+                      className="p-3 bg-surface border border-line rounded-lg shadow-e1 outline-none text-sm font-bold text-primary"
                       placeholder="$ Amount"
                       value={currentMilestone.budgetAllocated === 0 ? '' : currentMilestone.budgetAllocated}
                       onChange={(e) => {
@@ -594,19 +594,19 @@ const CreateProject = () => {
                   <button
                     type="button"
                     onClick={addMilestoneToList}
-                    className="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold text-sm shadow-md shadow-indigo-100"
+                    className="w-full bg-primary text-primary-fg p-3 rounded-lg font-bold text-sm shadow-e1"
                   >
                     + Add to Project
                   </button>
                 </div>
               </div>
 
-              <div className="bg-gray-900 rounded-3xl p-6 text-white shadow-xl">
+              <div className="bg-surface-3 rounded-xl p-6 text-fg shadow-e2 border border-line">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-gray-400 text-sm">Allocation Status</span>
+                  <span className="text-fg-muted text-sm">Allocation Status</span>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
-                      remainingBudget < 0 ? 'bg-red-500' : 'bg-green-500'
+                      remainingBudget < 0 ? 'bg-danger text-white' : 'bg-success text-white'
                     }`}
                   >
                     {remainingBudget >= 0 ? 'Budget OK' : 'Over Budget'}
@@ -614,11 +614,11 @@ const CreateProject = () => {
                 </div>
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-widest">Remaining</p>
+                    <p className="text-fg-muted text-xs uppercase tracking-widest">Remaining</p>
                     <p className="text-3xl font-bold">${remainingBudget.toLocaleString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-400 text-xs">Total: ${formData.budget}</p>
+                    <p className="text-fg-muted text-xs">Total: ${formData.budget}</p>
                   </div>
                 </div>
               </div>
@@ -627,47 +627,47 @@ const CreateProject = () => {
                 {milestones.map((m, i) => (
                   <div
                     key={i}
-                    className="p-4 bg-white border border-gray-100 rounded-2xl hover:border-indigo-200 transition-colors space-y-3"
+                    className="p-4 bg-surface border border-line rounded-xl hover:border-primary-border transition-colors space-y-3"
                   >
                     <div className="flex justify-between items-start gap-2">
-                      <span className="text-xs font-bold text-gray-400">Milestone {i + 1}</span>
+                      <span className="text-xs font-bold text-fg-subtle">Milestone {i + 1}</span>
                       <button
                         type="button"
                         onClick={() => removeMilestone(i)}
-                        className="text-gray-300 hover:text-red-500 transition-colors"
+                        className="text-fg-subtle hover:text-danger transition-colors"
                       >
                         <FiTrash2 size={18} />
                       </button>
                     </div>
                     <input
-                      className="w-full p-3 bg-gray-50 rounded-xl text-sm font-bold text-gray-900 outline-none"
+                      className="w-full p-3 bg-surface-2 border border-line rounded-lg text-sm font-bold text-fg outline-none"
                       value={m.title}
                       onChange={(e) => updateMilestone(i, { title: e.target.value })}
                     />
                     <textarea
                       rows={2}
-                      className="w-full p-3 bg-gray-50 rounded-xl text-xs text-gray-700 outline-none resize-none"
+                      className="w-full p-3 bg-surface-2 border border-line rounded-lg text-xs text-fg-muted outline-none resize-none"
                       placeholder="Description"
                       value={m.description}
                       onChange={(e) => updateMilestone(i, { description: e.target.value })}
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] uppercase text-gray-400 font-bold">Deadline</label>
+                        <label className="text-[10px] uppercase text-fg-subtle font-bold">Deadline</label>
                         <input
                           type="date"
                           min={minDateToday()}
-                          className="w-full p-2 bg-gray-50 rounded-lg text-sm outline-none mt-1"
+                          className="w-full p-2 bg-surface-2 border border-line rounded-lg text-sm outline-none mt-1 text-fg"
                           value={m.deadline}
                           onChange={(e) => updateMilestone(i, { deadline: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-gray-400 font-bold">Budget</label>
+                        <label className="text-[10px] uppercase text-fg-subtle font-bold">Budget</label>
                         <input
                           type="text"
                           inputMode="decimal"
-                          className="w-full p-2 bg-gray-50 rounded-lg text-sm outline-none mt-1 font-semibold text-indigo-600"
+                          className="w-full p-2 bg-surface-2 border border-line rounded-lg text-sm outline-none mt-1 font-semibold text-primary"
                           value={m.budgetAllocated === 0 ? '' : m.budgetAllocated}
                           onChange={(e) => {
                             const val = e.target.value.replace(/[^0-9.]/g, '');
@@ -676,19 +676,19 @@ const CreateProject = () => {
                         />
                       </div>
                     </div>
-                    <div className="border-t border-gray-100 pt-3 space-y-2">
-                      <p className="text-xs font-bold text-gray-500">Tasks</p>
+                    <div className="border-t border-line pt-3 space-y-2">
+                      <p className="text-xs font-bold text-fg-muted">Tasks</p>
                       {(m.tasks || []).map((t, ti) => (
-                        <div key={ti} className="flex gap-2 items-start pl-2 border-l-2 border-indigo-100">
+                        <div key={ti} className="flex gap-2 items-start pl-2 border-l-2 border-primary-border">
                           <div className="flex-1 space-y-1 min-w-0">
                             <input
-                              className="w-full text-xs p-2 bg-gray-50 rounded-lg outline-none"
+                              className="w-full text-xs p-2 bg-surface-2 border border-line rounded-lg outline-none text-fg"
                               placeholder="Task title"
                               value={t.title}
                               onChange={(e) => updateTask(i, ti, { title: e.target.value })}
                             />
                             <input
-                              className="w-full text-xs p-2 bg-gray-50 rounded-lg outline-none text-gray-600"
+                              className="w-full text-xs p-2 bg-surface-2 border border-line rounded-lg outline-none text-fg-muted"
                               placeholder="Description (optional)"
                               value={t.description}
                               onChange={(e) => updateTask(i, ti, { description: e.target.value })}
@@ -697,7 +697,7 @@ const CreateProject = () => {
                           <button
                             type="button"
                             onClick={() => removeTask(i, ti)}
-                            className="text-gray-300 hover:text-red-500 p-1 shrink-0"
+                            className="text-fg-subtle hover:text-danger p-1 shrink-0"
                             aria-label="Remove task"
                           >
                             <FiTrash2 size={14} />
@@ -707,7 +707,7 @@ const CreateProject = () => {
                       <button
                         type="button"
                         onClick={() => addTaskToMilestone(i)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800"
+                        className="text-xs font-bold text-primary hover:text-primary-hover"
                       >
                         + Add task
                       </button>
@@ -716,11 +716,11 @@ const CreateProject = () => {
                 ))}
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-4 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="flex-1 bg-gray-50 text-gray-500 p-4 rounded-2xl font-bold"
+                  className="flex-1 bg-surface-2 text-fg-muted p-4 rounded-lg font-bold"
                 >
                   Back
                 </button>
@@ -728,7 +728,7 @@ const CreateProject = () => {
                   type="button"
                   onClick={handleLaunchProject}
                   disabled={loading}
-                  className="flex-[2] bg-indigo-600 text-white p-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-indigo-200 transition-all disabled:bg-gray-300"
+                  className="flex-[2] bg-primary text-primary-fg p-4 rounded-lg font-bold hover:bg-primary-hover transition-all disabled:opacity-40"
                 >
                   {loading ? 'Processing...' : 'Launch Project'}
                 </button>

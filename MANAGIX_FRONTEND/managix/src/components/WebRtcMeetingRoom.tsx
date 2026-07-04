@@ -472,22 +472,22 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
 
   if (phase === 'lobby') {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-[#202124] rounded-2xl">
+      <div className="min-h-[70vh] flex items-center justify-center bg-bg rounded-xl">
         <div className="text-center max-w-md px-8">
-          <div className="w-20 h-20 rounded-full bg-[#3c4043] mx-auto mb-6 flex items-center justify-center">
-            <Video className="text-white" size={36} />
+          <div className="w-20 h-20 rounded-full bg-surface-2 mx-auto mb-6 flex items-center justify-center">
+            <Video className="text-fg" size={36} />
           </div>
-          <h2 className="text-2xl font-semibold text-white mb-2">{meetingTitle}</h2>
-          <p className="text-[#9aa0a6] text-sm mb-8">MANAGIX Video — secure WebRTC call</p>
-          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+          <h2 className="text-2xl font-semibold text-fg mb-2">{meetingTitle}</h2>
+          <p className="text-fg-muted text-sm mb-8">MANAGIX Video — secure WebRTC call</p>
+          {error && <p className="text-danger text-sm mb-4">{error}</p>}
           <button
             type="button"
             onClick={joinMeeting}
-            className="bg-[#1a73e8] hover:bg-[#1765cc] text-white font-medium px-10 py-3 rounded-full text-lg transition-colors"
+            className="bg-primary hover:bg-primary-hover text-primary-fg font-medium px-10 py-3 rounded-full text-lg transition-colors"
           >
             Join now
           </button>
-          <p className="text-xs text-[#9aa0a6] mt-6">Camera and microphone will be requested. Recording starts automatically.</p>
+          <p className="text-xs text-fg-muted mt-6">Camera and microphone will be requested. Recording starts automatically.</p>
         </div>
       </div>
     );
@@ -495,8 +495,8 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
 
   if (phase === 'connecting') {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-[#202124] rounded-2xl">
-        <div className="text-center text-white">
+      <div className="min-h-[70vh] flex items-center justify-center bg-bg rounded-xl">
+        <div className="text-center text-fg">
           <Loader2 className="animate-spin mx-auto mb-4" size={40} />
           <p>Connecting to meeting…</p>
         </div>
@@ -507,38 +507,38 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
   if (phase === 'ended') {
     return (
       <div className="space-y-6">
-        <div className="bg-[#202124] rounded-2xl p-10 text-center text-white">
+        <div className="bg-bg rounded-xl p-10 text-center text-fg">
           <h2 className="text-xl font-semibold mb-2">You left the meeting</h2>
           {processing && (
-            <p className="text-[#9aa0a6] flex items-center justify-center gap-2">
+            <p className="text-fg-muted flex items-center justify-center gap-2">
               <Loader2 className="animate-spin" size={18} /> {processing}
             </p>
           )}
-          {error && <p className="text-red-400 mt-2">{error}</p>}
+          {error && <p className="text-danger mt-2">{error}</p>}
         </div>
         {transcript && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm space-y-6">
+          <div className="bg-surface rounded-xl border border-line p-8 shadow-e1 space-y-6">
             {analysis?.combinedSummary && (
-              <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
-                <h3 className="text-sm font-black uppercase text-indigo-500 tracking-widest mb-2">Meeting summary</h3>
-                <p className="text-gray-800 text-sm">{analysis.combinedSummary}</p>
+              <div className="bg-primary-soft rounded-xl p-5 border border-primary-border">
+                <h3 className="text-sm font-bold uppercase text-primary tracking-widest mb-2">Meeting summary</h3>
+                <p className="text-fg text-sm">{analysis.combinedSummary}</p>
               </div>
             )}
             {analysis?.meetingNotes && (
-              <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
-                <h3 className="text-sm font-black uppercase text-amber-600 tracking-widest mb-2">Meeting notes</h3>
-                <pre className="whitespace-pre-wrap text-sm text-gray-700">{analysis.meetingNotes}</pre>
+              <div className="bg-warning-soft rounded-xl p-5 border border-warning/25">
+                <h3 className="text-sm font-bold uppercase text-warning tracking-widest mb-2">Meeting notes</h3>
+                <pre className="whitespace-pre-wrap text-sm text-fg-muted">{analysis.meetingNotes}</pre>
               </div>
             )}
             {analysis?.backlogItems && analysis.backlogItems.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h3 className="text-sm font-black uppercase text-gray-500 tracking-widest mb-3">Backlog items</h3>
+              <div className="bg-surface-2 rounded-xl p-5 border border-line">
+                <h3 className="text-sm font-bold uppercase text-fg-muted tracking-widest mb-3">Backlog items</h3>
                 <ul className="space-y-2 text-sm">
                   {analysis.backlogItems.map((b, i) => (
-                    <li key={i} className="bg-white rounded-lg px-3 py-2 border border-gray-100">
-                      <span className="font-bold text-gray-900">{b.title}</span>
-                      {b.priority && <span className="ml-2 text-xs text-indigo-600 font-bold">{b.priority}</span>}
-                      {b.description && <p className="text-gray-600 mt-1">{b.description}</p>}
+                    <li key={i} className="bg-surface rounded-lg px-3 py-2 border border-line">
+                      <span className="font-bold text-fg">{b.title}</span>
+                      {b.priority && <span className="ml-2 text-xs text-primary font-bold">{b.priority}</span>}
+                      {b.description && <p className="text-fg-muted mt-1">{b.description}</p>}
                     </li>
                   ))}
                 </ul>
@@ -546,7 +546,7 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
             )}
             <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-fg flex items-center gap-2">
                 <FileText size={20} /> {analysis?.combinedTranscript ? 'Combined transcript' : 'Your transcript'}
               </h3>
               <button
@@ -560,19 +560,19 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
                   a.click();
                   URL.revokeObjectURL(url);
                 }}
-                className="flex items-center gap-2 text-sm font-semibold text-[#1a73e8] hover:underline"
+                className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
               >
                 <Download size={16} /> Download
               </button>
             </div>
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-5 max-h-80 overflow-y-auto border border-gray-100">
+            <pre className="whitespace-pre-wrap text-sm text-fg-muted bg-surface-2 rounded-xl p-5 max-h-80 overflow-y-auto border border-line">
               {transcript}
             </pre>
             {onOpenTaskExtractor && (
               <button
                 type="button"
                 onClick={() => onOpenTaskExtractor(transcript)}
-                className="mt-4 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold text-sm"
+                className="mt-4 flex items-center gap-2 bg-success hover:bg-success text-primary-fg px-6 py-3 rounded-lg font-semibold text-sm"
               >
                 <Sparkles size={18} /> Review AI tasks
               </button>
@@ -585,19 +585,19 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
   }
 
   return (
-    <div className="flex flex-col bg-[#202124] rounded-2xl overflow-hidden min-h-[75vh] shadow-2xl">
+    <div className="flex flex-col bg-bg rounded-xl overflow-hidden min-h-[75vh] shadow-e3">
       {/* Top bar — Google Meet style */}
-      <div className="flex items-center justify-between px-6 py-3 bg-[#202124] border-b border-[#3c4043]">
+      <div className="flex items-center justify-between px-6 py-3 bg-surface-2 border-b border-line">
         <div className="flex items-center gap-4">
-          <span className="text-white font-medium truncate max-w-xs">{meetingTitle}</span>
-          <span className="text-[#9aa0a6] text-sm font-mono">{formatElapsed(elapsed)}</span>
+          <span className="text-fg font-medium truncate max-w-xs">{meetingTitle}</span>
+          <span className="text-fg-muted text-sm font-mono">{formatElapsed(elapsed)}</span>
           {recording && (
-            <span className="flex items-center gap-1.5 text-red-400 text-xs font-semibold uppercase tracking-wide">
+            <span className="flex items-center gap-1.5 text-danger text-xs font-semibold uppercase tracking-wide">
               <Circle size={8} fill="currentColor" className="animate-pulse" /> Rec
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-[#9aa0a6] text-sm">
+        <div className="flex items-center gap-2 text-fg-muted text-sm">
           <Users size={16} />
           <span>{joinedCount} / {totalCount} joined</span>
         </div>
@@ -609,14 +609,14 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
           <VideoTile key={tile.id} tile={tile} />
         ))}
         {tiles.length === 0 && (
-          <div className="col-span-full flex items-center justify-center text-[#9aa0a6]">
+          <div className="col-span-full flex items-center justify-center text-fg-muted">
             Waiting for participants…
           </div>
         )}
       </div>
 
       {/* Bottom toolbar — Zoom/Meet style */}
-      <div className="flex items-center justify-center gap-3 py-5 px-6 bg-[#202124] border-t border-[#3c4043]">
+      <div className="flex items-center justify-center gap-3 py-5 px-6 bg-surface-2 border-t border-line">
         <ToolbarBtn
           active={micOn}
           onClick={toggleMic}
@@ -644,10 +644,10 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
           className="flex flex-col items-center gap-1 mx-4"
           title="Leave call"
         >
-          <span className="w-14 h-14 rounded-full bg-[#ea4335] hover:bg-[#d93025] flex items-center justify-center text-white transition-colors">
+          <span className="w-14 h-14 rounded-full bg-danger hover:bg-danger flex items-center justify-center text-white transition-colors">
             <PhoneOff size={24} />
           </span>
-          <span className="text-[10px] text-[#9aa0a6]">Leave</span>
+          <span className="text-[10px] text-fg-muted">Leave</span>
         </button>
       </div>
     </div>
@@ -738,15 +738,15 @@ const ToolbarBtn: React.FC<{
     <span
       className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors ${
         highlight
-          ? 'bg-[#1a73e8]'
+          ? 'bg-primary'
           : danger
-            ? 'bg-[#ea4335] hover:bg-[#d93025]'
-            : 'bg-[#3c4043] hover:bg-[#5f6368]'
+            ? 'bg-danger hover:bg-danger'
+            : 'bg-surface-3 hover:bg-surface-3'
       }`}
     >
       {icon}
     </span>
-    <span className="text-[10px] text-[#9aa0a6] group-hover:text-white">{label}</span>
+    <span className="text-[10px] text-fg-muted group-hover:text-fg">{label}</span>
   </button>
 );
 

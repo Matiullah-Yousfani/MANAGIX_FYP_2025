@@ -317,14 +317,14 @@ const Profile = () => {
         }));
     };
 
-    if (!userProfile) return <div className="p-10 font-bold animate-pulse text-gray-400 uppercase">Loading Profile...</div>;
+    if (!userProfile) return <div className="p-10 font-bold animate-pulse text-fg-subtle uppercase">Loading Profile...</div>;
 
     return (
         <div className="p-8 max-w-6xl mx-auto">
             <div className="mb-10 flex justify-between items-end">
                 <div>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase">Profile Settings</h1>
-                    <p className="text-gray-400 font-bold text-sm tracking-widest uppercase">Identity & AI Resume Parsing</p>
+                    <h1 className="text-2xl font-bold tracking-tighter uppercase">Profile Settings</h1>
+                    <p className="text-fg-subtle font-bold text-sm tracking-widest uppercase">Identity & AI Resume Parsing</p>
                 </div>
                 {!isEditing && !showParsedForm && (
                     <button 
@@ -332,7 +332,7 @@ const Profile = () => {
                             setEditForm(mapToEditForm(userProfile, userProfile));
                             setIsEditing(true);
                         }}
-                        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl font-black text-xs transition border border-gray-200"
+                        className="flex items-center gap-2 bg-surface-2 hover:bg-surface-3 px-4 py-2 rounded-lg font-bold text-xs transition border border-line"
                     >
                         <Edit3 size={14} /> EDIT DETAILS
                     </button>
@@ -340,7 +340,7 @@ const Profile = () => {
             </div>
 
             {message.text && (
-                <div className={`mb-6 p-4 rounded-2xl font-bold flex items-center gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+                <div className={`mb-6 p-4 rounded-lg font-bold flex items-center gap-3 ${message.type === 'success' ? 'bg-success-soft text-success border border-success/25' : 'bg-danger-soft text-danger border border-danger/25'}`}>
                     {message.type === 'success' && <CheckCircle size={20} />}
                     {message.text}
                 </div>
@@ -350,28 +350,28 @@ const Profile = () => {
                 <div className="lg:col-span-2 space-y-6">
                     {showParsedForm ? (
                         // Parsed Data Form
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="bg-surface p-8 rounded-xl border border-line shadow-e1">
                             <form onSubmit={handleSaveParsedData} className="space-y-6">
                                 <div className="mb-6">
-                                    <h2 className="text-2xl font-black text-gray-800 mb-2">Resume Parsed Data</h2>
-                                    <p className="text-sm text-gray-500">Review and edit the parsed information, then click Save.</p>
+                                    <h2 className="text-xl font-bold text-fg mb-2">Resume Parsed Data</h2>
+                                    <p className="text-sm text-fg-muted">Review and edit the parsed information, then click Save.</p>
                                 </div>
 
                                 {/* Personal Information */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Name</label>
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase mb-1">Name</label>
                                         <input 
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
+                                            className="w-full p-4 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
                                             value={parsedForm.name}
                                             onChange={e => setParsedForm(prev => ({ ...prev, name: e.target.value }))}
                                             placeholder="Full Name"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Email</label>
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase mb-1">Email</label>
                                         <input 
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
+                                            className="w-full p-4 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
                                             type="email"
                                             value={parsedForm.email}
                                             onChange={e => setParsedForm(prev => ({ ...prev, email: e.target.value }))}
@@ -379,9 +379,9 @@ const Profile = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Phone</label>
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase mb-1">Phone</label>
                                         <input 
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
+                                            className="w-full p-4 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
                                             value={parsedForm.phone}
                                             onChange={e => setParsedForm(prev => ({ ...prev, phone: e.target.value }))}
                                             placeholder="+1234567890"
@@ -391,9 +391,9 @@ const Profile = () => {
 
                                 {/* Summary */}
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Professional Summary</label>
+                                    <label className="text-[10px] font-bold text-fg-subtle uppercase mb-1">Professional Summary</label>
                                     <textarea 
-                                        className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none h-32"
+                                        className="w-full p-4 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none h-32"
                                         value={parsedForm.summary}
                                         onChange={e => setParsedForm(prev => ({ ...prev, summary: e.target.value }))}
                                         placeholder="Professional summary..."
@@ -403,39 +403,39 @@ const Profile = () => {
                                 {/* Education */}
                                 <div>
                                     <div className="flex justify-between items-center mb-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase">Education</label>
-                                        <button type="button" onClick={addEducation} className="text-blue-600 hover:text-blue-700">
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase">Education</label>
+                                        <button type="button" onClick={addEducation} className="text-info hover:text-info">
                                             <Plus size={16} />
                                         </button>
                                     </div>
                                     {parsedForm.education.map((edu, index) => (
-                                        <div key={index} className="mb-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div key={index} className="mb-4 p-4 bg-surface-2 rounded-lg border border-line">
                                             <div className="flex justify-end mb-2">
-                                                <button type="button" onClick={() => removeEducation(index)} className="text-red-600 hover:text-red-700">
+                                                <button type="button" onClick={() => removeEducation(index)} className="text-danger hover:text-danger">
                                                     <X size={16} />
                                                 </button>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <input 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Degree"
                                                     value={edu.degree || ''}
                                                     onChange={e => updateEducation(index, 'degree', e.target.value)}
                                                 />
                                                 <input 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Institution"
                                                     value={edu.institution || ''}
                                                     onChange={e => updateEducation(index, 'institution', e.target.value)}
                                                 />
                                                 <input 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Year"
                                                     value={edu.year || ''}
                                                     onChange={e => updateEducation(index, 'year', e.target.value)}
                                                 />
                                                 <textarea 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm md:col-span-2"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm md:col-span-2"
                                                     placeholder="Details"
                                                     value={edu.details || ''}
                                                     onChange={e => updateEducation(index, 'details', e.target.value)}
@@ -448,8 +448,8 @@ const Profile = () => {
                                 {/* Skills */}
                                 <div>
                                     <div className="flex justify-between items-center mb-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase">Skills</label>
-                                        <button type="button" onClick={addSkill} className="text-blue-600 hover:text-blue-700">
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase">Skills</label>
+                                        <button type="button" onClick={addSkill} className="text-info hover:text-info">
                                             <Plus size={16} />
                                         </button>
                                     </div>
@@ -457,12 +457,12 @@ const Profile = () => {
                                         {parsedForm.skills.map((skill, index) => (
                                             <div key={index} className="flex gap-2">
                                                 <input 
-                                                    className="flex-1 p-3 bg-gray-50 border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="flex-1 p-3 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Skill name"
                                                     value={skill}
                                                     onChange={e => updateSkill(index, e.target.value)}
                                                 />
-                                                <button type="button" onClick={() => removeSkill(index)} className="text-red-600 hover:text-red-700">
+                                                <button type="button" onClick={() => removeSkill(index)} className="text-danger hover:text-danger">
                                                     <X size={16} />
                                                 </button>
                                             </div>
@@ -473,27 +473,27 @@ const Profile = () => {
                                 {/* Projects */}
                                 <div>
                                     <div className="flex justify-between items-center mb-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase">Projects</label>
-                                        <button type="button" onClick={addProject} className="text-blue-600 hover:text-blue-700">
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase">Projects</label>
+                                        <button type="button" onClick={addProject} className="text-info hover:text-info">
                                             <Plus size={16} />
                                         </button>
                                     </div>
                                     {parsedForm.projects.map((proj, index) => (
-                                        <div key={index} className="mb-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div key={index} className="mb-4 p-4 bg-surface-2 rounded-lg border border-line">
                                             <div className="flex justify-end mb-2">
-                                                <button type="button" onClick={() => removeProject(index)} className="text-red-600 hover:text-red-700">
+                                                <button type="button" onClick={() => removeProject(index)} className="text-danger hover:text-danger">
                                                     <X size={16} />
                                                 </button>
                                             </div>
                                             <div className="space-y-3">
                                                 <input 
-                                                    className="w-full p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="w-full p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Project Title"
                                                     value={proj.title || ''}
                                                     onChange={e => updateProject(index, 'title', e.target.value)}
                                                 />
                                                 <textarea 
-                                                    className="w-full p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="w-full p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Project Description"
                                                     value={proj.description || ''}
                                                     onChange={e => updateProject(index, 'description', e.target.value)}
@@ -506,39 +506,39 @@ const Profile = () => {
                                 {/* Experience */}
                                 <div>
                                     <div className="flex justify-between items-center mb-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase">Work Experience</label>
-                                        <button type="button" onClick={addExperience} className="text-blue-600 hover:text-blue-700">
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase">Work Experience</label>
+                                        <button type="button" onClick={addExperience} className="text-info hover:text-info">
                                             <Plus size={16} />
                                         </button>
                                     </div>
                                     {parsedForm.experience.map((exp, index) => (
-                                        <div key={index} className="mb-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div key={index} className="mb-4 p-4 bg-surface-2 rounded-lg border border-line">
                                             <div className="flex justify-end mb-2">
-                                                <button type="button" onClick={() => removeExperience(index)} className="text-red-600 hover:text-red-700">
+                                                <button type="button" onClick={() => removeExperience(index)} className="text-danger hover:text-danger">
                                                     <X size={16} />
                                                 </button>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <input 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Job Title"
                                                     value={exp.title || ''}
                                                     onChange={e => updateExperience(index, 'title', e.target.value)}
                                                 />
                                                 <input 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm"
                                                     placeholder="Company"
                                                     value={exp.company || ''}
                                                     onChange={e => updateExperience(index, 'company', e.target.value)}
                                                 />
                                                 <input 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm md:col-span-2"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm md:col-span-2"
                                                     placeholder="Duration (e.g., Jan 2020 - Dec 2022)"
                                                     value={exp.duration || ''}
                                                     onChange={e => updateExperience(index, 'duration', e.target.value)}
                                                 />
                                                 <textarea 
-                                                    className="p-3 bg-white border-none rounded-xl font-bold focus:ring-2 focus:ring-black outline-none text-sm md:col-span-2"
+                                                    className="p-3 bg-surface border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none text-sm md:col-span-2"
                                                     placeholder="Job Description"
                                                     value={exp.description || ''}
                                                     onChange={e => updateExperience(index, 'description', e.target.value)}
@@ -552,7 +552,7 @@ const Profile = () => {
                                     <button 
                                         type="submit" 
                                         disabled={saving}
-                                        className="bg-black text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-gray-800 transition disabled:opacity-50 flex items-center gap-2"
+                                        className="bg-primary text-primary-fg px-8 py-4 rounded-lg font-bold text-xs uppercase hover:bg-primary-hover transition disabled:opacity-50 flex items-center gap-2"
                                     >
                                         <Save size={16} />
                                         {saving ? 'Saving...' : 'Save Profile'}
@@ -560,7 +560,7 @@ const Profile = () => {
                                     <button 
                                         type="button" 
                                         onClick={() => setShowParsedForm(false)} 
-                                        className="bg-gray-100 text-gray-500 px-8 py-4 rounded-2xl font-black text-xs uppercase"
+                                        className="bg-surface-2 text-fg-muted px-8 py-4 rounded-lg font-bold text-xs uppercase"
                                     >
                                         Cancel
                                     </button>
@@ -569,48 +569,48 @@ const Profile = () => {
                         </div>
                     ) : isEditing ? (
                         // Original Edit Form
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <div className="bg-surface p-8 rounded-xl border border-line shadow-e1">
                             <form onSubmit={handleUpdateProfile} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Professional Bio</label>
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase mb-1">Professional Bio</label>
                                         <textarea 
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none h-24"
+                                            className="w-full p-4 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none h-24"
                                             value={editForm.bio}
                                             onChange={e => setEditForm({...editForm, bio: e.target.value})}
                                             placeholder="Briefly describe your experience..."
                                         />
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-1">Phone Number</label>
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase mb-1">Phone Number</label>
                                         <input 
-                                            className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-black outline-none"
+                                            className="w-full p-4 bg-surface-2 border border-line rounded-lg font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
                                             value={editForm.phone}
                                             onChange={e => setEditForm({...editForm, phone: e.target.value})}
                                         />
                                     </div>
                                 </div>
                                 <div className="flex gap-3 pt-4">
-                                    <button type="submit" className="bg-black text-white px-8 py-4 rounded-2xl font-black text-xs uppercase hover:bg-gray-800 transition">Save Profile</button>
-                                    <button type="button" onClick={() => setIsEditing(false)} className="bg-gray-100 text-gray-500 px-8 py-4 rounded-2xl font-black text-xs uppercase">Cancel</button>
+                                    <button type="submit" className="bg-primary text-primary-fg px-8 py-4 rounded-lg font-bold text-xs uppercase hover:bg-primary-hover transition">Save Profile</button>
+                                    <button type="button" onClick={() => setIsEditing(false)} className="bg-surface-2 text-fg-muted px-8 py-4 rounded-lg font-bold text-xs uppercase">Cancel</button>
                                 </div>
                             </form>
                         </div>
                     ) : (
                         // Original Display View
                         <>
-                            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                                <div className="flex items-center gap-5 mb-10 pb-10 border-b border-gray-50">
-                                    <div className="h-20 w-20 bg-black rounded-[2rem] flex items-center justify-center text-white text-3xl font-black italic shadow-lg">
+                            <div className="bg-surface p-8 rounded-xl border border-line shadow-e1">
+                                <div className="flex items-center gap-5 mb-10 pb-10 border-b border-line">
+                                    <div className="h-20 w-20 bg-primary rounded-xl flex items-center justify-center text-primary-fg text-3xl font-bold shadow-e2">
                                         {editForm.fullName?.charAt(0)}
                                     </div>
                                     <div>
-                                        <h2 className="text-3xl font-black text-gray-800 tracking-tighter">{editForm.fullName}</h2>
+                                        <h2 className="text-2xl font-bold text-fg tracking-tighter">{editForm.fullName}</h2>
                                         <div className="flex gap-2 items-center mt-1">
-                                            <span className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest">
+                                            <span className="px-3 py-1 bg-info text-primary-fg rounded-lg text-[9px] font-bold uppercase tracking-widest">
                                                 {appRole === 'QA' ? 'Quality Assurance' : appRole}
                                             </span>
-                                            <span className="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                                            <span className="px-3 py-1 bg-success-soft text-success rounded-lg text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
                                                 <Shield size={10} /> Verified
                                             </span>
                                         </div>
@@ -619,20 +619,20 @@ const Profile = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                     <div className="md:col-span-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Professional Summary</label>
-                                        <p className="text-gray-700 font-medium leading-relaxed bg-gray-50 p-6 rounded-3xl italic border border-gray-100">
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest block mb-2">Professional Summary</label>
+                                        <p className="text-fg-muted font-medium leading-relaxed bg-surface-2 p-6 rounded-xl border border-line">
                                             "{userProfile.Bio || userProfile.Summary || "No bio available. Update your profile to add one."}"
                                         </p>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-3">Technical Expertise</label>
+                                        <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest block mb-3">Technical Expertise</label>
                                         <div className="flex flex-wrap gap-2">
                                             {userProfile.Skills ? userProfile.Skills.split(',').map((s: string) => (
-                                                <span key={s} className="px-4 py-2 bg-white border-2 border-gray-100 text-gray-800 rounded-xl text-xs font-black uppercase tracking-tight">
+                                                <span key={s} className="px-4 py-2 bg-surface-2 border-2 border-line text-fg rounded-lg text-xs font-bold uppercase tracking-tight">
                                                     {s.trim()}
                                                 </span>
                                             )) : (
-                                                <div className="flex items-center gap-2 text-gray-400 text-xs font-bold italic">
+                                                <div className="flex items-center gap-2 text-fg-subtle text-xs font-bold">
                                                     <Brain size={14} /> AI parsing pending resume upload...
                                                 </div>
                                             )}
@@ -640,8 +640,8 @@ const Profile = () => {
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Phone</label>
-                                            <p className="font-bold text-gray-800">{userProfile.Phone || 'Not Provided'}</p>
+                                            <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest block mb-1">Phone</label>
+                                            <p className="font-bold text-fg">{userProfile.Phone || 'Not Provided'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -652,18 +652,18 @@ const Profile = () => {
 
                 <div className="lg:col-span-1">
                     {showResumeUpload && !showParsedForm && (
-                        <div className="bg-black text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                        <div className="bg-primary text-primary-fg p-8 rounded-xl shadow-e3 relative overflow-hidden">
                             <div className="relative z-10">
-                                <div className="h-12 w-12 bg-gray-800 rounded-2xl flex items-center justify-center mb-6">
-                                    <FileText className="text-blue-400" size={24} />
+                                <div className="h-12 w-12 bg-black/20 rounded-lg flex items-center justify-center mb-6">
+                                    <FileText className="text-primary-fg" size={24} />
                                 </div>
-                                <h3 className="text-2xl font-black mb-2 italic tracking-tighter">AI RESUME PARSER</h3>
-                                <p className="text-sm text-gray-400 font-medium mb-8 leading-relaxed">
+                                <h3 className="text-2xl font-bold mb-2 tracking-tighter">AI RESUME PARSER</h3>
+                                <p className="text-sm text-primary-fg/70 font-medium mb-8 leading-relaxed">
                                     Upload your resume to let our AI automatically detect your skills and match you to tasks.
                                 </p>
 
                                 <form onSubmit={handleUpload} className="space-y-4">
-                                    <div className="group border-2 border-dashed border-gray-700 rounded-3xl p-8 text-center hover:border-blue-500 transition-all cursor-pointer relative bg-gray-900/50">
+                                    <div className="group border-2 border-dashed border-primary-fg/30 rounded-xl p-8 text-center hover:border-primary-fg transition-all cursor-pointer relative bg-black/20">
                                         <input 
                                             type="file" 
                                             className="absolute inset-0 opacity-0 cursor-pointer" 
@@ -673,15 +673,15 @@ const Profile = () => {
                                             accept=".pdf,.doc,.docx"
                                             disabled={parsing}
                                         />
-                                        <Upload className="mx-auto mb-3 text-gray-600 group-hover:text-blue-400 transition-colors" size={32} />
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                        <Upload className="mx-auto mb-3 text-primary-fg/50 group-hover:text-primary-fg transition-colors" size={32} />
+                                        <p className="text-[10px] font-bold text-primary-fg/70 uppercase tracking-widest">
                                             {file ? file.name : "Drop Resume Here"}
                                         </p>
                                     </div>
-                                    <button 
+                                    <button
                                         type="submit"
                                         disabled={!file || parsing}
-                                        className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 disabled:bg-gray-800 uppercase text-xs tracking-widest"
+                                        className="w-full bg-primary-fg text-primary font-bold py-5 rounded-lg hover:opacity-90 transition-all shadow-e2 disabled:opacity-50 uppercase text-xs tracking-widest"
                                     >
                                         {parsing ? "Parsing..." : "Process with AI"}
                                     </button>

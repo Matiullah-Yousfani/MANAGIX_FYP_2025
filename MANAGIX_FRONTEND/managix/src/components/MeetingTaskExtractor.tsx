@@ -169,21 +169,21 @@ const MeetingTaskExtractor: React.FC<Props> = ({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={onClose} />
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
         <motion.div
           initial={{ scale: 0.92, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.92, opacity: 0 }}
-          className="relative w-full max-w-3xl bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]"
+          className="relative w-full max-w-3xl bg-surface rounded-xl shadow-e3 p-10 overflow-y-auto max-h-[90vh]"
         >
-          <button onClick={onClose} className="absolute top-6 right-6 text-gray-300 hover:text-gray-700">
+          <button onClick={onClose} className="absolute top-6 right-6 text-fg-subtle hover:text-fg">
             <FiX size={22} />
           </button>
 
-          <h2 className="text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
-            <FiZap className="text-indigo-600" /> AI Meeting Analysis
+          <h2 className="text-2xl font-bold text-fg mb-2 flex items-center gap-3">
+            <FiZap className="text-primary" /> AI Meeting Analysis
           </h2>
-          <p className="text-gray-500 italic mb-8">
+          <p className="text-fg-muted mb-8">
             Per-participant transcripts are combined, then AI suggests tasks and speed-up notifications.
           </p>
 
@@ -191,11 +191,11 @@ const MeetingTaskExtractor: React.FC<Props> = ({
             <div className="space-y-6">
               {!projectIdProp && (
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Target project</label>
+                  <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest block mb-2">Target project</label>
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                    className="w-full bg-surface-2 border border-line p-4 rounded-lg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary font-medium text-fg"
                   >
                     {projects.length === 0 && <option value="">No projects available</option>}
                     {projects.map((p) => {
@@ -205,81 +205,81 @@ const MeetingTaskExtractor: React.FC<Props> = ({
                   </select>
                 </div>
               )}
-              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs font-bold text-indigo-700">
+              <div className="bg-primary-soft border border-primary-border rounded-lg p-4 text-xs font-bold text-primary">
                 Your transcript: {transcript.length.toLocaleString()} characters
                 {meetingId && <span className="block mt-1">Linked to scheduled meeting</span>}
               </div>
               {errorMsg && (
-                <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-xs font-bold text-red-700">{errorMsg}</div>
+                <div className="bg-danger-soft border border-danger/25 rounded-lg p-4 text-xs font-bold text-danger">{errorMsg}</div>
               )}
               <div className="flex gap-3">
                 <button
                   onClick={runExtraction}
                   disabled={!(projectIdProp || projectId) || !transcript.trim()}
-                  className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50"
+                  className="flex-1 bg-primary text-primary-fg py-4 rounded-lg font-bold hover:bg-primary-hover transition-all disabled:opacity-50"
                 >
                   Analyze & suggest tasks
                 </button>
-                <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold">Cancel</button>
+                <button onClick={onClose} className="flex-1 bg-surface-2 text-fg-muted py-4 rounded-lg font-bold">Cancel</button>
               </div>
             </div>
           )}
 
           {phase === 'extracting' && (
             <div className="py-16 text-center">
-              <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-500 font-bold italic">Combining transcripts and analyzing with AI…</p>
+              <div className="w-12 h-12 border-4 border-line border-t-primary rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-fg-muted font-bold">Combining transcripts and analyzing with AI…</p>
             </div>
           )}
 
           {phase === 'review' && (
             <>
               {combinedSummary && (
-                <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-gray-100">
-                  <p className="text-xs font-black uppercase text-gray-400 mb-1">Meeting summary</p>
+                <div className="bg-surface-2 rounded-lg p-4 mb-4 text-sm text-fg-muted border border-line">
+                  <p className="text-xs font-bold uppercase text-fg-subtle mb-1">Meeting summary</p>
                   {combinedSummary}
                 </div>
               )}
               {meetingNotes && (
-                <div className="bg-amber-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-amber-100">
-                  <p className="text-xs font-black uppercase text-amber-600 mb-1">Meeting notes</p>
+                <div className="bg-warning-soft rounded-lg p-4 mb-4 text-sm text-fg-muted border border-warning/25">
+                  <p className="text-xs font-bold uppercase text-warning mb-1">Meeting notes</p>
                   <pre className="whitespace-pre-wrap font-sans">{meetingNotes}</pre>
                 </div>
               )}
               {backlogItems.length > 0 && (
-                <div className="bg-indigo-50 rounded-2xl p-4 mb-4 border border-indigo-100">
-                  <p className="text-xs font-black uppercase text-indigo-500 mb-2">Backlog</p>
+                <div className="bg-primary-soft rounded-lg p-4 mb-4 border border-primary-border">
+                  <p className="text-xs font-bold uppercase text-primary mb-2">Backlog</p>
                   <ul className="space-y-2 text-sm">
                     {backlogItems.map((b, i) => (
-                      <li key={i} className="bg-white rounded-lg px-3 py-2 border border-indigo-50">
+                      <li key={i} className="bg-surface rounded-lg px-3 py-2 border border-primary-border">
                         <span className="font-bold">{b.title}</span>
-                        {b.priority && <span className="ml-2 text-xs text-indigo-600">{b.priority}</span>}
-                        {b.description && <p className="text-gray-600 mt-1">{b.description}</p>}
+                        {b.priority && <span className="ml-2 text-xs text-primary">{b.priority}</span>}
+                        {b.description && <p className="text-fg-muted mt-1">{b.description}</p>}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
               {speedAlerts.length > 0 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 space-y-2">
-                  <p className="text-xs font-black uppercase text-amber-700 flex items-center gap-1">
+                <div className="bg-warning-soft border border-warning/25 rounded-lg p-4 mb-4 space-y-2">
+                  <p className="text-xs font-bold uppercase text-warning flex items-center gap-1">
                     <FiAlertTriangle /> Speed-up notifications sent
                   </p>
                   {speedAlerts.map((a, i) => (
-                    <p key={i} className="text-sm text-amber-900">
+                    <p key={i} className="text-sm text-warning">
                       <strong>{a.userName ?? 'Team member'}:</strong> {a.message}
                     </p>
                   ))}
                 </div>
               )}
               {suggestions.length === 0 ? (
-                <div className="bg-gray-50 rounded-2xl p-8 text-center">
-                  <p className="text-gray-500 font-bold italic">No clear action items found in the transcript.</p>
-                  <button onClick={onClose} className="mt-6 bg-indigo-600 text-white py-3 px-6 rounded-2xl font-bold">Close</button>
+                <div className="bg-surface-2 rounded-lg p-8 text-center">
+                  <p className="text-fg-muted font-bold">No clear action items found in the transcript.</p>
+                  <button onClick={onClose} className="mt-6 bg-primary text-primary-fg py-3 px-6 rounded-lg font-bold">Close</button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                  <div className="text-xs font-bold text-fg-subtle uppercase tracking-widest">
                     {suggestions.length} suggestion{suggestions.length === 1 ? '' : 's'} — toggle off any you don't want.
                   </div>
                   {suggestions.map((s, idx) => (
@@ -298,11 +298,11 @@ const MeetingTaskExtractor: React.FC<Props> = ({
                     <button
                       onClick={persistSelected}
                       disabled={!suggestions.some((s) => s.keep)}
-                      className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50"
+                      className="flex-1 bg-primary text-primary-fg py-4 rounded-lg font-bold hover:bg-primary-hover transition-all disabled:opacity-50"
                     >
                       Create {suggestions.filter((s) => s.keep).length} task{suggestions.filter((s) => s.keep).length === 1 ? '' : 's'}
                     </button>
-                    <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold">Cancel</button>
+                    <button onClick={onClose} className="flex-1 bg-surface-2 text-fg-muted py-4 rounded-lg font-bold">Cancel</button>
                   </div>
                 </div>
               )}
@@ -311,21 +311,21 @@ const MeetingTaskExtractor: React.FC<Props> = ({
 
           {phase === 'creating' && (
             <div className="py-16 text-center">
-              <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-500 font-bold italic">Creating tasks…</p>
+              <div className="w-12 h-12 border-4 border-line border-t-primary rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-fg-muted font-bold">Creating tasks…</p>
             </div>
           )}
 
           {phase === 'done' && (
             <div className="py-16 text-center">
-              <FiCheckCircle className="text-emerald-500 mx-auto mb-4" size={48} />
-              <p className="text-gray-700 font-bold mb-6">Created {createdCount} task{createdCount === 1 ? '' : 's'} successfully.</p>
-              <button onClick={onClose} className="bg-indigo-600 text-white py-3 px-6 rounded-2xl font-bold">Close</button>
+              <FiCheckCircle className="text-success mx-auto mb-4" size={48} />
+              <p className="text-fg font-bold mb-6">Created {createdCount} task{createdCount === 1 ? '' : 's'} successfully.</p>
+              <button onClick={onClose} className="bg-primary text-primary-fg py-3 px-6 rounded-lg font-bold">Close</button>
             </div>
           )}
 
           {phase === 'error' && (
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-sm font-bold text-red-700">
+            <div className="bg-danger-soft border border-danger/25 rounded-lg p-4 text-sm font-bold text-danger">
               {errorMsg}
               <button onClick={() => setPhase('pick')} className="ml-3 underline">Try again</button>
             </div>
@@ -342,43 +342,43 @@ const SuggestionCard: React.FC<{
   onEdit: (patch: Partial<EditableSuggestion>) => void;
 }> = ({ suggestion, onToggle, onEdit }) => {
   return (
-    <div className={`rounded-2xl border p-5 transition-colors ${suggestion.keep ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-100 bg-gray-50 opacity-60'}`}>
+    <div className={`rounded-xl border p-5 transition-colors ${suggestion.keep ? 'border-primary-border bg-primary-soft' : 'border-line bg-surface-2 opacity-60'}`}>
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
           checked={suggestion.keep}
           onChange={(e) => onToggle(e.target.checked)}
-          className="mt-1 size-5 accent-indigo-600"
+          className="mt-1 size-5 accent-primary"
         />
         <div className="flex-1 min-w-0 space-y-3">
           <input
             value={suggestion.title}
             onChange={(e) => onEdit({ title: e.target.value })}
-            className="w-full bg-transparent font-black text-gray-900 outline-none focus:bg-white focus:px-2 focus:py-1 focus:rounded-lg transition-all"
+            className="w-full bg-transparent font-bold text-fg outline-none focus:bg-surface focus:px-2 focus:py-1 focus:rounded-lg transition-all"
           />
           <textarea
             value={suggestion.description ?? ''}
             placeholder="(no description)"
             onChange={(e) => onEdit({ description: e.target.value })}
-            className="w-full bg-transparent text-sm text-gray-600 outline-none resize-none focus:bg-white focus:px-2 focus:py-1 focus:rounded-lg transition-all"
+            className="w-full bg-transparent text-sm text-fg-muted outline-none resize-none focus:bg-surface focus:px-2 focus:py-1 focus:rounded-lg transition-all"
             rows={2}
           />
-          <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
+          <div className="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest">
             {suggestion.suggestedAssigneeName && (
-              <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
+              <span className="bg-success-soft text-success px-3 py-1 rounded-full">
                 Suggested: {suggestion.suggestedAssigneeName}
               </span>
             )}
-            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full inline-flex items-center gap-1">
+            <span className="bg-warning-soft text-warning px-3 py-1 rounded-full inline-flex items-center gap-1">
               <FiFlag /> {suggestion.priority || 'Medium'}
             </span>
             {suggestion.estimatedHours != null && (
-              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full inline-flex items-center gap-1">
+              <span className="bg-info-soft text-info px-3 py-1 rounded-full inline-flex items-center gap-1">
                 <FiClock /> {suggestion.estimatedHours}h
               </span>
             )}
             {(suggestion.requiredSkills ?? []).map((sk) => (
-              <span key={sk} className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full">{sk}</span>
+              <span key={sk} className="bg-surface-3 text-fg-muted px-3 py-1 rounded-full">{sk}</span>
             ))}
           </div>
         </div>

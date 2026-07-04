@@ -8,7 +8,7 @@ import ToastStack, { useToast } from './ToastStack';
 const scrollbarStyles = `
   .custom-scroll::-webkit-scrollbar { width: 6px; }
   .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-  .custom-scroll::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 10px; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: var(--color-line-strong); border-radius: 10px; }
 `;
 
 const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
@@ -197,19 +197,19 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
   };
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+    <div className="bg-surface p-8 rounded-xl shadow-e1 border border-line relative overflow-hidden">
       <style>{scrollbarStyles}</style>
-      <FiBriefcase className="absolute -bottom-4 -right-4 size-32 text-gray-50 pointer-events-none" />
-      
+      <FiBriefcase className="absolute -bottom-4 -right-4 size-32 text-surface-2 pointer-events-none" />
+
       <div className="flex justify-between items-center mb-8 relative z-10">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Workflow</span>
-          <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Project Tasks</h2>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Workflow</span>
+          <h2 className="text-2xl font-bold text-fg uppercase tracking-tighter">Project Tasks</h2>
         </div>
         {role === 'Manager' && (
-          <button 
-            onClick={() => setShowTaskModal(true)} 
-            className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2"
+          <button
+            onClick={() => setShowTaskModal(true)}
+            className="bg-primary text-primary-fg px-8 py-3 rounded-lg font-bold hover:bg-primary-hover transition-all shadow-e2 flex items-center gap-2"
           >
             <FiPlus /> New Task
           </button>
@@ -219,7 +219,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       {/* Tasks list */}
       <div className="space-y-4 relative z-10">
         {tasks.length === 0 ? (
-          <div className="border-2 border-dashed border-gray-200 rounded-[2rem] p-12 flex flex-col items-center justify-center text-gray-400">
+          <div className="border-2 border-dashed border-line rounded-xl p-12 flex flex-col items-center justify-center text-fg-subtle">
             <FiBriefcase className="size-12 mb-4 opacity-20" />
             <p className="font-medium">No tasks assigned yet.</p>
           </div>
@@ -228,37 +228,37 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
             const status = t.status || t.Status;
             const taskId = t.taskId || t.TaskId;
             const isAssignedToMe = (t.assignedEmployeeId || t.AssignedEmployeeId) === userId;
-            
+
             return (
-              <div key={taskId} className="group p-6 border border-gray-50 rounded-[1.5rem] bg-gray-50/50 flex justify-between items-center hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+              <div key={taskId} className="group p-6 border border-line rounded-xl bg-surface-2 flex justify-between items-center hover:bg-surface-3 hover:shadow-e2 hover:-translate-y-1 transition-all duration-300">
                 <div className="flex-1">
-                  <h4 className="font-bold text-gray-900 text-lg line-clamp-1">{t.title || t.Title}</h4>
-                  <p className="text-sm text-gray-500 font-medium line-clamp-2 max-w-xl">{t.description || t.Description}</p>
-                  {t.qaComment && <p className="text-xs text-red-500 mt-2 font-medium italic bg-red-50 inline-block px-2 py-1 rounded-lg">Note: {t.qaComment}</p>}
+                  <h4 className="font-bold text-fg text-lg line-clamp-1">{t.title || t.Title}</h4>
+                  <p className="text-sm text-fg-muted font-medium line-clamp-2 max-w-xl">{t.description || t.Description}</p>
+                  {t.qaComment && <p className="text-xs text-danger mt-2 font-medium bg-danger-soft inline-block px-2 py-1 rounded-lg">Note: {t.qaComment}</p>}
                 </div>
-                
+
                 <div className="flex items-center gap-4">
-                  <span className={`text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-tighter ${
-                    status === 'Submitted' 
-                    ? 'bg-emerald-100 text-emerald-700' 
-                    : 'bg-indigo-100 text-indigo-700'
+                  <span className={`text-[10px] font-bold uppercase px-4 py-1.5 rounded-full tracking-tighter ${
+                    status === 'Submitted'
+                    ? 'bg-success-soft text-success'
+                    : 'bg-primary-soft text-primary'
                   }`}>
                     {status}
                   </span>
-                  
+
                   {role === 'Employee' && isAssignedToMe && (status === "Pending" || status === "InProgress") && (
-                    <button 
-                      onClick={() => { setSelectedTaskId(taskId); setShowSubmitModal(true); }} 
-                      className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                    <button
+                      onClick={() => { setSelectedTaskId(taskId); setShowSubmitModal(true); }}
+                      className="bg-success text-white px-5 py-2 rounded-lg text-xs font-bold hover:bg-success/90 transition-colors flex items-center gap-2"
                     >
                       <FiUploadCloud /> SUBMIT
                     </button>
                   )}
-                  
+
                   {role === 'Manager' && status === "Submitted" && (
-                    <button 
-                      onClick={() => handleDownloadWork(taskId, t.title)} 
-                      className="bg-gray-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-black transition-colors"
+                    <button
+                      onClick={() => handleDownloadWork(taskId, t.title)}
+                      className="bg-primary text-primary-fg px-5 py-2 rounded-lg text-xs font-bold hover:bg-primary-hover transition-colors"
                     >
                       VIEW WORK
                     </button>
@@ -275,7 +275,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                             status: status || 'Todo',
                           });
                         }}
-                        className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100"
+                        className="p-2 rounded-lg border border-line hover:bg-surface-3"
                         title="Edit task"
                       >
                         <FiEdit2 size={16} />
@@ -283,7 +283,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(t)}
-                        className="p-2 rounded-lg border border-red-100 text-red-600 hover:bg-red-50"
+                        className="p-2 rounded-lg border border-danger/25 text-danger hover:bg-danger-soft"
                         title="Delete task"
                       >
                         <FiTrash2 size={16} />
@@ -299,44 +299,44 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
 
       {/* Task Creation Modal */}
       {showTaskModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-8 pb-4 font-black text-gray-900 text-3xl">Assign Task</div>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className="bg-surface border border-line rounded-xl w-full max-w-2xl shadow-e3 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 pb-4 font-bold text-fg text-2xl">Assign Task</div>
             <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scroll">
               <form onSubmit={handleCreateTask} className="space-y-4">
-                
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Task Title</label>
-                  <input className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white transition-all rounded-2xl outline-none" placeholder="What needs to be done?" required onChange={e => setNewTask({...newTask, title: e.target.value})} />
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest px-1">Task Title</label>
+                  <input className="w-full p-4 bg-surface-2 border border-line focus:border-primary focus:ring-2 focus:ring-primary/25 transition-all rounded-lg outline-none text-fg" placeholder="What needs to be done?" required onChange={e => setNewTask({...newTask, title: e.target.value})} />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Instructions</label>
-                  <textarea className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white transition-all rounded-2xl h-32 outline-none" placeholder="Provide detailed steps..." onChange={e => setNewTask({...newTask, description: e.target.value})} />
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest px-1">Instructions</label>
+                  <textarea className="w-full p-4 bg-surface-2 border border-line focus:border-primary focus:ring-2 focus:ring-primary/25 transition-all rounded-lg h-32 outline-none text-fg" placeholder="Provide detailed steps..." onChange={e => setNewTask({...newTask, description: e.target.value})} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Milestone</label>
-                    <select className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none appearance-none" onChange={e => setNewTask({...newTask, milestoneId: e.target.value})}>
+                    <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest px-1">Milestone</label>
+                    <select className="w-full p-4 bg-surface-2 border border-line focus:border-primary focus:ring-2 focus:ring-primary/25 rounded-lg outline-none appearance-none text-fg" onChange={e => setNewTask({...newTask, milestoneId: e.target.value})}>
                       <option value="">None</option>
                       {milestones.map((m: any) => (<option key={m.milestoneId || m.MilestoneId} value={m.milestoneId || m.MilestoneId}>{m.title || m.Title}</option>))}
                     </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Team</label>
+                    <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest px-1">Team</label>
 
                     {projectTeam?.TeamId ? (
                       <input
                         type="text"
-                        className="w-full p-4 bg-gray-100 border-2 border-gray-200 rounded-2xl outline-none font-bold cursor-not-allowed"
+                        className="w-full p-4 bg-surface-3 border border-line rounded-lg outline-none font-bold cursor-not-allowed text-fg"
                         value={projectTeam.Name}
                         disabled
                       />
                     ) : (
                       <select
-                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none appearance-none"
+                        className="w-full p-4 bg-surface-2 border border-line focus:border-primary focus:ring-2 focus:ring-primary/25 rounded-lg outline-none appearance-none text-fg"
                         required
                         value={selectedTeamId}
                         onChange={e => setSelectedTeamId(e.target.value)}
@@ -353,11 +353,11 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Assignee</label>
-                  <select 
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none font-bold" 
-                    required 
-                    disabled={!selectedTeamId || isLoadingMembers} 
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest px-1">Assignee</label>
+                  <select
+                    className="w-full p-4 bg-surface-2 border border-line focus:border-primary focus:ring-2 focus:ring-primary/25 rounded-lg outline-none font-bold text-fg"
+                    required
+                    disabled={!selectedTeamId || isLoadingMembers}
                     value={newTask.assignedEmployeeId}
                     onChange={e => setNewTask({...newTask, assignedEmployeeId: e.target.value})}
                   >
@@ -371,10 +371,10 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
 
                 <div className="flex gap-4 pt-6">
-                  <button type="submit" disabled={isSaving || !newTask.assignedEmployeeId} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black disabled:bg-gray-200 transition-all hover:bg-indigo-700 shadow-lg shadow-indigo-100 uppercase tracking-widest">
+                  <button type="submit" disabled={isSaving || !newTask.assignedEmployeeId} className="flex-1 bg-primary text-primary-fg py-4 rounded-lg font-bold disabled:opacity-40 transition-all hover:bg-primary-hover shadow-e2 uppercase tracking-widest">
                     {isSaving ? "Creating..." : "Assign Task"}
                   </button>
-                  <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-4 rounded-2xl font-black hover:bg-gray-200">CANCEL</button>
+                  <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 bg-surface-2 text-fg py-4 rounded-lg font-bold hover:bg-surface-3">CANCEL</button>
                 </div>
               </form>
             </div>
@@ -383,35 +383,35 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       )}
 
       {editTask && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-lg shadow-2xl">
-            <h2 className="text-2xl font-black mb-4">Edit task</h2>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className="bg-surface border border-line p-8 rounded-xl w-full max-w-lg shadow-e3">
+            <h2 className="text-2xl font-bold mb-4 text-fg">Edit task</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <input
-                className="w-full p-3 border rounded-xl font-bold"
+                className="w-full p-3 border border-line bg-surface-2 rounded-lg font-bold text-fg focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none"
                 value={editForm.title}
                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                 required
               />
               <textarea
-                className="w-full p-3 border rounded-xl h-24"
+                className="w-full p-3 border border-line bg-surface-2 rounded-lg h-24 text-fg focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none"
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               />
               <select
-                className="w-full p-3 border rounded-xl font-bold"
+                className="w-full p-3 border border-line bg-surface-2 rounded-lg font-bold text-fg focus:border-primary focus:ring-2 focus:ring-primary/25 outline-none"
                 value={editForm.status}
                 onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
               >
                 <option value="Todo">Todo</option>
                 <option value="InProgress">In Progress</option>
               </select>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-fg-muted">
                 Managers cannot mark Done without an employee file submission. Use QA review after submit.
               </p>
               <div className="flex gap-3">
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black">Save</button>
-                <button type="button" onClick={() => setEditTask(null)} className="flex-1 bg-gray-100 py-3 rounded-xl font-black">Cancel</button>
+                <button type="submit" className="flex-1 bg-primary text-primary-fg py-3 rounded-lg font-bold">Save</button>
+                <button type="button" onClick={() => setEditTask(null)} className="flex-1 bg-surface-2 text-fg py-3 rounded-lg font-bold">Cancel</button>
               </div>
             </form>
           </div>
@@ -420,19 +420,19 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
 
       {/* Submission Modal */}
       {showSubmitModal && (
-        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
-          <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-90 duration-300">
-            <h2 className="text-3xl font-black text-gray-900 mb-6">Upload Work</h2>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6 z-50">
+          <div className="bg-surface border border-line p-10 rounded-xl w-full max-w-lg shadow-e3 animate-in fade-in zoom-in-90 duration-300">
+            <h2 className="text-2xl font-bold text-fg mb-6">Upload Work</h2>
             <form onSubmit={handleSubmitWork} className="space-y-4">
-              <div className="group relative border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-emerald-500 transition-colors">
+              <div className="group relative border-2 border-dashed border-line rounded-lg p-8 text-center hover:border-success transition-colors">
                 <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required onChange={e => setSubmission({...submission, file: e.target.files?.[0] || null})} />
-                <FiUploadCloud className="mx-auto size-10 text-gray-300 group-hover:text-emerald-500 mb-2" />
-                <p className="text-sm font-bold text-gray-500">{submission.file ? submission.file.name : "Click or drag file to upload"}</p>
+                <FiUploadCloud className="mx-auto size-10 text-fg-subtle group-hover:text-success mb-2" />
+                <p className="text-sm font-bold text-fg-muted">{submission.file ? submission.file.name : "Click or drag file to upload"}</p>
               </div>
-              <textarea className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl h-24 outline-none" placeholder="Any comments for the reviewer?" onChange={e => setSubmission({...submission, comment: e.target.value})} />
+              <textarea className="w-full p-4 bg-surface-2 border border-line focus:border-success focus:ring-2 focus:ring-success/25 rounded-lg h-24 outline-none text-fg" placeholder="Any comments for the reviewer?" onChange={e => setSubmission({...submission, comment: e.target.value})} />
               <div className="flex gap-4 pt-4">
-                <button type="submit" className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black hover:bg-emerald-700 shadow-lg shadow-emerald-100 uppercase tracking-widest">SUBMIT WORK</button>
-                <button type="button" onClick={() => setShowSubmitModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-4 rounded-2xl font-black hover:bg-gray-200">CLOSE</button>
+                <button type="submit" className="flex-1 bg-success text-white py-4 rounded-lg font-bold hover:bg-success/90 shadow-e2 uppercase tracking-widest">SUBMIT WORK</button>
+                <button type="button" onClick={() => setShowSubmitModal(false)} className="flex-1 bg-surface-2 text-fg py-4 rounded-lg font-bold hover:bg-surface-3">CLOSE</button>
               </div>
             </form>
           </div>

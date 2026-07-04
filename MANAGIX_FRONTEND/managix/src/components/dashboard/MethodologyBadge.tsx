@@ -10,18 +10,18 @@ interface Props {
 }
 
 const STYLE: Record<string, string> = {
-  Scrum:     'bg-indigo-100 text-indigo-700',
-  Agile:     'bg-emerald-100 text-emerald-700',
-  Kanban:    'bg-blue-100 text-blue-700',
-  Waterfall: 'bg-orange-100 text-orange-700',
-  Hybrid:    'bg-gray-100 text-gray-700',
+  Scrum:     'bg-primary-soft text-primary border-primary-border',
+  Agile:     'bg-success-soft text-success border-success/25',
+  Kanban:    'bg-info-soft text-info border-info/25',
+  Waterfall: 'bg-warning-soft text-warning border-warning/25',
+  Hybrid:    'bg-surface-3 text-fg-muted border-line-strong',
 };
 
 const MethodologyBadge: React.FC<Props> = ({ methodology, className }) => {
   const style = STYLE[methodology as string] || STYLE.Hybrid;
   return (
     <span
-      className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${style} ${className ?? ''}`}
+      className={`px-2.5 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${style} ${className ?? ''}`}
     >
       {methodology}
     </span>

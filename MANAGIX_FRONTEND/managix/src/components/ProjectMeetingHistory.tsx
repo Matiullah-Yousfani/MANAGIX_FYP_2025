@@ -25,21 +25,21 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
   const fmt = (iso: string) => new Date(iso).toLocaleString();
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+    <div className="bg-surface rounded-xl border border-line p-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-          <FiVideo className="text-indigo-600" />
+        <h2 className="text-xl font-bold text-fg flex items-center gap-2">
+          <FiVideo className="text-primary" />
           Project meetings
         </h2>
-        <span className="text-sm font-black text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full">
+        <span className="text-sm font-bold text-primary bg-primary-soft px-3 py-1 rounded-full">
           {meetings.length} total
         </span>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400 italic">Loading meeting history…</p>
+        <p className="text-sm text-fg-subtle">Loading meeting history…</p>
       ) : meetings.length === 0 ? (
-        <p className="text-sm text-gray-500 bg-gray-50 rounded-xl p-4">
+        <p className="text-sm text-fg-muted bg-surface-2 rounded-xl p-4">
           No meetings scheduled for this project yet.
         </p>
       ) : (
@@ -56,22 +56,22 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
             return (
               <li
                 key={id}
-                className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100"
+                className="bg-surface-2 rounded-xl px-4 py-3 border border-line"
               >
                 <div className="flex flex-wrap justify-between items-start gap-2">
                   <div>
-                    <p className="font-bold text-gray-900">{m.title ?? (m as any).Title}</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <p className="font-bold text-fg">{m.title ?? (m as any).Title}</p>
+                    <p className="text-xs text-fg-muted flex items-center gap-1 mt-1">
                       <FiCalendar size={12} />
                       {fmt(m.scheduledAt ?? (m as any).ScheduledAt)}
                       {endsAt && <span> → {fmt(endsAt)}</span>}
                     </p>
-                    <p className="text-xs text-indigo-600 font-bold mt-1">Sprint {sprint}</p>
+                    <p className="text-xs text-primary font-bold mt-1">Sprint {sprint}</p>
                   </div>
                   <div className="text-right text-xs">
-                    <span className="font-black uppercase tracking-widest text-gray-400">{status}</span>
+                    <span className="font-bold uppercase tracking-widest text-fg-subtle">{status}</span>
                     {transcripts > 0 && (
-                      <p className="text-gray-500 mt-1 flex items-center justify-end gap-1">
+                      <p className="text-fg-muted mt-1 flex items-center justify-end gap-1">
                         <FiUsers size={12} />
                         {transcripts} transcript{transcripts === 1 ? '' : 's'}
                       </p>
@@ -82,7 +82,7 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
                   <button
                     type="button"
                     onClick={() => setExpandedId(expanded ? null : id)}
-                    className="mt-2 text-xs font-bold text-indigo-600 flex items-center gap-1 hover:underline"
+                    className="mt-2 text-xs font-bold text-primary flex items-center gap-1 hover:underline"
                   >
                     <FiFileText size={12} />
                     {expanded ? 'Hide details' : 'View summary & transcript'}
@@ -91,10 +91,10 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
                 {expanded && (
                   <div className="mt-3 space-y-2 text-sm">
                     {summary && (
-                      <p className="bg-white rounded-lg p-3 border border-gray-100 text-gray-700">{summary}</p>
+                      <p className="bg-surface rounded-lg p-3 border border-line text-fg-muted">{summary}</p>
                     )}
                     {m.meetingNotesText && (
-                      <pre className="bg-amber-50 rounded-lg p-3 text-xs whitespace-pre-wrap border border-amber-100">
+                      <pre className="bg-warning-soft rounded-lg p-3 text-xs whitespace-pre-wrap border border-warning/25 text-fg">
                         {(m as any).meetingNotesText ?? m.meetingNotesText}
                       </pre>
                     )}

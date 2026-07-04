@@ -207,56 +207,57 @@ const Dashboard = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
-      <p className="text-gray-400 font-bold italic">Refreshing workspace...</p>
+    <div className="flex flex-col items-center justify-center py-32">
+      <div className="w-10 h-10 border-[3px] border-line border-t-primary rounded-full animate-spin mb-4" />
+      <p className="text-fg-muted text-sm">Refreshing workspace…</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
+    <div className="pb-16">
       {/* HEADER */}
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 size-10 grid place-items-center rounded-lg bg-primary-soft text-primary border border-primary-border">
+            <FiActivity className="size-5" />
+          </div>
           <div>
-            <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
-              <FiActivity className="text-indigo-600" /> Welcome, {userName.split(' ')[0]}
-            </h1>
-            <p className="text-gray-500 mt-1 font-medium italic">Strategic Project Overview</p>
+            <h1 className="text-xl font-bold text-fg">Welcome, {userName.split(' ')[0]}</h1>
+            <p className="text-fg-muted text-sm mt-0.5">Strategic project overview</p>
           </div>
+        </div>
 
-          <div className="relative group w-full md:w-96">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search active projects..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-indigo-200 transition-all font-medium"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="relative group w-full md:w-80">
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-subtle group-focus-within:text-primary transition-colors" />
+          <input
+            type="text"
+            placeholder="Search active projects…"
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-surface-2 text-fg border border-line rounded-lg outline-none placeholder:text-fg-subtle focus:border-primary focus:ring-2 focus:ring-primary/25 transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div>
         {userRole?.toLowerCase() !== 'admin' && userRole?.toLowerCase() !== 'qa' && <DashboardTimesheetCard />}
 
         {/* METRICS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
-            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-              <FiBriefcase size={28} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+          <div className="bg-surface rounded-xl p-5 border border-line flex items-center gap-5">
+            <div className="size-14 bg-primary-soft text-primary border border-primary-border rounded-lg flex items-center justify-center">
+              <FiBriefcase size={24} />
             </div>
             <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Projects</p>
-              <h3 className="text-3xl font-black text-gray-900">{projects.length}</h3>
+              <p className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide">Active Projects</p>
+              <h3 className="text-3xl font-bold text-fg">{projects.length}</h3>
             </div>
           </div>
         </div>
 
         {/* PROJECTS GRID */}
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-          <h2 className="text-2xl font-black text-gray-800">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <h2 className="text-lg font-bold text-fg">
             {showClosed ? 'Portfolio (incl. archived)' : 'Operational Portfolio'}
           </h2>
           <div className="flex items-center gap-3">
@@ -268,26 +269,26 @@ const Dashboard = () => {
             {closedCount > 0 && (
               <button
                 onClick={() => setShowClosed(s => !s)}
-                className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all border ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-all border ${
                   showClosed
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+                    ? 'bg-primary text-primary-fg border-primary'
+                    : 'bg-surface-2 text-fg-muted border-line hover:border-primary-border hover:text-primary'
                 }`}
                 title={showClosed ? 'Hide archived projects' : 'Show archived projects'}
               >
                 {showClosed ? `Hiding ${closedCount} archived` : `Show ${closedCount} archived`}
               </button>
             )}
-            <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
+            <span className="bg-primary-soft text-primary border border-primary-border px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide">
               {filteredProjects.length} Instances
             </span>
           </div>
         </div>
 
         {filteredProjects.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
-            <FiBriefcase className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-400 font-bold italic">No projects matching your search.</p>
+          <div className="text-center py-16 bg-surface/50 rounded-xl border border-dashed border-line">
+            <FiBriefcase className="mx-auto text-fg-subtle mb-4" size={40} />
+            <p className="text-fg-muted">No projects matching your search.</p>
           </div>
         ) : (
           /*
@@ -314,11 +315,11 @@ const Dashboard = () => {
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }}
-            className={`fixed bottom-8 right-8 z-50 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 ${
-              toast.type === 'success' ? 'bg-gray-900 text-white' : 'bg-red-600 text-white'
+            className={`fixed bottom-8 right-8 z-50 px-5 py-3.5 rounded-lg shadow-e3 border flex items-center gap-3 ${
+              toast.type === 'success' ? 'bg-surface border-line text-fg' : 'bg-danger-soft border-danger/25 text-danger'
             }`}>
-            {toast.type === 'success' ? <FiCheckCircle /> : <FiTrash2 />}
-            <span className="font-bold text-sm">{toast.msg}</span>
+            {toast.type === 'success' ? <FiCheckCircle className="text-success" /> : <FiTrash2 />}
+            <span className="font-medium text-sm">{toast.msg}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -327,59 +328,71 @@ const Dashboard = () => {
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowModal(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]">
-              
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+            <motion.div initial={{ scale: 0.96, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="relative w-full max-w-2xl bg-surface border border-line rounded-xl shadow-e3 p-8 overflow-y-auto max-h-[90vh]">
+
               {isEditing ? (
                 // Edit Form
                 <>
-                  <h2 className="text-3xl font-black text-gray-900 mb-8">Edit Project</h2>
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <h2 className="text-xl font-bold text-fg mb-6">Edit Project</h2>
+                  <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Title</label>
-                      <input className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      <label className="text-xs font-semibold text-fg-muted block mb-1.5">Title</label>
+                      <input className="w-full bg-surface-2 text-fg border border-line p-3 rounded-lg text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25"
                         required value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
                     </div>
                     <div>
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Description</label>
-                      <textarea className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium h-32 resize-none"
+                      <label className="text-xs font-semibold text-fg-muted block mb-1.5">Description</label>
+                      <textarea className="w-full bg-surface-2 text-fg border border-line p-3 rounded-lg text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 h-32 resize-none"
                         value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} />
                     </div>
-                    <div className="flex gap-4 pt-4">
-                      <button type="submit" className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all">Save Changes</button>
-                      <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold">Cancel</button>
+                    <div className="flex gap-3 pt-2">
+                      <button type="submit" className="flex-1 bg-primary text-primary-fg py-3 rounded-lg font-semibold hover:bg-primary-hover transition-all active:scale-[0.98]">Save Changes</button>
+                      <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-surface-2 text-fg-muted border border-line py-3 rounded-lg font-semibold hover:bg-surface-3">Cancel</button>
                     </div>
                   </form>
                 </>
               ) : selectedProject ? (
                 // Details View
                 <>
-                  <h2 className="text-3xl font-black text-gray-900 mb-4">{selectedProject.Title}</h2>
-                  <p className="text-gray-500 mb-4 whitespace-pre-line">{selectedProject.Description}</p>
+                  <h2 className="text-xl font-bold text-fg mb-2">{selectedProject.Title}</h2>
+                  <p className="text-fg-muted text-sm mb-5 whitespace-pre-line">{selectedProject.Description}</p>
 
-                  <div className="mb-4"><span className="font-bold">Deadline:</span> {new Date(selectedProject.Deadline).toLocaleDateString()}</div>
-                  <div className="mb-4"><span className="font-bold">Budget:</span> ${selectedProject.Budget}</div>
-                  <div className="mb-4"><span className="font-bold">Status:</span> {selectedProject.Status}</div>
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    <div className="bg-surface-2 border border-line rounded-lg p-3">
+                      <div className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide">Deadline</div>
+                      <div className="text-sm font-semibold text-fg mt-1">{new Date(selectedProject.Deadline).toLocaleDateString()}</div>
+                    </div>
+                    <div className="bg-surface-2 border border-line rounded-lg p-3">
+                      <div className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide">Budget</div>
+                      <div className="text-sm font-semibold text-fg mt-1">${selectedProject.Budget}</div>
+                    </div>
+                    <div className="bg-surface-2 border border-line rounded-lg p-3">
+                      <div className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide">Status</div>
+                      <div className="text-sm font-semibold text-fg mt-1">{selectedProject.Status}</div>
+                    </div>
+                  </div>
 
-                  <div className="mb-4">
-                    <h3 className="font-bold text-lg mb-2">Milestones</h3>
-                    <ul className="list-disc pl-6">
+                  <div className="mb-5">
+                    <h3 className="font-semibold text-sm text-fg mb-2">Milestones</h3>
+                    <ul className="space-y-1.5">
                       {selectedProject.Milestones.map((m: any) => (
-                        <li key={m.MilestoneId}>
-                          {m.Title} - {m.Status} - Deadline: {new Date(m.Deadline).toLocaleDateString()}
+                        <li key={m.MilestoneId} className="flex items-center justify-between bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm">
+                          <span className="font-medium text-fg">{m.Title}</span>
+                          <span className="text-fg-subtle text-xs">{m.Status} · {new Date(m.Deadline).toLocaleDateString()}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="mb-4">
-                    <h3 className="font-bold text-lg mb-2">Tasks</h3>
-                    <ul className="space-y-2">
+                  <div className="mb-5">
+                    <h3 className="font-semibold text-sm text-fg mb-2">Tasks</h3>
+                    <ul className="space-y-1.5">
                       {(selectedProject.Tasks ?? selectedProject.tasks ?? []).map((t: any) => (
-                        <li key={t.TaskId ?? t.taskId} className="text-sm flex justify-between bg-gray-50 rounded-lg px-3 py-2">
-                          <span className="font-medium">{t.Title ?? t.title}</span>
-                          <span className="text-gray-500 text-xs">
+                        <li key={t.TaskId ?? t.taskId} className="text-sm flex justify-between bg-surface-2 border border-line rounded-lg px-3 py-2">
+                          <span className="font-medium text-fg">{t.Title ?? t.title}</span>
+                          <span className="text-fg-subtle text-xs">
                             {t.AssignedEmployeeName ?? t.assignedEmployeeName ?? 'Unassigned'} · {t.Status ?? t.status}
                           </span>
                         </li>
@@ -387,20 +400,23 @@ const Dashboard = () => {
                     </ul>
                   </div>
 
-                  <div className="mb-4">
-                    <h3 className="font-bold text-lg mb-2">Teams</h3>
-                    <ul className="list-disc pl-6">
+                  <div className="mb-5">
+                    <h3 className="font-semibold text-sm text-fg mb-2">Teams</h3>
+                    <div className="flex flex-wrap gap-2">
                       {selectedProject.Teams.map((team: any) => (
-                        <li key={team.TeamId}>{team.Name}</li>
+                        <span key={team.TeamId} className="bg-surface-3 text-fg-muted border border-line-strong px-2.5 py-0.5 rounded-full text-xs font-medium">{team.Name}</span>
                       ))}
-                    </ul>
+                    </div>
                   </div>
 
-                  <div className="mb-4">
-                    <h3 className="font-bold text-lg mb-2">Members</h3>
-                    <ul className="list-disc pl-6">
+                  <div className="mb-5">
+                    <h3 className="font-semibold text-sm text-fg mb-2">Members</h3>
+                    <ul className="space-y-1.5">
                       {selectedProject.Members.map((member: any) => (
-                        <li key={member.UserId}>{member.FullName} ({member.Email})</li>
+                        <li key={member.UserId} className="flex items-center justify-between bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm">
+                          <span className="font-medium text-fg">{member.FullName}</span>
+                          <span className="text-fg-subtle text-xs">{member.Email}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -421,7 +437,7 @@ const Dashboard = () => {
                               description: selectedProject.Description,
                             });
                           }}
-                          className="bg-indigo-600 text-white py-3 px-6 rounded-2xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2"
+                          className="bg-primary text-primary-fg py-2.5 px-5 rounded-lg font-semibold hover:bg-primary-hover transition-all active:scale-[0.98] flex items-center gap-2"
                         >
                           <FiEdit3 /> Edit Project
                         </button>
@@ -430,13 +446,13 @@ const Dashboard = () => {
                             const proxyEvent = { stopPropagation: () => {} } as React.MouseEvent;
                             confirmDelete(proxyEvent, selectedProject.ProjectId || selectedProject.projectId);
                           }}
-                          className="bg-red-50 text-red-600 border border-red-100 py-3 px-6 rounded-2xl font-bold hover:bg-red-600 hover:text-white transition-all flex items-center gap-2"
+                          className="bg-danger-soft text-danger border border-danger/25 py-2.5 px-5 rounded-lg font-semibold hover:bg-danger hover:text-white transition-all flex items-center gap-2"
                         >
                           <FiTrash2 /> Delete
                         </button>
                       </>
                     )}
-                    <button onClick={() => setShowModal(false)} className="bg-gray-100 text-gray-600 py-3 px-6 rounded-2xl font-bold">Close</button>
+                    <button onClick={() => setShowModal(false)} className="bg-surface-2 text-fg-muted border border-line py-2.5 px-5 rounded-lg font-semibold hover:bg-surface-3">Close</button>
                   </div>
                 </>
               ) : null}

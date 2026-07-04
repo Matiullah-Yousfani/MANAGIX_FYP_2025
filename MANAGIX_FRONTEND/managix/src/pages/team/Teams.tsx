@@ -361,23 +361,23 @@ const Teams = () => {
     const portalRole = localStorage.getItem('roleName') || localStorage.getItem('userRole');
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-20">
+        <div className="min-h-screen bg-bg pb-20">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+            <div className="bg-surface border-b border-line mb-8 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
-                            <FiUsers className="text-indigo-600" /> Team Hub
+                        <h1 className="text-2xl font-bold text-fg flex items-center gap-3">
+                            <FiUsers className="text-primary" /> Team Hub
                         </h1>
-                        <p className="text-gray-500 mt-1 font-medium">Manage your workforce and project distribution</p>
+                        <p className="text-fg-muted mt-1 font-medium">Manage your workforce and project distribution</p>
                     </div>
-                    
+
                     <div className="relative group w-full md:w-96">
-                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
-                        <input 
+                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle group-focus-within:text-primary transition-colors" />
+                        <input
                             type="text"
                             placeholder="Search teams or projects..."
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-indigo-200 transition-all font-medium"
+                            className="w-full pl-12 pr-4 py-3 bg-surface-2 border border-transparent rounded-lg outline-none focus:bg-surface-3 focus:border-primary transition-all font-medium"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -388,37 +388,37 @@ const Teams = () => {
             <div className="max-w-7xl mx-auto px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
                     {/* Create Team Card */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <div className="bg-surface rounded-xl shadow-e1 border border-line p-8">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                            <div className="w-10 h-10 bg-primary-soft text-primary rounded-lg flex items-center justify-center">
                                 <FiPlus size={20} />
                             </div>
-                            <h2 className="text-xl font-bold text-gray-800">New Operational Team</h2>
+                            <h2 className="text-xl font-bold text-fg">New Operational Team</h2>
                         </div>
                         <div className="flex gap-3">
-                            <input 
-                                className="flex-1 bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium" 
-                                placeholder="Enter team name..." 
-                                value={teamName} 
-                                onChange={(e) => setTeamName(e.target.value)} 
+                            <input
+                                className="flex-1 bg-surface-2 border border-line p-4 rounded-lg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all font-medium"
+                                placeholder="Enter team name..."
+                                value={teamName}
+                                onChange={(e) => setTeamName(e.target.value)}
                             />
-                            <button onClick={handleCreateTeam} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 rounded-2xl font-bold shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                            <button onClick={handleCreateTeam} className="bg-primary hover:bg-primary-hover text-primary-fg px-8 rounded-lg font-bold shadow-e2 transition-all active:scale-95">
                                 Create
                             </button>
                         </div>
                     </div>
 
                     {/* Member Assignment Card */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <div className="bg-surface rounded-xl shadow-e1 border border-line p-8">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                            <div className="w-10 h-10 bg-info-soft text-info rounded-lg flex items-center justify-center">
                                 <FiUserPlus size={20} />
                             </div>
-                            <h2 className="text-xl font-bold text-gray-800">Assign Member</h2>
+                            <h2 className="text-xl font-bold text-fg">Assign Member</h2>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <select 
-                                className="bg-gray-50 border-none p-4 rounded-2xl outline-none cursor-pointer font-medium" 
+                                className="bg-surface-2 border border-line p-4 rounded-lg outline-none cursor-pointer font-medium"
                                 value={selectedTeamForMember} 
                                 onChange={(e) => setSelectedTeamForMember(e.target.value)}
                             >
@@ -426,7 +426,7 @@ const Teams = () => {
                                 {teams.map((t: any) => <option key={t.TeamId} value={t.TeamId}>{t.Name}</option>)}
                             </select>
                             <select 
-                                className="bg-gray-50 border-none p-4 rounded-2xl outline-none cursor-pointer font-medium" 
+                                className="bg-surface-2 border border-line p-4 rounded-lg outline-none cursor-pointer font-medium"
                                 value={selectedEmployee} 
                                 onChange={(e) => setSelectedEmployee(e.target.value)}
                             >
@@ -442,15 +442,15 @@ const Teams = () => {
                                 )}
                             </select>
                         </div>
-                        <button onClick={handleAddMember} className="w-full mt-4 bg-gray-900 text-white p-4 rounded-2xl font-bold hover:bg-black transition-all active:scale-[0.98]">
+                        <button onClick={handleAddMember} className="w-full mt-4 bg-primary text-primary-fg p-4 rounded-lg font-bold hover:bg-primary-hover transition-all active:scale-[0.98]">
                             Add to Team
                         </button>
                     </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-black text-gray-800">Operational Teams</h2>
-                    <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
+                    <h2 className="text-2xl font-bold text-fg">Operational Teams</h2>
+                    <span className="bg-primary-soft text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
                         {filteredTeams.length} Teams
                     </span>
                 </div>
@@ -460,59 +460,59 @@ const Teams = () => {
                         <div
                             key={team.TeamId}
                             onClick={() => handleTeamClick(team)}
-                            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                            className="group bg-surface rounded-xl p-8 shadow-e1 border border-line hover:shadow-e3 hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden"
                         >
-                            <FiUsers className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-indigo-50 transition-colors pointer-events-none" />
-                            
+                            <FiUsers className="absolute -bottom-4 -right-4 text-surface-2 size-32 group-hover:text-primary-soft transition-colors pointer-events-none" />
+
                             <div className="relative">
                                 <div className="flex justify-between items-start mb-6">
-                                    <h3 className="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors pr-8">
+                                    <h3 className="text-2xl font-bold text-fg group-hover:text-primary transition-colors pr-8">
                                         {team.Name}
                                     </h3>
-                                    <button 
+                                    <button
                                         onClick={(e) => handleDeleteTeam(e, team)}
                                         title={
                                             (team.removableCount ?? 0) > 0
                                                 ? 'Remove employees/QA before deleting'
                                                 : 'Delete team'
                                         }
-                                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                        className="p-2 text-fg-subtle hover:text-danger hover:bg-danger-soft rounded-lg transition-all"
                                     >
                                         <FiTrash2 size={18} />
                                     </button>
                                 </div>
 
-                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 space-y-1">
-                                    <p>Manager <span className="text-indigo-600">{team.CreatedByName ?? 'Manager'}</span></p>
+                                <div className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest mb-4 space-y-1">
+                                    <p>Manager <span className="text-primary">{team.CreatedByName ?? 'Manager'}</span></p>
                                     {team.qaNames?.length > 0 && (
                                         <p>
                                             QA <span className="text-violet-600">{team.qaNames.join(', ')}</span>
                                             {(team.qaPendingReview ?? 0) > 0 && (
-                                                <span className="block text-amber-600 normal-case tracking-normal font-bold text-[11px] mt-0.5">
+                                                <span className="block text-warning normal-case tracking-normal font-bold text-[11px] mt-0.5">
                                                     {team.qaPendingReview} pending for review
                                                 </span>
                                             )}
                                         </p>
                                     )}
                                     {team.employeeNames?.length > 0 && (
-                                        <p className="normal-case tracking-normal text-gray-500 font-bold text-xs">
+                                        <p className="normal-case tracking-normal text-fg-muted font-bold text-xs">
                                             {team.employeeNames.join(' · ')}
                                         </p>
                                     )}
                                 </div>
-                                <div className="bg-indigo-50/50 rounded-2xl p-4 mb-6">
-                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Assigned Project</span>
-                                    <div className="flex items-center gap-2 text-indigo-900 font-bold">
+                                <div className="bg-primary-soft/50 rounded-lg p-4 mb-6">
+                                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1 block">Assigned Project</span>
+                                    <div className="flex items-center gap-2 text-primary font-bold">
                                         <FiBriefcase size={14} />
                                         <p className="truncate">{team.ProjectTitle || "Not Assigned"}</p>
                                     </div>
                                 </div>
 
                                 <div onClick={(e) => e.stopPropagation()}>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-2 px-1">Quick Reassign</label>
-                                    <select 
+                                    <label className="text-[10px] font-bold text-fg-subtle uppercase block mb-2 px-1">Quick Reassign</label>
+                                    <select
                                         onChange={(e) => handleAssignToProject(team.TeamId, e.target.value)}
-                                        className="w-full bg-gray-50 border-none p-3 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
+                                        className="w-full bg-surface-2 border border-line p-3 rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none cursor-pointer"
                                         defaultValue=""
                                     >
                                         <option value="" disabled>Change Project...</option>
@@ -534,21 +534,21 @@ const Teams = () => {
             {/* Workflow Modal */}
             {isPanelOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setIsPanelOpen(false)} />
-                    
-                    <div className="relative w-full max-w-3xl bg-white max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
-                        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsPanelOpen(false)} />
+
+                    <div className="relative w-full max-w-3xl bg-surface max-h-[90vh] rounded-xl shadow-e3 flex flex-col overflow-hidden">
+                        <div className="p-8 border-b border-line flex justify-between items-center bg-surface sticky top-0 z-10">
                             <div>
-                                <p className="text-indigo-600 font-black text-xs uppercase tracking-widest mb-1">Team Overview</p>
-                                <h2 className="text-3xl font-black text-gray-900">{activeTeam?.Name}</h2>
+                                <p className="text-primary font-bold text-xs uppercase tracking-widest mb-1">Team Overview</p>
+                                <h2 className="text-2xl font-bold text-fg">{activeTeam?.Name}</h2>
                                 {activeTeam?.ProjectTitle && (
-                                    <p className="text-sm text-gray-500 font-bold">Project: {activeTeam.ProjectTitle}</p>
+                                    <p className="text-sm text-fg-muted font-bold">Project: {activeTeam.ProjectTitle}</p>
                                 )}
                                 {activeTeamCreator && (
-                                    <p className="text-sm text-indigo-600 font-bold mt-1">Manager / creator: {activeTeamCreator}</p>
+                                    <p className="text-sm text-primary font-bold mt-1">Manager / creator: {activeTeamCreator}</p>
                                 )}
                             </div>
-                            <button onClick={() => setIsPanelOpen(false)} className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-red-500 transition-colors">
+                            <button onClick={() => setIsPanelOpen(false)} className="p-3 bg-surface-2 rounded-lg text-fg-subtle hover:text-danger transition-colors">
                                 <FiX size={24} />
                             </button>
                         </div>
@@ -556,20 +556,20 @@ const Teams = () => {
                         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                             {loadingDetails ? (
                                 <div className="flex flex-col items-center justify-center h-full py-10 gap-4">
-                                    <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
-                                    <p className="font-bold text-gray-400 italic">Syncing with database...</p>
+                                    <div className="w-12 h-12 border-4 border-line border-t-primary rounded-full animate-spin" />
+                                    <p className="font-bold text-fg-subtle">Syncing with database...</p>
                                 </div>
                             ) : (
                                 <div className="space-y-10">
                                     <section>
                                         <div className="flex items-center gap-2 mb-4">
-                                            <FiUsers className="text-indigo-600" />
-                                            <h3 className="font-black text-gray-800 uppercase text-xs tracking-widest">Team roster</h3>
+                                            <FiUsers className="text-primary" />
+                                            <h3 className="font-bold text-fg uppercase text-xs tracking-widest">Team roster</h3>
                                         </div>
                                         {activeTeamCreator && (
-                                            <div className="mb-4 p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
-                                                <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest mb-1">Manager</p>
-                                                <p className="font-bold text-indigo-900">{activeTeamCreator}</p>
+                                            <div className="mb-4 p-4 rounded-lg bg-primary-soft border border-primary-border">
+                                                <p className="text-[9px] font-bold uppercase text-primary tracking-widest mb-1">Manager</p>
+                                                <p className="font-bold text-primary">{activeTeamCreator}</p>
                                             </div>
                                         )}
                                         {(() => {
@@ -585,22 +585,22 @@ const Teams = () => {
                                                 return (
                                                     <div
                                                         key={mid}
-                                                        className={`flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl border ${
-                                                            isFree ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-100' : 'bg-gray-50 border-gray-100'
+                                                        className={`flex items-center gap-3 pl-4 pr-2 py-2 rounded-lg border ${
+                                                            isFree ? 'bg-success-soft border-success/25 ring-1 ring-success/25' : 'bg-surface-2 border-line'
                                                         }`}
                                                     >
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-white font-bold ${isFree ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-primary-fg font-bold ${isFree ? 'bg-success' : 'bg-primary'}`}>
                                                             {(member.fullName ?? member.FullName)?.charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <span className="text-sm font-bold text-gray-700 block">{member.fullName ?? member.FullName}</span>
-                                                            <span className={`text-[9px] font-black uppercase ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
+                                                            <span className="text-sm font-bold text-fg-muted block">{member.fullName ?? member.FullName}</span>
+                                                            <span className={`text-[9px] font-bold uppercase ${isFree ? 'text-success' : 'text-fg-subtle'}`}>
                                                                 {isFree ? 'FREE — no active tasks' : `${active} active task(s)`}
                                                             </span>
                                                         </div>
                                                         <button
                                                             onClick={() => handleRemoveMember(member)}
-                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                            className="p-1.5 text-fg-subtle hover:text-danger hover:bg-danger-soft rounded-lg transition-all"
                                                         >
                                                             <FiX size={14} />
                                                         </button>
@@ -615,16 +615,16 @@ const Teams = () => {
                                                 return (
                                                     <div
                                                         key={mid}
-                                                        className={`flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl border ${
-                                                            hasPending ? 'bg-amber-50 border-amber-200 ring-1 ring-amber-100' : 'bg-violet-50 border-violet-100'
+                                                        className={`flex items-center gap-3 pl-4 pr-2 py-2 rounded-lg border ${
+                                                            hasPending ? 'bg-warning-soft border-warning/25 ring-1 ring-warning/25' : 'bg-violet-50 border-violet-100'
                                                         }`}
                                                     >
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-white font-bold ${hasPending ? 'bg-amber-500' : 'bg-violet-600'}`}>
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-primary-fg font-bold ${hasPending ? 'bg-warning' : 'bg-violet-600'}`}>
                                                             {(member.fullName ?? member.FullName)?.charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <span className="text-sm font-bold text-gray-700 block">{member.fullName ?? member.FullName}</span>
-                                                            <span className={`text-[9px] font-black uppercase ${hasPending ? 'text-amber-700' : 'text-violet-600'}`}>
+                                                            <span className="text-sm font-bold text-fg-muted block">{member.fullName ?? member.FullName}</span>
+                                                            <span className={`text-[9px] font-bold uppercase ${hasPending ? 'text-warning' : 'text-violet-600'}`}>
                                                                 {hasPending
                                                                     ? `${pending} pending for review`
                                                                     : 'No tasks awaiting review'}
@@ -632,7 +632,7 @@ const Teams = () => {
                                                         </div>
                                                         <button
                                                             onClick={() => handleRemoveMember(member)}
-                                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                            className="p-1.5 text-fg-subtle hover:text-danger hover:bg-danger-soft rounded-lg transition-all"
                                                         >
                                                             <FiX size={14} />
                                                         </button>
@@ -640,19 +640,19 @@ const Teams = () => {
                                                 );
                                             };
                                             if (teamMembers.length === 0) {
-                                                return <p className="text-xs text-gray-400 font-medium italic px-2">No members assigned.</p>;
+                                                return <p className="text-xs text-fg-subtle font-medium px-2">No members assigned.</p>;
                                             }
                                             return (
                                                 <div className="space-y-4">
                                                     {qaList.length > 0 && (
                                                         <div>
-                                                            <p className="text-[9px] font-black uppercase text-violet-500 tracking-widest mb-2">Quality assurance</p>
+                                                            <p className="text-[9px] font-bold uppercase text-violet-500 tracking-widest mb-2">Quality assurance</p>
                                                             <div className="flex flex-wrap gap-3">{qaList.map((m) => renderQaChip(m))}</div>
                                                         </div>
                                                     )}
                                                     {empList.length > 0 && (
                                                         <div>
-                                                            <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Employees</p>
+                                                            <p className="text-[9px] font-bold uppercase text-fg-subtle tracking-widest mb-2">Employees</p>
                                                             <div className="flex flex-wrap gap-3">{empList.map((m) => renderEmployeeChip(m))}</div>
                                                         </div>
                                                     )}
@@ -661,44 +661,44 @@ const Teams = () => {
                                         })()}
                                     </section>
 
-                                    <hr className="border-gray-50" />
+                                    <hr className="border-line" />
 
                                     <section>
                                         <div className="flex items-center gap-2 mb-6">
-                                            <FiBriefcase className="text-indigo-600" />
-                                            <h3 className="font-black text-gray-800 uppercase text-xs tracking-widest">Project Roadmap</h3>
+                                            <FiBriefcase className="text-primary" />
+                                            <h3 className="font-bold text-fg uppercase text-xs tracking-widest">Project Roadmap</h3>
                                         </div>
 
                                         {hierarchy.length === 0 ? (
-                                            <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                                                <FiInfo className="mx-auto text-gray-300 mb-4" size={40} />
-                                                <p className="text-gray-400 font-bold italic">No roadmap found.</p>
+                                            <div className="text-center py-20 bg-surface-2 rounded-xl border-2 border-dashed border-line">
+                                                <FiInfo className="mx-auto text-fg-subtle mb-4" size={40} />
+                                                <p className="text-fg-subtle font-bold">No roadmap found.</p>
                                             </div>
                                         ) : (
                                             <div className="space-y-8">
                                                 {hierarchy.map((milestone) => (
-                                                    <div key={milestone.MilestoneId || milestone.milestoneId} className="border border-gray-100 rounded-2xl p-5 bg-gray-50/50">
+                                                    <div key={milestone.MilestoneId || milestone.milestoneId} className="border border-line rounded-lg p-5 bg-surface-2/50">
                                                         <div className="flex items-start justify-between gap-4 mb-3">
-                                                            <h4 className="font-black text-gray-900 text-base leading-tight">{milestone.Title || milestone.title}</h4>
-                                                            <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase shrink-0 ${
-                                                                milestone.Status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700'
+                                                            <h4 className="font-bold text-fg text-base leading-tight">{milestone.Title || milestone.title}</h4>
+                                                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase shrink-0 ${
+                                                                milestone.Status === 'Completed' ? 'bg-success-soft text-success' : 'bg-primary-soft text-primary'
                                                             }`}>
                                                                 {milestone.Status}
                                                             </span>
                                                         </div>
                                                         <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                                                             {(milestone.tasks?.length ?? 0) === 0 ? (
-                                                                <p className="text-xs text-gray-400 italic">No tasks in this milestone.</p>
+                                                                <p className="text-xs text-fg-subtle">No tasks in this milestone.</p>
                                                             ) : (
                                                                 milestone.tasks?.map((task: any) => (
-                                                                    <div key={task.TaskId || task.taskId} className="bg-white border border-gray-100 p-4 rounded-xl flex justify-between items-center gap-2">
+                                                                    <div key={task.TaskId || task.taskId} className="bg-surface border border-line p-4 rounded-lg flex justify-between items-center gap-2">
                                                                         <div className="min-w-0">
-                                                                            <p className="font-bold text-gray-800 text-sm truncate">{task.Title || task.title}</p>
-                                                                            <p className="text-[11px] text-gray-500 mt-1">
+                                                                            <p className="font-bold text-fg text-sm truncate">{task.Title || task.title}</p>
+                                                                            <p className="text-[11px] text-fg-muted mt-1">
                                                                                 Assigned: <strong>{getEmployeeName(task.AssignedEmployeeId || task.assignedEmployeeId)}</strong>
                                                                             </p>
                                                                         </div>
-                                                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase bg-amber-50 text-amber-700 shrink-0">
+                                                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase bg-warning-soft text-warning shrink-0">
                                                                             {task.Status || task.status || 'Todo'}
                                                                         </span>
                                                                     </div>
@@ -756,7 +756,6 @@ const Teams = () => {
                         ? `Remove ${removeMemberTarget.fullName ?? removeMemberTarget.FullName} from the team? You won't be able to revert this!`
                         : undefined
                 }
-                confirmLabel="Yes, remove!"
                 details={
                     removeMemberTarget
                         ? [

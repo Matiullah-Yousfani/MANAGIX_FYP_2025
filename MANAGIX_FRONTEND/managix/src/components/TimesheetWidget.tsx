@@ -69,28 +69,28 @@ const TimesheetWidget: React.FC<Props> = ({ projectId, taskId, onOvertimeTrigger
   const standard = summary?.standardHoursPerDay ?? 8;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
-      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Timesheet</h3>
-      <p className="text-sm text-gray-600 mb-1">
+    <div className="bg-surface rounded-xl border border-line p-5 mb-6">
+      <h3 className="text-xs font-bold text-fg-subtle uppercase tracking-widest mb-3">Timesheet</h3>
+      <p className="text-sm text-fg-muted mb-1">
         Today: <strong>{today.toFixed(1)}h</strong> / {standard}h standard
-        <span className="text-gray-400"> (limit {limit}h)</span>
+        <span className="text-fg-subtle"> (limit {limit}h)</span>
       </p>
-      <p className="text-sm text-gray-600 mb-3">
+      <p className="text-sm text-fg-muted mb-3">
         Week: <strong>{summary?.totalHoursThisWeek ?? 0}h</strong>
-        {summary?.isOnline && <span className="ml-2 text-emerald-600 font-bold">● Online</span>}
-        {isClockedIn && <span className="ml-2 text-amber-600 font-bold">● Clocked in</span>}
+        {summary?.isOnline && <span className="ml-2 text-success font-bold">● Online</span>}
+        {isClockedIn && <span className="ml-2 text-warning font-bold">● Clocked in</span>}
       </p>
       {summary?.pendingOvertimeRequestId && (
-        <p className="text-xs text-amber-700 font-bold mb-2">Overtime explanation required.</p>
+        <p className="text-xs text-warning font-bold mb-2">Overtime explanation required.</p>
       )}
-      {error && <p className="text-xs text-red-600 mb-2 font-bold">{error}</p>}
+      {error && <p className="text-xs text-danger mb-2 font-bold">{error}</p>}
       <div className="flex gap-2">
         <button type="button" disabled={busy || isClockedIn} onClick={clockIn}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black disabled:opacity-40">
+          className="flex items-center gap-2 px-4 py-2 bg-success text-white rounded-lg text-xs font-bold disabled:opacity-40">
           <FiPlay size={14} /> Clock in
         </button>
         <button type="button" disabled={busy || !isClockedIn} onClick={clockOut}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-xl text-xs font-black disabled:opacity-40">
+          className="flex items-center gap-2 px-4 py-2 bg-surface-3 text-fg rounded-lg text-xs font-bold disabled:opacity-40">
           <FiSquare size={14} /> Clock out
         </button>
       </div>

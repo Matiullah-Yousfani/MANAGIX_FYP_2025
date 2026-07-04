@@ -59,22 +59,22 @@ const AdminHourlyRatesTab: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-2xl p-32 text-center">
-        <div className="inline-block w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-[#9CA3AF] font-black uppercase tracking-[0.4em] text-[10px]">Loading payroll</p>
+      <div className="bg-surface rounded-xl border border-line shadow-e2 p-32 text-center">
+        <div className="inline-block w-8 h-8 border-4 border-line border-t-primary rounded-full animate-spin mb-4" />
+        <p className="text-fg-subtle font-bold uppercase tracking-[0.4em] text-[10px]">Loading payroll</p>
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <div className="bg-white rounded-[2.5rem] border border-red-200 p-10">
-        <h2 className="text-lg font-black text-red-700 mb-2">Could not load</h2>
-        <p className="text-sm mb-4">{loadError}</p>
+      <div className="bg-surface rounded-xl border border-danger/25 p-10">
+        <h2 className="text-lg font-bold text-danger mb-2">Could not load</h2>
+        <p className="text-sm mb-4 text-fg-muted">{loadError}</p>
         <button
           type="button"
           onClick={load}
-          className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase"
+          className="px-6 py-3 bg-primary text-primary-fg rounded-lg text-[10px] font-bold uppercase"
         >
           Retry
         </button>
@@ -83,10 +83,10 @@ const AdminHourlyRatesTab: React.FC = () => {
   }
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-2xl overflow-hidden">
-      <div className="px-10 py-8 border-b border-[#F3F4F6]">
-        <h2 className="text-xl font-black uppercase tracking-tight">Compensation — hourly rates</h2>
-        <p className="text-sm text-[#9CA3AF] mt-1 font-medium">
+    <div className="bg-surface rounded-xl border border-line shadow-e2 overflow-hidden">
+      <div className="px-10 py-8 border-b border-line">
+        <h2 className="text-xl font-bold uppercase tracking-tight text-fg">Compensation — hourly rates</h2>
+        <p className="text-sm text-fg-subtle mt-1 font-medium">
           Set $/hr for every user. Used when calculating payroll from approved timesheets.
         </p>
       </div>
@@ -94,25 +94,25 @@ const AdminHourlyRatesTab: React.FC = () => {
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-[#F3F4F6] bg-white">
-              <th className="px-10 py-8 text-[10px] font-black text-[#9CA3AF] uppercase tracking-[0.2em]">
+            <tr className="border-b border-line bg-surface-2">
+              <th className="px-10 py-8 text-[10px] font-bold text-fg-subtle uppercase tracking-[0.2em]">
                 Personnel
               </th>
-              <th className="px-10 py-8 text-[10px] font-black text-[#9CA3AF] uppercase tracking-[0.2em]">
+              <th className="px-10 py-8 text-[10px] font-bold text-fg-subtle uppercase tracking-[0.2em]">
                 Status
               </th>
-              <th className="px-10 py-8 text-[10px] font-black text-[#9CA3AF] uppercase tracking-[0.2em]">
+              <th className="px-10 py-8 text-[10px] font-bold text-fg-subtle uppercase tracking-[0.2em]">
                 Role
               </th>
-              <th className="px-10 py-8 text-[10px] font-black text-[#9CA3AF] uppercase tracking-[0.2em]">
+              <th className="px-10 py-8 text-[10px] font-bold text-fg-subtle uppercase tracking-[0.2em]">
                 Hourly rate ($/hr)
               </th>
-              <th className="px-10 py-8 text-[10px] font-black text-[#9CA3AF] uppercase tracking-[0.2em] text-right">
+              <th className="px-10 py-8 text-[10px] font-bold text-fg-subtle uppercase tracking-[0.2em] text-right">
                 Execution
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F3F4F6]">
+          <tbody className="divide-y divide-line">
             {rows.map((r) => {
               const uid = String(r.userId ?? r.UserId);
               const displayName = r.fullName ?? r.FullName ?? '?';
@@ -120,15 +120,15 @@ const AdminHourlyRatesTab: React.FC = () => {
               const roleLabel = (r.roleName ?? r.RoleName ?? '—').replace(/_/g, ' ');
               const rateVal = r.hourlyRate ?? r.HourlyRate ?? '';
               return (
-                <tr key={uid} className="hover:bg-[#F9FAFB] transition-all group">
+                <tr key={uid} className="hover:bg-surface-2 transition-all group">
                   <td className="px-10 py-6">
                     <div className="flex items-center gap-5">
-                      <div className="w-12 h-12 bg-black text-white flex items-center justify-center rounded-2xl font-black text-sm shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 bg-primary text-primary-fg flex items-center justify-center rounded-xl font-bold text-sm shadow-e1 group-hover:scale-110 transition-transform">
                         {displayName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-black text-sm uppercase tracking-tight">{displayName}</div>
-                        <div className="text-[10px] text-[#9CA3AF] font-bold mt-0.5 tracking-wide">
+                        <div className="font-bold text-sm uppercase tracking-tight text-fg">{displayName}</div>
+                        <div className="text-[10px] text-fg-subtle font-bold mt-0.5 tracking-wide">
                           {displayEmail}
                         </div>
                       </div>
@@ -136,30 +136,30 @@ const AdminHourlyRatesTab: React.FC = () => {
                   </td>
                   <td className="px-10 py-6">
                     <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500">
+                      <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-fg-muted">
                         Verified access
                       </span>
                     </div>
                   </td>
                   <td className="px-10 py-6">
-                    <span className="inline-block bg-[#F3F4F6] px-5 py-2.5 rounded-xl text-[10px] font-black uppercase">
+                    <span className="inline-block bg-surface-2 px-5 py-2.5 rounded-lg text-[10px] font-bold uppercase text-fg">
                       {roleLabel}
                     </span>
                   </td>
                   <td className="px-10 py-6">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-[#9CA3AF]">$</span>
+                      <span className="text-[10px] font-bold text-fg-subtle">$</span>
                       <input
                         type="number"
                         min={0}
                         step={0.01}
-                        className="w-28 bg-[#F3F4F6] border border-transparent hover:border-black focus:border-black px-4 py-2.5 rounded-xl text-sm font-black outline-none transition-all"
+                        className="w-28 bg-surface-2 text-fg border border-line hover:border-line-strong focus:border-primary focus:ring-2 focus:ring-primary/25 px-4 py-2.5 rounded-lg text-sm font-bold outline-none transition-all"
                         value={rateVal}
                         placeholder="0.00"
                         onChange={(e) => updateRate(uid, e.target.value)}
                       />
-                      <span className="text-[9px] font-black text-[#9CA3AF] uppercase">/ hr</span>
+                      <span className="text-[9px] font-bold text-fg-subtle uppercase">/ hr</span>
                     </div>
                   </td>
                   <td className="px-10 py-6 text-right">
@@ -167,7 +167,7 @@ const AdminHourlyRatesTab: React.FC = () => {
                       type="button"
                       disabled={savingId === uid}
                       onClick={() => saveRate(r)}
-                      className="bg-black text-white px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#1A1A1A] transition-all active:scale-90 shadow-lg disabled:opacity-50"
+                      className="bg-primary text-primary-fg px-6 py-2.5 rounded-lg text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-primary-hover transition-all active:scale-90 shadow-e1 disabled:opacity-50"
                     >
                       {savingId === uid ? 'Saving…' : 'Save rate'}
                     </button>
@@ -180,7 +180,7 @@ const AdminHourlyRatesTab: React.FC = () => {
 
         {rows.length === 0 && (
           <div className="p-32 text-center">
-            <p className="text-[#9CA3AF] font-black uppercase tracking-[0.5em] text-[10px]">No users found</p>
+            <p className="text-fg-subtle font-bold uppercase tracking-[0.5em] text-[10px]">No users found</p>
           </div>
         )}
       </div>

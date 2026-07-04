@@ -65,8 +65,8 @@ const WorkloadPanel: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-line border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -84,14 +84,14 @@ const WorkloadPanel: React.FC = () => {
   const filteredProjectMembers = projectLoad ? filterMembers(projectLoad.members) : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+    <div className="min-h-screen bg-bg pb-20 font-sans">
+      <div className="bg-surface border-b border-line mb-8 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
-              <FiTrendingUp className="text-indigo-600" /> Workload
+            <h1 className="text-2xl font-bold text-fg flex items-center gap-3">
+              <FiTrendingUp className="text-primary" /> Workload
             </h1>
-            <p className="text-gray-500 mt-1 font-medium italic">
+            <p className="text-fg-muted mt-1 font-medium">
               {isManager
                 ? 'Capacity for employees on your project teams only'
                 : 'Organization-wide capacity overview'}
@@ -106,23 +106,23 @@ const WorkloadPanel: React.FC = () => {
           placeholder="Search team members…"
           value={memberSearch}
           onChange={(e) => setMemberSearch(e.target.value)}
-          className="w-full max-w-md border border-gray-200 rounded-xl px-4 py-3 font-medium text-sm"
+          className="w-full max-w-md bg-surface-2 text-fg border border-line rounded-lg px-4 py-3 font-medium text-sm focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
         />
 
         {isManager && projects.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100"
+            className="bg-surface rounded-xl p-8 shadow-e1 border border-line"
           >
-            <h2 className="text-2xl font-black text-gray-900 mb-1">Project team hours</h2>
-            <p className="text-sm text-gray-500 mb-4">
+            <h2 className="text-2xl font-bold text-fg mb-1">Project team hours</h2>
+            <p className="text-sm text-fg-muted mb-4">
               Active task hours on the selected project only (Todo / In Progress).
             </p>
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="mb-6 border border-gray-200 rounded-xl px-4 py-3 font-bold w-full max-w-md"
+              className="mb-6 bg-surface-2 text-fg border border-line rounded-lg px-4 py-3 font-bold w-full max-w-md focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
             >
               {projects.map((p) => (
                 <option key={p.projectId} value={p.projectId}>
@@ -137,7 +137,7 @@ const WorkloadPanel: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 italic text-sm">
+              <p className="text-fg-subtle text-sm">
                 Assign a team and add tasks with estimated hours to see project workload.
               </p>
             )}
@@ -145,7 +145,7 @@ const WorkloadPanel: React.FC = () => {
         )}
 
         {isManager && projects.length === 0 && (
-          <p className="text-gray-500 font-medium">
+          <p className="text-fg-muted font-medium">
             Create a project, assign a team in Team Hub, then return here.
           </p>
         )}
@@ -175,9 +175,9 @@ const WorkloadPanel: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-orange-100"
+            className="bg-surface rounded-xl p-8 shadow-e1 border border-warning/25"
           >
-            <h2 className="text-2xl font-black text-orange-600 mb-6 flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-warning mb-6 flex items-center gap-3">
               <FiAlertTriangle /> Capacity alerts
             </h2>
             <div className="space-y-3">
@@ -191,14 +191,14 @@ const WorkloadPanel: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100"
+          className="bg-surface rounded-xl p-8 shadow-e1 border border-line"
         >
-          <h2 className="text-2xl font-black text-gray-900 mb-2">{teamLabel}</h2>
-          <p className="text-sm text-gray-500 mb-6">
+          <h2 className="text-2xl font-bold text-fg mb-2">{teamLabel}</h2>
+          <p className="text-sm text-fg-muted mb-6">
             Total active workload across all assigned tasks (company-wide for each person).
           </p>
           {filteredTeamLoad.length === 0 ? (
-            <p className="text-gray-400 italic">
+            <p className="text-fg-subtle">
               No team members yet. Assign teams to your projects in Team Hub.
             </p>
           ) : (
@@ -221,19 +221,19 @@ const Kpi: React.FC<{
   accent: 'indigo' | 'emerald' | 'orange' | 'red';
 }> = ({ icon, label, value, accent }) => {
   const map = {
-    indigo: 'bg-indigo-50 text-indigo-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    orange: 'bg-orange-50 text-orange-600',
-    red: 'bg-red-50 text-red-600',
+    indigo: 'bg-primary-soft text-primary',
+    emerald: 'bg-success-soft text-success',
+    orange: 'bg-warning-soft text-warning',
+    red: 'bg-danger-soft text-danger',
   } as const;
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${map[accent]} text-2xl`}>
+    <div className="bg-surface rounded-xl p-8 shadow-e1 border border-line flex items-center gap-6">
+      <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${map[accent]} text-2xl`}>
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
-        <h3 className="text-3xl font-black text-gray-900">{value}</h3>
+        <p className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest">{label}</p>
+        <h3 className="text-3xl font-bold text-fg">{value}</h3>
       </div>
     </div>
   );
@@ -244,37 +244,37 @@ const UtilizationRow: React.FC<{ entry: WorkloadEntry }> = ({ entry }) => {
   const clamped = Math.min(150, pct);
   const tier = pct >= 100 ? 'red' : pct >= 90 ? 'orange' : pct >= 60 ? 'indigo' : 'emerald';
   const fill = {
-    red: 'bg-red-500',
-    orange: 'bg-orange-500',
-    indigo: 'bg-indigo-500',
-    emerald: 'bg-emerald-500',
+    red: 'bg-danger',
+    orange: 'bg-warning',
+    indigo: 'bg-primary',
+    emerald: 'bg-success',
   }[tier];
   const text = {
-    red: 'text-red-600',
-    orange: 'text-orange-600',
-    indigo: 'text-indigo-600',
-    emerald: 'text-emerald-600',
+    red: 'text-danger',
+    orange: 'text-warning',
+    indigo: 'text-primary',
+    emerald: 'text-success',
   }[tier];
 
   const isFree = (entry.activeTaskCount ?? 0) === 0;
 
   return (
-    <div className={`flex items-center gap-6 p-4 rounded-2xl border ${
-      isFree ? 'border-emerald-200 bg-emerald-50/80 ring-1 ring-emerald-100' : 'border-gray-100 bg-gray-50'
+    <div className={`flex items-center gap-6 p-4 rounded-lg border ${
+      isFree ? 'border-success/25 bg-success-soft ring-1 ring-success/25' : 'border-line bg-surface-2'
     }`}>
       <div className="w-44 shrink-0">
-        <div className="font-bold text-gray-900 flex items-center gap-2">
+        <div className="font-bold text-fg flex items-center gap-2">
           {entry.fullName}
           {isFree && (
-            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">Free</span>
+            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-success text-white">Free</span>
           )}
         </div>
-        <div className={`text-[10px] font-black uppercase tracking-widest ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
+        <div className={`text-[10px] font-bold uppercase tracking-widest ${isFree ? 'text-success' : 'text-fg-subtle'}`}>
           {isFree
             ? 'No active tasks — available for assignment'
             : `${entry.assignedTaskCount ?? 0} assigned - ${entry.inProgressTaskCount ?? entry.activeTaskCount ?? 0} active`}
           {entry.usesClockedHours && (
-            <span className="block text-indigo-600">
+            <span className="block text-primary">
               {entry.clockedHoursThisWeek?.toFixed(1)}h clocked this week
             </span>
           )}
@@ -282,15 +282,15 @@ const UtilizationRow: React.FC<{ entry: WorkloadEntry }> = ({ entry }) => {
       </div>
       <div className="flex-1">
         <div className="flex justify-between mb-1">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest">
             {entry.usesClockedHours
               ? `${entry.clockedHoursThisWeek?.toFixed(1) ?? 0}h clocked`
               : `${entry.totalEstimatedHours.toFixed(1)}h est.`}{' '}
             / {entry.capacityHours.toFixed(0)}h
           </span>
-          <span className={`text-xs font-black ${text}`}>{pct}%</span>
+          <span className={`text-xs font-bold ${text}`}>{pct}%</span>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-3 bg-surface-3 rounded-full overflow-hidden">
           <div className={`h-full ${fill}`} style={{ width: `${(clamped / 150) * 100}%` }} />
         </div>
       </div>

@@ -110,24 +110,24 @@ const fetchProjectData = async () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-surface p-8 rounded-xl shadow-e1 border border-line">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-4">{project.title}</h1>
-            <p className="text-gray-600 leading-relaxed">{project.description}</p>
+            <h1 className="text-2xl font-bold mb-4 text-fg">{project.title}</h1>
+            <p className="text-fg-muted leading-relaxed">{project.description}</p>
           </div>
           {isClosed && projectId && (
             <button
               type="button"
               onClick={() => setReportOpen(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
+              className="px-4 py-2 bg-primary text-primary-fg rounded-lg text-xs font-bold uppercase tracking-widest"
             >
               Closure report
             </button>
           )}
         </div>
         <div className="mt-6 flex gap-4">
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
+          <span className="px-3 py-1 bg-info-soft text-info rounded-full text-sm font-bold">
             Status: {project.status || project.Status || 'Active'}
           </span>
         </div>
@@ -143,31 +143,31 @@ const fetchProjectData = async () => {
         />
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
-        <h2 className="text-xl font-black text-gray-900">Team & task overview</h2>
+      <div className="bg-surface rounded-xl border border-line p-6 space-y-6">
+        <h2 className="text-xl font-bold text-fg">Team & task overview</h2>
         {!teamDetail && teamMembers.length === 0 ? (
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-4">
+          <p className="text-sm text-warning bg-warning-soft border border-warning/25 rounded-lg p-4">
             No team assigned to this project yet. Use <strong>Team Hub</strong> to assign a team, or data is not available.
           </p>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-indigo-50/50 rounded-xl p-4">
-                <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-2">Manager</p>
-                <p className="font-bold text-indigo-900">
+              <div className="bg-primary-soft rounded-lg p-4">
+                <p className="text-[10px] font-bold uppercase text-primary tracking-widest mb-2">Manager</p>
+                <p className="font-bold text-fg">
                   {teamDetail?.createdByName ?? teamDetail?.CreatedByName ?? '—'}
                 </p>
                 {teamDetail?.name ?? teamDetail?.Name ? (
-                  <p className="text-xs text-gray-500 mt-1">Team: {teamDetail.name ?? teamDetail.Name}</p>
+                  <p className="text-xs text-fg-muted mt-1">Team: {teamDetail.name ?? teamDetail.Name}</p>
                 ) : null}
               </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Team members</p>
+              <div className="bg-surface-2 rounded-lg p-4">
+                <p className="text-[10px] font-bold uppercase text-fg-subtle tracking-widest mb-2">Team members</p>
                 <ul className="text-sm space-y-1">
                   {teamMembers.map((m: any) => (
                     <li key={m.userId ?? m.UserId} className="flex justify-between">
-                      <span className="font-bold">{m.fullName ?? m.FullName}</span>
-                      <span className="text-xs text-gray-500">{m.roleName ?? m.RoleName ?? 'Employee'}</span>
+                      <span className="font-bold text-fg">{m.fullName ?? m.FullName}</span>
+                      <span className="text-xs text-fg-muted">{m.roleName ?? m.RoleName ?? 'Employee'}</span>
                     </li>
                   ))}
                 </ul>
@@ -223,27 +223,27 @@ const TaskBucket: React.FC<{
   tone?: 'amber' | 'emerald';
 }> = ({ title, tasks, nameFor, empty, tone }) => (
   <div>
-    <h3 className="font-black text-sm uppercase tracking-widest text-gray-400 mb-2">{title}</h3>
+    <h3 className="font-bold text-sm uppercase tracking-widest text-fg-subtle mb-2">{title}</h3>
     {tasks.length === 0 ? (
-      <p className="text-sm text-gray-400 italic">{empty}</p>
+      <p className="text-sm text-fg-subtle">{empty}</p>
     ) : (
       <ul className="space-y-2 max-h-48 overflow-y-auto">
         {tasks.map((t) => (
           <li
             key={t.taskId}
-            className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2"
+            className="flex justify-between items-center text-sm bg-surface-2 rounded-lg px-3 py-2"
           >
             <div>
-              <p className="font-bold">{t.title}</p>
-              <p className="text-xs text-gray-500">Assigned: {nameFor(String(t.assignedEmployeeId ?? ''))}</p>
+              <p className="font-bold text-fg">{t.title}</p>
+              <p className="text-xs text-fg-muted">Assigned: {nameFor(String(t.assignedEmployeeId ?? ''))}</p>
             </div>
             <span
-              className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+              className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
                 tone === 'amber'
-                  ? 'bg-amber-100 text-amber-700'
+                  ? 'bg-warning-soft text-warning'
                   : tone === 'emerald'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-indigo-100 text-indigo-700'
+                    ? 'bg-success-soft text-success'
+                    : 'bg-primary-soft text-primary'
               }`}
             >
               {t.status}

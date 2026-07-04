@@ -154,27 +154,27 @@ const DashboardTimesheetCard: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
+    <div className="bg-surface rounded-xl p-8 shadow-e1 border border-line mb-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Daily timesheet</p>
-          <h3 className="text-2xl font-black text-gray-900">
+          <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Daily timesheet</p>
+          <h3 className="text-2xl font-bold text-fg">
             Today <span className="tabular-nums">{displayTime}</span>{' '}
-            <span className="text-gray-400 font-medium text-lg">/ {standard}h shift</span>
+            <span className="text-fg-subtle font-medium text-lg">/ {standard}h shift</span>
           </h3>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-fg-muted mt-1">
             Max {max}h per day · multiple sessions · submit required daily
             {minSubmit > 0 && (
               <>
                 {' '}
-                · <strong className="text-amber-700">submit after {minSubmit}h</strong>
+                · <strong className="text-warning">submit after {minSubmit}h</strong>
               </>
             )}
           </p>
           {status !== 'Draft' && (
             <span
-              className={`inline-block mt-2 text-[10px] font-black uppercase px-2 py-1 rounded-lg ${
-                status === 'Rejected' ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700'
+              className={`inline-block mt-2 text-[10px] font-bold uppercase px-2 py-1 rounded-lg ${
+                status === 'Rejected' ? 'bg-danger-soft text-danger' : 'bg-primary-soft text-primary'
               }`}
             >
               {status}
@@ -186,7 +186,7 @@ const DashboardTimesheetCard: React.FC = () => {
             type="button"
             disabled={busy || isClockedIn || hours >= max || status === 'Submitted' || status === 'Approved'}
             onClick={clockIn}
-            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs font-black disabled:opacity-40"
+            className="flex items-center gap-2 px-5 py-3 bg-success text-white rounded-lg text-xs font-bold disabled:opacity-40"
           >
             <FiPlay size={14} /> Clock in
           </button>
@@ -194,12 +194,12 @@ const DashboardTimesheetCard: React.FC = () => {
             type="button"
             disabled={busy || !isClockedIn}
             onClick={clockOut}
-            className="flex items-center gap-2 px-5 py-3 bg-gray-900 text-white rounded-xl text-xs font-black disabled:opacity-40"
+            className="flex items-center gap-2 px-5 py-3 bg-surface-3 text-fg rounded-lg text-xs font-bold disabled:opacity-40"
           >
             <FiSquare size={14} /> Clock out
           </button>
           {mustSubmitToday && !canSubmit && !isClockedIn && minSubmit > 0 && hours < minSubmit && (
-            <span className="text-[10px] font-black uppercase text-gray-400 px-3 py-2">
+            <span className="text-[10px] font-bold uppercase text-fg-subtle px-3 py-2">
               Submit locked
             </span>
           )}
@@ -208,7 +208,7 @@ const DashboardTimesheetCard: React.FC = () => {
               type="button"
               disabled={busy}
               onClick={() => (needsOvertimeReason ? setShowOvertimeModal(true) : submit())}
-              className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black"
+              className="flex items-center gap-2 px-5 py-3 bg-primary text-primary-fg rounded-lg text-xs font-bold"
             >
               <FiSend size={14} /> Submit day
             </button>
@@ -217,34 +217,34 @@ const DashboardTimesheetCard: React.FC = () => {
       </div>
 
       {loadError && (
-        <p className="mt-4 text-sm text-red-600 flex items-center gap-2">
+        <p className="mt-4 text-sm text-danger flex items-center gap-2">
           <FiAlertCircle /> {loadError}
         </p>
       )}
 
       {minSubmit > 0 && hours > 0 && hours < minSubmit && !isClockedIn && (
-        <p className="mt-4 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+        <p className="mt-4 text-sm text-fg-muted bg-surface-2 border border-line rounded-xl px-4 py-3">
           You can clock in/out freely. Submit unlocks at <strong>{minSubmit}h</strong> —{' '}
           <strong>{hoursLeft.toFixed(1)}h</strong> remaining ({hours.toFixed(1)}h logged).
         </p>
       )}
 
       {mustSubmitToday && status === 'Draft' && canSubmit && (
-        <p className="mt-4 text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+        <p className="mt-4 text-sm text-warning bg-warning-soft border border-warning/25 rounded-xl px-4 py-3">
           You have {hours.toFixed(1)}h logged today. Submit your timesheet before end of day.
         </p>
       )}
 
       {showSubmitReminder && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-black text-gray-900 mb-2">Submit your timesheet</h3>
-            <p className="text-sm text-gray-600 mb-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-surface border border-line rounded-xl shadow-e2 max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-fg mb-2">Submit your timesheet</h3>
+            <p className="text-sm text-fg-muted mb-4">
               You have <strong>{formatHoursHms(hours)}</strong> logged today and have not submitted yet.
               Submit before end of day so your manager can approve it.
             </p>
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setShowSubmitReminder(false)} className="text-xs font-bold text-gray-500">
+              <button type="button" onClick={() => setShowSubmitReminder(false)} className="text-xs font-bold text-fg-muted">
                 Later
               </button>
               <button
@@ -255,7 +255,7 @@ const DashboardTimesheetCard: React.FC = () => {
                   if (needsOvertimeReason) setShowOvertimeModal(true);
                   else submit();
                 }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black"
+                className="px-4 py-2 bg-primary text-primary-fg rounded-lg text-xs font-bold"
               >
                 Submit now
               </button>
@@ -265,15 +265,15 @@ const DashboardTimesheetCard: React.FC = () => {
       )}
 
       {showOvertimeModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-black text-gray-900 mb-2">Overtime / extended hours</h3>
-            <p className="text-sm text-gray-600 mb-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-surface border border-line rounded-xl shadow-e2 max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-fg mb-2">Overtime / extended hours</h3>
+            <p className="text-sm text-fg-muted mb-4">
               You logged <strong>{hours.toFixed(1)}h</strong>. At or above {max}h (or over {threshold}h), explain why
               work ran long. This is required to submit your daily timesheet.
             </p>
             <textarea
-              className="w-full border rounded-xl px-3 py-2 text-sm min-h-[80px]"
+              className="w-full bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 text-sm min-h-[80px]"
               placeholder="Reason for overtime / delayed work"
               value={overtimeReason}
               onChange={(e) => setOvertimeReason(e.target.value)}
@@ -283,17 +283,17 @@ const DashboardTimesheetCard: React.FC = () => {
               placeholder="Note (optional)"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 text-sm mt-2"
+              className="w-full bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 text-sm mt-2"
             />
             <div className="flex gap-2 mt-4 justify-end">
-              <button type="button" onClick={() => setShowOvertimeModal(false)} className="text-xs font-bold text-gray-500">
+              <button type="button" onClick={() => setShowOvertimeModal(false)} className="text-xs font-bold text-fg-muted">
                 Cancel
               </button>
               <button
                 type="button"
                 disabled={busy || !overtimeReason.trim()}
                 onClick={submit}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black disabled:opacity-40"
+                className="px-4 py-2 bg-primary text-primary-fg rounded-lg text-xs font-bold disabled:opacity-40"
               >
                 Submit with reason
               </button>

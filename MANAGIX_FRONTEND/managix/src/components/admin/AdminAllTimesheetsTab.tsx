@@ -72,15 +72,15 @@ const AdminAllTimesheetsTab: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-20 text-center text-gray-400 font-black text-[10px] uppercase">Loading…</div>;
+    return <div className="p-20 text-center text-fg-subtle font-bold text-[10px] uppercase">Loading…</div>;
   }
 
   if (loadError) {
     return (
-      <div className="bg-white rounded-[2.5rem] border border-red-200 p-10">
-        <h2 className="text-lg font-black text-red-700 mb-2">Could not load</h2>
-        <p className="text-sm mb-4">{loadError}</p>
-        <button type="button" onClick={load} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+      <div className="bg-surface rounded-xl border border-danger/25 p-10">
+        <h2 className="text-lg font-bold text-danger mb-2">Could not load</h2>
+        <p className="text-sm mb-4 text-fg-muted">{loadError}</p>
+        <button type="button" onClick={load} className="px-6 py-3 bg-primary text-primary-fg rounded-lg text-[10px] font-bold uppercase">
           Retry
         </button>
       </div>
@@ -91,9 +91,9 @@ const AdminAllTimesheetsTab: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase mb-2">Org timesheet rules</h2>
-        <p className="text-sm text-gray-500 mb-4">
+      <div className="bg-surface rounded-xl border border-line p-8 shadow-e1">
+        <h2 className="text-xl font-bold uppercase mb-2 text-fg">Org timesheet rules</h2>
+        <p className="text-sm text-fg-muted mb-4">
           {policy.standardHoursPerDay}h shift + {policy.overtimeGraceHours}h grace (reason after {threshold}h), max{' '}
           {policy.dailyMaxHours}h/day. Submit enabled after{' '}
           <strong>{policy.minimumSubmitHours}h</strong> clocked (0 = no minimum).
@@ -103,7 +103,7 @@ const AdminAllTimesheetsTab: React.FC = () => {
             Shift (h)
             <input
               type="number"
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.standardHoursPerDay}
               onChange={(e) => setPolicy((p) => ({ ...p, standardHoursPerDay: Number(e.target.value) }))}
             />
@@ -112,7 +112,7 @@ const AdminAllTimesheetsTab: React.FC = () => {
             Grace (h)
             <input
               type="number"
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.overtimeGraceHours}
               onChange={(e) => setPolicy((p) => ({ ...p, overtimeGraceHours: Number(e.target.value) }))}
             />
@@ -121,7 +121,7 @@ const AdminAllTimesheetsTab: React.FC = () => {
             Max (h)
             <input
               type="number"
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.dailyMaxHours}
               onChange={(e) => setPolicy((p) => ({ ...p, dailyMaxHours: Number(e.target.value) }))}
             />
@@ -132,31 +132,31 @@ const AdminAllTimesheetsTab: React.FC = () => {
               type="number"
               min={0}
               step={0.5}
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.minimumSubmitHours}
               onChange={(e) => setPolicy((p) => ({ ...p, minimumSubmitHours: Number(e.target.value) }))}
             />
           </label>
-          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-primary text-primary-fg rounded-lg text-[10px] font-bold uppercase">
             Save policy
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase mb-4">All users — daily timesheets</h2>
+      <div className="bg-surface rounded-xl border border-line p-8 shadow-e1">
+        <h2 className="text-xl font-bold uppercase mb-4 text-fg">All users — daily timesheets</h2>
         <div className="flex flex-wrap gap-3 mb-4">
           <input
             type="search"
             placeholder="Search name or date…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]"
+            className="bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px] focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm font-bold"
+            className="bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
           >
             <option value="all">All</option>
             <option value="submitted">Submitted</option>
@@ -165,21 +165,21 @@ const AdminAllTimesheetsTab: React.FC = () => {
           </select>
         </div>
         {filteredSheets.length === 0 ? (
-          <p className="text-gray-400 italic text-sm">No submissions match your filters.</p>
+          <p className="text-fg-subtle text-sm">No submissions match your filters.</p>
         ) : (
           <div className="space-y-3 max-h-[32rem] overflow-y-auto">
             {filteredSheets.map((s) => (
-              <div key={s.dailyTimesheetId ?? s.DailyTimesheetId} className="border rounded-xl p-4 text-sm">
+              <div key={s.dailyTimesheetId ?? s.DailyTimesheetId} className="border border-line rounded-lg p-4 text-sm text-fg">
                 <strong>{s.fullName ?? s.FullName}</strong>
                 {(s.submitterRole ?? s.SubmitterRole) && (
-                  <span className="text-indigo-600 text-xs ml-2">({s.submitterRole ?? s.SubmitterRole})</span>
+                  <span className="text-primary text-xs ml-2">({s.submitterRole ?? s.SubmitterRole})</span>
                 )}
                 {' '}— {String(s.workDate ?? s.WorkDate).slice(0, 10)} —{' '}
                 {s.totalHours ?? s.TotalHours}h — <span className="uppercase font-bold">{s.status ?? s.Status}</span>
                 {s.overtimeReason && (
-                  <p className="text-amber-700 mt-1 text-xs">Overtime: {s.overtimeReason}</p>
+                  <p className="text-warning mt-1 text-xs">Overtime: {s.overtimeReason}</p>
                 )}
-                {s.employeeNote && <p className="text-gray-600 mt-1 text-xs">{s.employeeNote}</p>}
+                {s.employeeNote && <p className="text-fg-muted mt-1 text-xs">{s.employeeNote}</p>}
               </div>
             ))}
           </div>

@@ -94,15 +94,15 @@ const Login = () => {
 
   return (
 
-    <div className="flex items-center justify-center min-h-screen bg-[#F3F4F6]">
+    <div className="flex items-center justify-center min-h-screen bg-bg">
 
-      <div className="w-full max-w-md p-10 bg-white shadow-2xl rounded-3xl border border-gray-200">
+      <div className="w-full max-w-md p-10 bg-surface shadow-e3 rounded-xl border border-line">
 
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black text-black tracking-tight mb-2">
+          <h1 className="text-2xl font-bold text-fg tracking-tight mb-2">
             MANAGIX
           </h1>
-          <p className="text-gray-500 font-medium">
+          <p className="text-fg-muted font-medium">
             Welcome back
           </p>
         </div>
@@ -111,7 +111,7 @@ const Login = () => {
 
           <div className="space-y-2">
 
-            <label className="text-sm font-bold text-gray-700 ml-1">
+            <label className="text-sm font-bold text-fg-muted ml-1">
               Email
             </label>
 
@@ -119,7 +119,7 @@ const Login = () => {
               type="email"
               required
               placeholder="name@company.com"
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               onChange={(e) => setEmail(e.target.value)}
             />
 
@@ -129,13 +129,13 @@ const Login = () => {
 
             <div className="flex justify-between items-center">
 
-              <label className="text-sm font-bold text-gray-700 ml-1">
+              <label className="text-sm font-bold text-fg-muted ml-1">
                 Password
               </label>
 
               <Link
                 to="/forgot-password"
-                className="text-xs font-semibold text-gray-400 hover:text-black"
+                className="text-xs font-semibold text-fg-subtle hover:text-fg"
               >
                 Forgot Password?
               </Link>
@@ -146,14 +146,14 @@ const Login = () => {
               type="password"
               required
               placeholder="••••••••"
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               onChange={(e) => setPassword(e.target.value)}
             />
 
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm font-semibold text-center">
+            <div className="text-danger text-sm font-semibold text-center">
               {error}
             </div>
           )}
@@ -161,14 +161,14 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white p-4 rounded-2xl font-bold text-lg hover:bg-zinc-800 transition disabled:bg-gray-400 mt-4 shadow-lg"
+            className="w-full bg-primary text-primary-fg p-4 rounded-lg font-bold text-lg hover:bg-primary-hover transition disabled:opacity-50 mt-4 shadow-e2"
           >
 
             {loading ? (
 
               <span className="flex items-center justify-center gap-2">
 
-                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                <svg className="animate-spin h-5 w-5 text-primary-fg" viewBox="0 0 24 24">
 
                   <circle
                     className="opacity-25"
@@ -201,15 +201,15 @@ const Login = () => {
 
         </form>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+        <div className="mt-8 pt-6 border-t border-line text-center">
 
-          <p className="text-sm font-medium text-gray-500">
+          <p className="text-sm font-medium text-fg-muted">
 
             Don't have an account?
 
             <Link
               to="/signup"
-              className="ml-1 text-black font-bold hover:underline"
+              className="ml-1 text-primary font-bold hover:underline"
             >
               Signup
             </Link>

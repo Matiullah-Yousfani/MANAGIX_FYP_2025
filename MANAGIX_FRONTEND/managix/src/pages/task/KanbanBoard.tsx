@@ -27,9 +27,9 @@ const priorityNorm = (p?: string) => {
 };
 
 const priorityStyle = (p: string) => {
-  if (p === "High") return "bg-red-50 text-red-700 border-red-100";
-  if (p === "Low") return "bg-gray-100 text-gray-500 border-gray-100";
-  return "bg-amber-50 text-amber-700 border-amber-100";
+  if (p === "High") return "bg-danger-soft text-danger border-danger/25";
+  if (p === "Low") return "bg-surface-2 text-fg-muted border-line";
+  return "bg-warning-soft text-warning border-warning/25";
 };
 
 // --- Sub-Component: Task Card ---
@@ -87,10 +87,10 @@ const TaskCard = ({
 
   const getBadgeColor = () => {
     const s = getStatusDisplay();
-    if (s === "Approved") return "bg-emerald-100 text-emerald-700";
-    if (s === "Rejected") return "bg-red-50 text-red-600";
-    if (s === "Submitted for review" || s === "Under Review") return "bg-amber-50 text-amber-700";
-    return "bg-gray-100 text-gray-500";
+    if (s === "Approved") return "bg-success-soft text-success";
+    if (s === "Rejected") return "bg-danger-soft text-danger";
+    if (s === "Submitted for review" || s === "Under Review") return "bg-warning-soft text-warning";
+    return "bg-surface-2 text-fg-muted";
   };
 
   return (
@@ -104,40 +104,40 @@ const TaskCard = ({
         <div
           ref={p.innerRef} {...p.draggableProps} {...p.dragHandleProps}
           onClick={onClick}
-          className={`bg-white p-8 rounded-[2.5rem] border transition-all duration-300 relative overflow-hidden group 
-            ${isHigh ? 'border-red-200 ring-1 ring-red-100 shadow-red-50/50' : 'border-gray-100'}
-            ${!canDrag ? 'cursor-default' : 'hover:-translate-y-2 hover:shadow-2xl cursor-pointer'}`}
+          className={`bg-surface-2 p-8 rounded-xl border transition-all duration-300 relative overflow-hidden group
+            ${isHigh ? 'border-danger/25 ring-1 ring-danger/25' : 'border-line'}
+            ${!canDrag ? 'cursor-default' : 'hover:-translate-y-2 hover:shadow-e3 cursor-pointer'}`}
         >
           {/* Decorative Ghost Icon */}
-          <div className="absolute -bottom-4 -right-4 size-32 opacity-5 text-indigo-600 pointer-events-none">
+          <div className="absolute -bottom-4 -right-4 size-32 opacity-5 text-primary pointer-events-none">
             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </div>
 
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Task Details</label>
-          <h4 className="font-sans font-black text-xl text-gray-900 tracking-tight leading-tight mb-3">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-fg-subtle block mb-2">Task Details</label>
+          <h4 className="font-sans font-bold text-xl text-fg tracking-tight leading-tight mb-3">
             {task.Title || task.title}
           </h4>
-          <p className="text-sm font-medium text-gray-500 leading-relaxed line-clamp-2 mb-6">
+          <p className="text-sm font-medium text-fg-muted leading-relaxed line-clamp-2 mb-6">
             {task.Description || task.description}
           </p>
 
           {isDone && submissionFile && (
-            <div className="mb-4 flex items-center gap-2 text-[10px] text-indigo-600 font-black uppercase tracking-wider bg-indigo-50/50 p-2 rounded-xl">
+            <div className="mb-4 flex items-center gap-2 text-[10px] text-primary font-bold uppercase tracking-wider bg-primary-soft p-2 rounded-lg">
               <span>📎</span> {submissionFile}
             </div>
           )}
 
           <div className="flex flex-wrap gap-2 mb-4">
-            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${priorityStyle(priority)}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border ${priorityStyle(priority)}`}>
               {priority}
             </span>
           </div>
 
           <div className="flex justify-between items-center gap-2">
-            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl ${getBadgeColor()}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg ${getBadgeColor()}`}>
               {getStatusDisplay()}
             </span>
-            <span className="text-[10px] font-bold text-gray-500 truncate max-w-[45%]" title={assigneeName}>
+            <span className="text-[10px] font-bold text-fg-muted truncate max-w-[45%]" title={assigneeName}>
               {assigneeName || "Unassigned"}
             </span>
           </div>
@@ -326,18 +326,18 @@ const TaskModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-[100] p-6 backdrop-blur-md">
-      <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
-        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-2">Task Editor</label>
-        <h2 className="text-3xl font-sans font-black text-gray-900 tracking-tight mb-8">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-6 backdrop-blur-md">
+      <div className="bg-surface w-full max-w-xl rounded-xl p-10 shadow-e3 relative overflow-hidden border border-line">
+        <label className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-2">Task Editor</label>
+        <h2 className="text-2xl font-sans font-bold text-fg tracking-tight mb-8">
           {task.Title || task.title}
         </h2>
 
         {isReadOnly ? (
           <div className="space-y-6">
-            <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current Status</label>
-                <p className="text-lg font-sans font-black text-indigo-600 mb-4">
+            <div className="p-6 bg-surface-2 rounded-xl border border-line">
+                <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest block mb-2">Current Status</label>
+                <p className="text-lg font-sans font-bold text-primary mb-4">
                   {taskStatus === "Approved" || submission?.status === "Approved"
                     ? "Approved"
                     : submission?.status === "Rejected"
@@ -346,61 +346,61 @@ const TaskModal = ({
                         ? "Submitted for review"
                         : submission?.status ?? taskStatus}
                 </p>
-                <p className="text-sm font-medium text-gray-500 mb-1">
+                <p className="text-sm font-medium text-fg-muted mb-1">
                   File: {submission?.fileName ?? submission?.FileName ?? "—"}
                 </p>
-                <p className="text-sm font-medium text-gray-400">"{submission?.comment}"</p>
+                <p className="text-sm font-medium text-fg-subtle">"{submission?.comment}"</p>
             </div>
             {submission?.qaComment && (
-                <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100">
-                    <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest block mb-2">Review Feedback</label>
-                    <p className="text-sm font-medium text-emerald-800 leading-relaxed">{submission.qaComment}</p>
+                <div className="p-6 bg-success-soft rounded-xl border border-success/25">
+                    <label className="text-[10px] font-bold text-success uppercase tracking-widest block mb-2">Review Feedback</label>
+                    <p className="text-sm font-medium text-success leading-relaxed">{submission.qaComment}</p>
                 </div>
             )}
-            <button onClick={onClose} className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition-colors">Close Portal</button>
+            <button onClick={onClose} className="w-full py-5 bg-primary text-primary-fg rounded-lg font-bold uppercase tracking-widest hover:bg-primary-hover transition-colors">Close Portal</button>
           </div>
         ) : (
           <div className="space-y-8">
             {isEmployee ? (
               <>
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Update Progress</label>
-                    <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none">
+                    <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-4">Update Progress</label>
+                    <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full p-5 bg-surface-2 rounded-lg outline-none font-medium text-fg-muted focus:ring-2 focus:ring-primary/25 focus:border-primary border border-line">
                       <option value="Todo">Todo</option>
                       <option value="InProgress">In Progress</option>
                       <option value="Done">Done (Attach File)</option>
                     </select>
                 </div>
-                
+
                 {status === "Done" && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Deliverable File</label>
-                        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                        <textarea placeholder="Add a submission comment..." className="w-full p-5 bg-gray-50 rounded-2xl h-32 outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none resize-none" value={comment} onChange={(e) => setComment(e.target.value)} />
+                        <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-4">Deliverable File</label>
+                        <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block w-full text-sm text-fg-muted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-primary-soft file:text-primary hover:file:bg-surface-3" />
+                        <textarea placeholder="Add a submission comment..." className="w-full p-5 bg-surface-2 rounded-lg h-32 outline-none font-medium text-fg-muted focus:ring-2 focus:ring-primary/25 focus:border-primary border border-line resize-none" value={comment} onChange={(e) => setComment(e.target.value)} />
                     </div>
                 )}
-                
+
                 <div className="flex gap-4 pt-4">
-                    <button onClick={onClose} className="flex-1 py-5 font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Discard</button>
-                    <button onClick={handleSave} disabled={loading || (status === "Done" && !file)} className="flex-2 px-10 py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest disabled:opacity-30 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">
+                    <button onClick={onClose} className="flex-1 py-5 font-bold text-fg-subtle uppercase tracking-widest hover:text-fg-muted transition-colors">Discard</button>
+                    <button onClick={handleSave} disabled={loading || (status === "Done" && !file)} className="flex-2 px-10 py-5 bg-primary text-primary-fg rounded-lg font-bold uppercase tracking-widest disabled:opacity-30 shadow-e2 hover:bg-primary-hover transition-all">
                         {loading ? "Processing..." : "Update Task"}
                     </button>
                 </div>
               </>
             ) : isManagerOrAdmin ? (
               <div className="space-y-6">
-                <p className="text-gray-500 font-medium leading-relaxed">
+                <p className="text-fg-muted font-medium leading-relaxed">
                   {task.Description || task.description || "No description provided."}
                 </p>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-4">
                     Priority
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none"
+                    className="w-full p-5 bg-surface-2 rounded-lg outline-none font-medium text-fg-muted focus:ring-2 focus:ring-primary/25 focus:border-primary border border-line"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
@@ -409,11 +409,11 @@ const TaskModal = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest ml-4">
                     Assign to team member
                   </label>
                   {membersError && (
-                    <p className="text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-3 border border-amber-100">
+                    <p className="text-sm text-warning bg-warning-soft rounded-lg px-4 py-3 border border-warning/25">
                       {membersError}
                     </p>
                   )}
@@ -421,7 +421,7 @@ const TaskModal = ({
                     value={assigneeId}
                     onChange={(e) => setAssigneeId(e.target.value)}
                     disabled={membersLoading || (!!membersError && members.length === 0)}
-                    className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none disabled:opacity-50"
+                    className="w-full p-5 bg-surface-2 rounded-lg outline-none font-medium text-fg-muted focus:ring-2 focus:ring-primary/25 focus:border-primary border border-line disabled:opacity-50"
                   >
                     <option value="">Unassigned</option>
                     {members.map((m) => {
@@ -434,11 +434,11 @@ const TaskModal = ({
                     })}
                   </select>
                   {membersLoading && (
-                    <p className="text-xs text-gray-400 font-medium px-1">Loading team roster…</p>
+                    <p className="text-xs text-fg-subtle font-medium px-1">Loading team roster…</p>
                   )}
                 </div>
 
-                <p className="text-xs text-gray-400 font-medium px-1 leading-relaxed">
+                <p className="text-xs text-fg-subtle font-medium px-1 leading-relaxed">
                   Assign manually here. For AI task allocation, use Milestones → Smart Task Allocation.
                 </p>
 
@@ -446,7 +446,7 @@ const TaskModal = ({
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={loading || deleteBusy}
-                  className="w-full py-3 text-red-600 bg-red-50 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-red-100 transition-all"
+                  className="w-full py-3 text-danger bg-danger-soft rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-danger/10 transition-all"
                 >
                   Delete task
                 </button>
@@ -455,7 +455,7 @@ const TaskModal = ({
                   type="button"
                   onClick={handleManagerSaveAssignment}
                   disabled={loading || membersLoading}
-                  className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm disabled:opacity-40 shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all"
+                  className="w-full py-4 bg-primary text-primary-fg rounded-lg font-bold uppercase tracking-widest text-sm disabled:opacity-40 shadow-e2 hover:bg-primary-hover transition-all"
                 >
                   {loading ? "Saving…" : "Save assignment"}
                 </button>
@@ -463,22 +463,22 @@ const TaskModal = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full py-4 text-gray-400 font-black uppercase tracking-widest text-sm hover:text-gray-600 transition-colors"
+                  className="w-full py-4 text-fg-subtle font-bold uppercase tracking-widest text-sm hover:text-fg-muted transition-colors"
                 >
                   Close
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
-                <p className="text-gray-500 font-medium leading-relaxed">
+                <p className="text-fg-muted font-medium leading-relaxed">
                   {task.Description || task.description || "No description provided."}
                 </p>
-                <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <div className="p-6 bg-surface-2 rounded-xl border border-line text-center text-[10px] font-bold text-fg-subtle uppercase tracking-widest">
                   View only for your role
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest"
+                  className="w-full py-5 bg-primary text-primary-fg rounded-lg font-bold uppercase tracking-widest"
                 >
                   Close
                 </button>
@@ -671,14 +671,14 @@ const KanbanBoard = () => {
   };
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen">
+    <div className="bg-bg min-h-screen">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-10 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="sticky top-0 z-30 bg-surface border-b border-line px-10 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-           <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-1">Overview</label>
-           <h1 className="text-4xl font-sans font-black text-gray-900 tracking-tight">Kanban Board</h1>
+           <label className="text-[10px] font-bold text-primary uppercase tracking-widest block mb-1">Overview</label>
+           <h1 className="text-2xl font-sans font-bold text-fg tracking-tight">Kanban Board</h1>
         </div>
-        
+
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative">
             <input
@@ -686,14 +686,14 @@ const KanbanBoard = () => {
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full md:w-72 p-4 pl-12 bg-gray-50 border-none rounded-2xl focus:ring-2 ring-indigo-500/20 font-medium text-sm transition-all"
+              className="w-full md:w-72 p-4 pl-12 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary font-medium text-sm transition-all"
             />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-subtle">🔍</span>
           </div>
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="p-4 bg-gray-50 border-none rounded-2xl font-bold text-sm"
+            className="p-4 bg-surface-2 border border-line rounded-lg font-bold text-sm"
           >
             <option value="all">All priorities</option>
             <option value="high">High</option>
@@ -706,16 +706,16 @@ const KanbanBoard = () => {
       <main className="p-10">
         {/* Metric Selectors */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-6">
-              <div className="size-16 rounded-[1.5rem] bg-indigo-50 flex items-center justify-center text-indigo-600">
+          <div className="bg-surface p-8 rounded-xl shadow-e1 border border-line flex items-center gap-6">
+              <div className="size-16 rounded-xl bg-primary-soft flex items-center justify-center text-primary">
                 <svg className="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
               </div>
               <div className="flex-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Active Project</label>
-                  <select 
-                      value={selectedProjectId} 
-                      onChange={(e) => setSelectedProjectId(e.target.value)} 
-                      className="w-full bg-transparent border-none p-0 font-sans font-black text-xl text-gray-900 outline-none cursor-pointer"
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest block mb-1">Active Project</label>
+                  <select
+                      value={selectedProjectId}
+                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                      className="w-full bg-transparent border-none p-0 font-sans font-bold text-xl text-fg outline-none cursor-pointer"
                       disabled={loadingProjects}
                   >
                     <option value="">{loadingProjects ? "Loading..." : "Select Project"}</option>
@@ -728,17 +728,17 @@ const KanbanBoard = () => {
               </div>
           </div>
 
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-6">
-              <div className="size-16 rounded-[1.5rem] bg-emerald-50 flex items-center justify-center text-emerald-600">
+          <div className="bg-surface p-8 rounded-xl shadow-e1 border border-line flex items-center gap-6">
+              <div className="size-16 rounded-xl bg-success-soft flex items-center justify-center text-success">
                 <svg className="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
               <div className="flex-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Project Milestone</label>
-                  <select 
-                    value={selectedMilestoneId} 
+                  <label className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest block mb-1">Project Milestone</label>
+                  <select
+                    value={selectedMilestoneId}
                     disabled={!selectedProjectId}
-                    onChange={(e) => setSelectedMilestoneId(e.target.value)} 
-                    className="w-full bg-transparent border-none p-0 font-sans font-black text-xl text-gray-900 outline-none cursor-pointer disabled:opacity-30"
+                    onChange={(e) => setSelectedMilestoneId(e.target.value)}
+                    className="w-full bg-transparent border-none p-0 font-sans font-bold text-xl text-fg outline-none cursor-pointer disabled:opacity-30"
                   >
                     <option value="">All Milestone Tasks</option>
                     {milestones.map(m => (
@@ -757,13 +757,13 @@ const KanbanBoard = () => {
             {KANBAN_COLUMNS.map((col) => (
               <Droppable droppableId={col} key={col}>
                 {(p, snap) => (
-                  <div ref={p.innerRef} {...p.droppableProps} 
-                    className={`p-6 rounded-[2.5rem] min-h-[700px] transition-all duration-500 
-                    ${snap.isDraggingOver ? 'bg-indigo-50/40 ring-2 ring-indigo-500/10' : 'bg-gray-100/50'}`}>
-                    
+                  <div ref={p.innerRef} {...p.droppableProps}
+                    className={`p-6 rounded-xl min-h-[700px] transition-all duration-500
+                    ${snap.isDraggingOver ? 'bg-primary-soft ring-2 ring-primary/25' : 'bg-surface-2'}`}>
+
                     <div className="flex items-center justify-between mb-8 px-4">
-                        <h3 className="text-[11px] font-black uppercase text-gray-400 tracking-[0.2em]">{col}</h3>
-                        <span className="text-[10px] font-black text-indigo-600 bg-white size-6 flex items-center justify-center rounded-lg shadow-sm border border-gray-100">
+                        <h3 className="text-[11px] font-bold uppercase text-fg-subtle tracking-[0.2em]">{col}</h3>
+                        <span className="text-[10px] font-bold text-primary bg-surface size-6 flex items-center justify-center rounded-lg shadow-e1 border border-line">
                             {visibleTasks.filter(t => STATUS_MAP[t.Status || t.status] === col).length}
                         </span>
                     </div>

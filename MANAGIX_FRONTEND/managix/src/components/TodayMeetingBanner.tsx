@@ -47,12 +47,12 @@ const TodayMeetingBanner: React.FC = () => {
   const timeLabel = new Date(todayMeeting.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="mb-6 flex items-center justify-between gap-4 bg-indigo-600 text-white px-6 py-4 rounded-2xl shadow-lg">
+    <div className="mb-6 flex items-center justify-between gap-4 bg-primary text-primary-fg px-6 py-4 rounded-xl shadow-e2">
       <div className="flex items-center gap-3">
         <FiVideo size={22} />
         <div>
-          <p className="font-black text-sm uppercase tracking-wider">Meeting today</p>
-          <p className="text-indigo-100 text-sm">
+          <p className="font-bold text-sm uppercase tracking-wider">Meeting today</p>
+          <p className="text-primary-fg/80 text-sm">
             {todayMeeting.title} at {timeLabel}
             {joinState === 'BeforeStart'
               ? ' — join opens exactly at start time (10 min window)'
@@ -65,13 +65,13 @@ const TodayMeetingBanner: React.FC = () => {
           type="button"
           disabled={!canJoin}
           onClick={() => navigate(`/meeting?meetingId=${todayMeeting.meetingId}`)}
-          className={`px-4 py-2 rounded-xl font-black text-xs uppercase ${
-            canJoin ? 'bg-white text-indigo-700 hover:bg-indigo-50' : 'bg-indigo-400 text-indigo-100 cursor-not-allowed'
+          className={`px-4 py-2 rounded-lg font-bold text-xs uppercase ${
+            canJoin ? 'bg-surface text-primary hover:bg-surface-2' : 'bg-primary-hover text-primary-fg/60 cursor-not-allowed'
           }`}
         >
           Join
         </button>
-        <button type="button" onClick={() => setDismissed(true)} className="p-2 hover:bg-indigo-500 rounded-lg" aria-label="Dismiss">
+        <button type="button" onClick={() => setDismissed(true)} className="p-2 hover:bg-primary-hover rounded-lg" aria-label="Dismiss">
           <FiX />
         </button>
       </div>

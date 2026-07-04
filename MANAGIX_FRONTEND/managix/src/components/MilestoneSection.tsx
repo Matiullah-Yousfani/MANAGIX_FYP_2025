@@ -21,14 +21,14 @@ const MilestoneSection = ({ milestones, projectId, refresh }: any) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="bg-surface p-6 rounded-xl shadow-e1 border border-line">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Milestones</h2>
+        <h2 className="text-xl font-bold text-fg">Milestones</h2>
       </div>
 
       <div className="space-y-6">
         {milestones.length === 0 ? (
-          <p className="text-gray-400 text-sm">No milestones created yet.</p>
+          <p className="text-fg-subtle text-sm">No milestones created yet.</p>
         ) : (
           milestones.map((m: any) => {
             const status = m.status || m.Status || '';
@@ -37,14 +37,14 @@ const MilestoneSection = ({ milestones, projectId, refresh }: any) => {
             return (
               <div key={id} className="relative">
                 <div className="flex justify-between mb-1 items-center gap-2">
-                  <span className="text-sm font-bold">{m.title || m.Title}</span>
-                  <span className={`text-xs font-bold ${completed ? 'text-emerald-600' : 'text-gray-500'}`}>
+                  <span className="text-sm font-bold text-fg">{m.title || m.Title}</span>
+                  <span className={`text-xs font-bold ${completed ? 'text-success' : 'text-fg-muted'}`}>
                     {status || 'Pending'}
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-surface-3 rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full transition-all ${completed ? 'bg-emerald-500 w-full' : 'bg-blue-500 w-1/3'}`}
+                    className={`h-2 rounded-full transition-all ${completed ? 'bg-success w-full' : 'bg-info w-1/3'}`}
                   />
                 </div>
                 {role === 'Manager' && !completed && (
@@ -52,7 +52,7 @@ const MilestoneSection = ({ milestones, projectId, refresh }: any) => {
                     type="button"
                     disabled={busyId === id}
                     onClick={() => handleComplete(m)}
-                    className="mt-2 text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                    className="mt-2 text-[10px] font-bold uppercase text-primary hover:text-primary-hover disabled:opacity-50"
                   >
                     {busyId === id ? 'Saving…' : 'Mark completed'}
                   </button>

@@ -102,16 +102,16 @@ const TopBarTimesheet: React.FC = () => {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm mb-4">
-        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-1">Timesheet</span>
-        <span className="text-xs font-bold text-gray-700">
+      <div className="flex flex-wrap items-center gap-2 bg-surface border border-line rounded-xl px-4 py-2 shadow-e1 mb-4">
+        <span className="text-[10px] font-bold text-fg-subtle uppercase tracking-widest mr-1">Timesheet</span>
+        <span className="text-xs font-bold text-fg-muted">
           Today {hours.toFixed(1)}h / {standard}h
-          <span className="text-gray-400 font-normal"> (max {max}h)</span>
+          <span className="text-fg-subtle font-normal"> (max {max}h)</span>
         </span>
         {status !== 'Draft' && (
           <span
-            className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg ${
-              status === 'Rejected' ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700'
+            className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg ${
+              status === 'Rejected' ? 'bg-danger-soft text-danger' : 'bg-primary-soft text-primary'
             }`}
           >
             {status}
@@ -121,7 +121,7 @@ const TopBarTimesheet: React.FC = () => {
           type="button"
           disabled={busy || isClockedIn}
           onClick={clockIn}
-          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black disabled:opacity-40"
+          className="flex items-center gap-1 px-3 py-1.5 bg-success text-white rounded-lg text-[10px] font-bold disabled:opacity-40"
         >
           <FiPlay size={12} /> Clock in
         </button>
@@ -129,7 +129,7 @@ const TopBarTimesheet: React.FC = () => {
           type="button"
           disabled={busy || !isClockedIn}
           onClick={clockOut}
-          className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 text-white rounded-lg text-[10px] font-black disabled:opacity-40"
+          className="flex items-center gap-1 px-3 py-1.5 bg-surface-3 text-fg rounded-lg text-[10px] font-bold disabled:opacity-40"
         >
           <FiSquare size={12} /> Clock out
         </button>
@@ -138,24 +138,24 @@ const TopBarTimesheet: React.FC = () => {
             type="button"
             disabled={busy}
             onClick={openSubmit}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black"
+            className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-fg rounded-lg text-[10px] font-bold"
           >
             <FiSend size={12} /> Submit day
           </button>
         )}
         {showSubmit && !showOvertimeModal && (
-          <div className="flex flex-wrap items-center gap-2 w-full mt-2 pt-2 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-2 w-full mt-2 pt-2 border-t border-line">
             <input
               type="text"
               placeholder="Note (optional)"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="border rounded-lg px-2 py-1 text-xs flex-1 min-w-[120px]"
+              className="bg-surface-2 text-fg border border-line rounded-lg px-2 py-1 text-xs flex-1 min-w-[120px]"
             />
-            <button type="button" onClick={submit} disabled={busy} className="text-[10px] font-black text-indigo-600">
+            <button type="button" onClick={submit} disabled={busy} className="text-[10px] font-bold text-primary">
               Confirm submit
             </button>
-            <button type="button" onClick={() => setShowSubmit(false)} className="text-[10px] font-bold text-gray-400">
+            <button type="button" onClick={() => setShowSubmit(false)} className="text-[10px] font-bold text-fg-subtle">
               Cancel
             </button>
           </div>
@@ -163,16 +163,16 @@ const TopBarTimesheet: React.FC = () => {
       </div>
 
       {showOvertimeModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-black text-gray-900 mb-2">Overtime threshold exceeded</h3>
-            <p className="text-sm text-gray-600 mb-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-surface border border-line rounded-xl shadow-e2 max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-fg mb-2">Overtime threshold exceeded</h3>
+            <p className="text-sm text-fg-muted mb-4">
               You logged <strong>{hours.toFixed(1)}h</strong> today. After{' '}
               <strong>{threshold}h</strong> ({standard}h shift + {threshold - standard}h grace), a reason is required
               before submitting (max {max}h/day).
             </p>
             <textarea
-              className="w-full border rounded-xl px-3 py-2 text-sm min-h-[80px]"
+              className="w-full bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 text-sm min-h-[80px]"
               placeholder="Why did you work overtime?"
               value={overtimeReason}
               onChange={(e) => setOvertimeReason(e.target.value)}
@@ -182,7 +182,7 @@ const TopBarTimesheet: React.FC = () => {
               placeholder="Note (optional)"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 text-sm mt-2"
+              className="w-full bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 text-sm mt-2"
             />
             <div className="flex gap-2 mt-4 justify-end">
               <button
@@ -191,7 +191,7 @@ const TopBarTimesheet: React.FC = () => {
                   setShowOvertimeModal(false);
                   setShowSubmit(false);
                 }}
-                className="px-4 py-2 text-xs font-bold text-gray-500"
+                className="px-4 py-2 text-xs font-bold text-fg-muted"
               >
                 Cancel
               </button>
@@ -199,7 +199,7 @@ const TopBarTimesheet: React.FC = () => {
                 type="button"
                 disabled={busy || !overtimeReason.trim()}
                 onClick={submit}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black disabled:opacity-40"
+                className="px-4 py-2 bg-primary text-primary-fg rounded-lg text-xs font-bold disabled:opacity-40"
               >
                 Submit timesheet
               </button>

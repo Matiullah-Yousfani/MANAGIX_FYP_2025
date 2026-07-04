@@ -52,11 +52,11 @@ interface Props {
 }
 
 const SECTION_META: Record<string, { label: string; icon: React.ReactNode; accent: string }> = {
-  Scrum:     { label: 'Scrum / Agile sprints',  icon: <FiZap />,    accent: 'text-indigo-600' },
-  Agile:     { label: 'Agile sprints',          icon: <FiZap />,    accent: 'text-indigo-600' },
-  Kanban:    { label: 'Kanban flow',            icon: <FiTrello />, accent: 'text-blue-600' },
-  Waterfall: { label: 'Waterfall phases',       icon: <FiLayers />, accent: 'text-orange-600' },
-  Hybrid:    { label: 'Mixed / unspecified',    icon: <FiBriefcase />, accent: 'text-gray-600' },
+  Scrum:     { label: 'Scrum / Agile sprints',  icon: <FiZap />,    accent: 'text-primary' },
+  Agile:     { label: 'Agile sprints',          icon: <FiZap />,    accent: 'text-success' },
+  Kanban:    { label: 'Kanban flow',            icon: <FiTrello />, accent: 'text-info' },
+  Waterfall: { label: 'Waterfall phases',       icon: <FiLayers />, accent: 'text-warning' },
+  Hybrid:    { label: 'Mixed / unspecified',    icon: <FiBriefcase />, accent: 'text-fg-muted' },
 };
 
 const MethodologyDashboard: React.FC<Props> = ({ projects, aggregatesById, onOpen }) => {
@@ -87,11 +87,11 @@ const MethodologyDashboard: React.FC<Props> = ({ projects, aggregatesById, onOpe
               className="space-y-6"
             >
               <div className="flex items-center justify-between">
-                <h2 className={`text-2xl font-black flex items-center gap-3 ${meta.accent}`}>
+                <h2 className={`text-lg font-bold flex items-center gap-2.5 ${meta.accent}`}>
                   {meta.icon}
                   {meta.label}
                 </h2>
-                <span className="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                <span className="bg-surface-3 text-fg-muted border border-line-strong px-3 py-1 rounded-full text-xs font-medium">
                   {projectsInGroup.length} {projectsInGroup.length === 1 ? 'project' : 'projects'}
                 </span>
               </div>

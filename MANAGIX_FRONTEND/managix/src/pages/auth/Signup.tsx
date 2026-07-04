@@ -115,15 +115,15 @@ const Signup = () => {
     roles.find(r => r.RoleId === formData.roleId)?.RoleName || "Select Role";
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#F3F4F6] p-4 font-sans text-black">
+    <div className="flex items-center justify-center min-h-screen bg-bg p-4 font-sans text-fg">
 
-      <div className="w-full max-w-xl p-10 bg-white shadow-2xl rounded-3xl border border-[#E5E7EB]">
+      <div className="w-full max-w-xl p-10 bg-surface shadow-e3 rounded-xl border border-line">
 
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-black tracking-tight mb-2 uppercase italic">
+          <h1 className="text-2xl font-bold tracking-tight mb-2 uppercase">
             MANAGIX
           </h1>
-          <p className="text-[#9CA3AF] font-bold uppercase tracking-[0.3em] text-[10px]">
+          <p className="text-fg-subtle font-bold uppercase tracking-[0.3em] text-[10px]">
             Create Your Account
           </p>
         </div>
@@ -138,7 +138,7 @@ const Signup = () => {
               type="text"
               required
               placeholder="Your full name"
-              className="w-full p-4 border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               onChange={e =>
                 setFormData({ ...formData, fullName: e.target.value })
               }
@@ -153,7 +153,7 @@ const Signup = () => {
               type="email"
               required
               placeholder="name@company.com"
-              className="w-full p-4 border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               onChange={e =>
                 setFormData({ ...formData, email: e.target.value })
               }
@@ -168,7 +168,7 @@ const Signup = () => {
               type="password"
               required
               placeholder="••••••••"
-              className="w-full p-4 border border-[#E5E7EB] rounded-2xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full p-4 bg-surface-2 border border-line rounded-lg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               onChange={e =>
                 setFormData({ ...formData, password: e.target.value })
               }
@@ -183,7 +183,7 @@ const Signup = () => {
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className={`w-full p-4 border rounded-2xl flex justify-between items-center ${isOpen ? 'border-black ring-1 ring-black' : 'border-[#E5E7EB]'
+              className={`w-full p-4 bg-surface-2 border rounded-lg flex justify-between items-center ${isOpen ? 'border-primary ring-1 ring-primary/25' : 'border-line'
                 }`}
             >
               <span className="font-semibold">
@@ -202,7 +202,7 @@ const Signup = () => {
             </button>
 
             {isOpen && (
-              <div className="absolute z-50 w-full mt-2 bg-white border shadow-lg rounded-2xl overflow-hidden">
+              <div className="absolute z-50 w-full mt-2 bg-surface border border-line shadow-e2 rounded-lg overflow-hidden">
 
                 <div className="max-h-52 overflow-y-auto">
 
@@ -214,8 +214,8 @@ const Signup = () => {
                         setIsOpen(false);
                       }}
                       className={`px-5 py-4 cursor-pointer ${formData.roleId === r.RoleId
-                        ? 'bg-black text-white'
-                        : 'hover:bg-gray-100'
+                        ? 'bg-primary text-primary-fg'
+                        : 'hover:bg-surface-3'
                         }`}
                     >
                       {r.RoleName}
@@ -227,7 +227,7 @@ const Signup = () => {
               </div>
             )}
 
-            <p className="text-[10px] text-[#9CA3AF] mt-1 ml-1 font-bold uppercase italic">
+            <p className="text-[10px] text-fg-subtle mt-1 ml-1 font-bold uppercase">
               * Employee requires admin approval
             </p>
 
@@ -235,28 +235,28 @@ const Signup = () => {
 
           {/* ERROR MESSAGE */}
           {error && (
-            <p className="text-red-500 text-sm font-semibold">{error}</p>
+            <p className="text-danger text-sm font-semibold">{error}</p>
           )}
 
           {/* SUBMIT BUTTON */}
           <button
             type="submit"
-            className="w-full bg-black text-white p-4 rounded-2xl font-black text-lg hover:bg-[#1A1A1A]"
+            className="w-full bg-primary text-primary-fg p-4 rounded-lg font-bold text-lg hover:bg-primary-hover"
           >
             Sign Up
           </button>
 
         </form>
 
-        <div className="mt-8 pt-6 border-t text-center">
+        <div className="mt-8 pt-6 border-t border-line text-center">
 
-          <p className="text-xs font-bold text-[#9CA3AF] uppercase">
+          <p className="text-xs font-bold text-fg-subtle uppercase">
 
             Already have an account?
 
             <Link
               to="/login"
-              className="ml-2 text-black font-black hover:underline"
+              className="ml-2 text-primary font-bold hover:underline"
             >
               Login
             </Link>

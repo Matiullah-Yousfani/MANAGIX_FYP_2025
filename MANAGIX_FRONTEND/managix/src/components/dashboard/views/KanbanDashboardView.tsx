@@ -35,16 +35,16 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             key={p.projectId}
             layout
             onClick={() => onOpen(p.projectId)}
-            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden"
+            className="group bg-surface rounded-xl p-5 border border-line hover:border-line-strong hover:bg-surface-2 hover:shadow-e2 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer relative overflow-hidden"
           >
-            <FiTrello className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-blue-50 transition-colors pointer-events-none" />
+            <FiTrello className="absolute -bottom-4 -right-4 text-white/3 size-32 group-hover:text-info/10 transition-colors pointer-events-none" />
 
-            <div className="flex justify-between items-start mb-6 relative">
+            <div className="flex justify-between items-start mb-5 relative">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2 line-clamp-1">
+                <h3 className="text-lg font-bold text-fg group-hover:text-info transition-colors mb-1 line-clamp-1">
                   {p.title}
                 </h3>
-                <p className="text-gray-500 text-sm font-medium leading-relaxed line-clamp-1">
+                <p className="text-fg-muted text-sm leading-relaxed line-clamp-1">
                   {p.description || 'No description.'}
                 </p>
               </div>
@@ -52,21 +52,21 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             </div>
 
             {/* The three Kanban columns rendered as mini-stacks */}
-            <div className="grid grid-cols-3 gap-3 mb-6 relative">
-              <KanbanColumn label="Backlog" count={p.pendingTasks} colorClass="bg-orange-50 text-orange-700 border-orange-100" />
+            <div className="grid grid-cols-3 gap-3 mb-5 relative">
+              <KanbanColumn label="Backlog" count={p.pendingTasks} colorClass="bg-warning-soft text-warning border-warning/25" />
               <KanbanColumn
                 label="In Progress"
                 count={p.inProgressTasks}
-                colorClass={`${overWip ? 'bg-red-50 text-red-700 border-red-200' : 'bg-blue-50 text-blue-700 border-blue-100'}`}
+                colorClass={`${overWip ? 'bg-danger-soft text-danger border-danger/25' : 'bg-info-soft text-info border-info/25'}`}
                 hint={`WIP ${p.inProgressTasks}/${wip}`}
                 warning={overWip}
               />
-              <KanbanColumn label="Done" count={p.completedTasks} colorClass="bg-emerald-50 text-emerald-700 border-emerald-100" />
+              <KanbanColumn label="Done" count={p.completedTasks} colorClass="bg-success-soft text-success border-success/25" />
             </div>
 
-            <div className="flex items-center justify-between relative pt-4 border-t border-gray-50">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{p.status || 'Active'}</span>
-              <div className="flex items-center text-blue-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
+            <div className="flex items-center justify-between relative pt-4 border-t border-line">
+              <span className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide">{p.status || 'Active'}</span>
+              <div className="flex items-center gap-1 text-info font-semibold text-sm group-hover:translate-x-1 transition-transform">
                 Open Board <FiChevronRight />
               </div>
             </div>
@@ -81,13 +81,13 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
 const KanbanColumn: React.FC<{ label: string; count: number; colorClass: string; hint?: string; warning?: boolean }> = ({
   label, count, colorClass, hint, warning
 }) => (
-  <div className={`rounded-2xl border p-3 text-center ${colorClass}`}>
-    <div className="text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1">
+  <div className={`rounded-lg border p-3 text-center ${colorClass}`}>
+    <div className="text-[10px] font-semibold uppercase tracking-wide flex items-center justify-center gap-1">
       {warning && <FiAlertTriangle className="size-3" />}
       {label}
     </div>
-    <div className="text-2xl font-black my-1">{count}</div>
-    {hint && <div className="text-[10px] font-bold opacity-80">{hint}</div>}
+    <div className="text-2xl font-bold my-1">{count}</div>
+    {hint && <div className="text-[10px] font-medium opacity-80">{hint}</div>}
   </div>
 );
 

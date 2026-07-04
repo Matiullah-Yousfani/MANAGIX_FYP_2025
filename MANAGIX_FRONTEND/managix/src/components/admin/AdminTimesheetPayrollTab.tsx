@@ -77,15 +77,15 @@ const AdminTimesheetPayrollTab: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-20 text-center text-gray-400 font-black text-[10px] uppercase">Loading…</div>;
+    return <div className="p-20 text-center text-fg-subtle font-bold text-[10px] uppercase">Loading…</div>;
   }
 
   if (loadError) {
     return (
-      <div className="bg-white rounded-[2.5rem] border border-red-200 p-10">
-        <h2 className="text-lg font-black text-red-700 mb-2">Could not load</h2>
-        <p className="text-sm mb-4">{loadError}</p>
-        <button type="button" onClick={load} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+      <div className="bg-surface rounded-xl border border-danger/25 p-10">
+        <h2 className="text-lg font-bold text-danger mb-2">Could not load</h2>
+        <p className="text-sm mb-4 text-fg-muted">{loadError}</p>
+        <button type="button" onClick={load} className="px-6 py-3 bg-primary text-primary-fg rounded-lg text-[10px] font-bold uppercase">
           Retry
         </button>
       </div>
@@ -96,9 +96,9 @@ const AdminTimesheetPayrollTab: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase tracking-tight mb-2">Org timesheet policy</h2>
-        <p className="text-sm text-gray-500 mb-6">
+      <div className="bg-surface rounded-xl border border-line p-8 shadow-e1">
+        <h2 className="text-xl font-bold uppercase tracking-tight mb-2 text-fg">Org timesheet policy</h2>
+        <p className="text-sm text-fg-muted mb-6">
           Default for everyone: {policy.standardHoursPerDay}h shift, {policy.overtimeGraceHours}h overtime grace
           (popup/submit reason after {threshold}h), {policy.dailyMaxHours}h max per day.
         </p>
@@ -107,7 +107,7 @@ const AdminTimesheetPayrollTab: React.FC = () => {
             Shift (h)
             <input
               type="number"
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.standardHoursPerDay}
               onChange={(e) => setPolicy((p) => ({ ...p, standardHoursPerDay: Number(e.target.value) }))}
             />
@@ -116,7 +116,7 @@ const AdminTimesheetPayrollTab: React.FC = () => {
             Overtime grace (h)
             <input
               type="number"
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.overtimeGraceHours}
               onChange={(e) => setPolicy((p) => ({ ...p, overtimeGraceHours: Number(e.target.value) }))}
             />
@@ -125,41 +125,41 @@ const AdminTimesheetPayrollTab: React.FC = () => {
             Max day (h)
             <input
               type="number"
-              className="block border rounded-lg px-3 py-2 mt-1 w-20"
+              className="block bg-surface-2 text-fg border border-line rounded-lg px-3 py-2 mt-1 w-20 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
               value={policy.dailyMaxHours}
               onChange={(e) => setPolicy((p) => ({ ...p, dailyMaxHours: Number(e.target.value) }))}
             />
           </label>
-          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-primary text-primary-fg rounded-lg text-[10px] font-bold uppercase">
             Save policy
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-2xl overflow-hidden">
-        <div className="px-10 py-8 border-b">
-          <h2 className="text-xl font-black uppercase">Hourly rates</h2>
-          <p className="text-sm text-gray-500 mt-1">Per employee / manager (used in payroll).</p>
+      <div className="bg-surface rounded-xl border border-line shadow-e2 overflow-hidden">
+        <div className="px-10 py-8 border-b border-line">
+          <h2 className="text-xl font-bold uppercase text-fg">Hourly rates</h2>
+          <p className="text-sm text-fg-muted mt-1">Per employee / manager (used in payroll).</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-surface-2">
               <tr>
-                <th className="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400">Employee</th>
-                <th className="px-4 py-4 text-left text-[10px] font-black uppercase text-gray-400">$/hr</th>
+                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase text-fg-subtle">Employee</th>
+                <th className="px-4 py-4 text-left text-[10px] font-bold uppercase text-fg-subtle">$/hr</th>
                 <th className="px-4 py-4" />
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-line">
               {rows.map((r) => {
                 const uid = String(r.userId ?? r.UserId);
                 return (
                   <tr key={uid}>
-                    <td className="px-6 py-4 font-bold">{r.fullName ?? r.FullName}</td>
+                    <td className="px-6 py-4 font-bold text-fg">{r.fullName ?? r.FullName}</td>
                     <td className="px-4 py-2">
                       <input
                         type="number"
-                        className="w-24 border rounded-lg px-2 py-1"
+                        className="w-24 bg-surface-2 text-fg border border-line rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
                         value={r.hourlyRate ?? r.HourlyRate ?? ''}
                         onChange={(e) => updateField(uid, 'hourlyRate', e.target.value)}
                       />
@@ -169,7 +169,7 @@ const AdminTimesheetPayrollTab: React.FC = () => {
                         type="button"
                         disabled={savingId === uid}
                         onClick={() => saveRate(r)}
-                        className="px-4 py-2 bg-black text-white rounded-xl text-[10px] font-black uppercase disabled:opacity-50"
+                        className="px-4 py-2 bg-primary text-primary-fg rounded-lg text-[10px] font-bold uppercase disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -182,14 +182,14 @@ const AdminTimesheetPayrollTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase mb-4">All daily timesheets</h2>
+      <div className="bg-surface rounded-xl border border-line p-8 shadow-e1">
+        <h2 className="text-xl font-bold uppercase mb-4 text-fg">All daily timesheets</h2>
         {sheets.length === 0 ? (
-          <p className="text-gray-400 italic text-sm">No submissions yet.</p>
+          <p className="text-fg-subtle text-sm">No submissions yet.</p>
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {sheets.map((s) => (
-              <div key={s.dailyTimesheetId ?? s.DailyTimesheetId} className="border rounded-xl p-4 text-sm">
+              <div key={s.dailyTimesheetId ?? s.DailyTimesheetId} className="border border-line rounded-lg p-4 text-sm text-fg">
                 <strong>{s.fullName ?? s.FullName}</strong> — {String(s.workDate ?? s.WorkDate).slice(0, 10)} —{' '}
                 {s.totalHours ?? s.TotalHours}h — <span className="uppercase font-bold">{s.status ?? s.Status}</span>
               </div>

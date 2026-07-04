@@ -47,18 +47,18 @@ const MilestoneForm: React.FC<Props> = ({
   };
 
   return (
-    <div className="card p-3 mb-3">
-      <h5>{milestone ? "Edit Milestone" : "Add Milestone"}</h5>
+    <div className="bg-surface p-4 mb-3 rounded-xl border border-line shadow-e1">
+      <h5 className="text-fg font-semibold mb-3">{milestone ? "Edit Milestone" : "Add Milestone"}</h5>
 
       <input
-        className="form-control mb-2"
+        className="w-full mb-2 p-3 bg-surface-2 border border-line rounded-lg text-fg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary"
         placeholder="Title"
         value={title}
         onChange={e => setTitle(e.target.value)}
       />
 
       <textarea
-        className="form-control mb-2"
+        className="w-full mb-2 p-3 bg-surface-2 border border-line rounded-lg text-fg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary"
         placeholder="Description"
         value={description}
         onChange={e => setDescription(e.target.value)}
@@ -67,23 +67,23 @@ const MilestoneForm: React.FC<Props> = ({
       <input
         type="date"
         min={minDateToday()}
-        className="form-control mb-2"
+        className="w-full mb-2 p-3 bg-surface-2 border border-line rounded-lg text-fg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary"
         value={deadline}
         onChange={e => setDeadline(e.target.value)}
       />
 
       <input
         type="number"
-        className="form-control mb-2"
+        className="w-full mb-2 p-3 bg-surface-2 border border-line rounded-lg text-fg outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary"
         placeholder="Budget"
         value={budget}
         onChange={e => setBudget(Number(e.target.value))}
       />
 
-      <button className="btn btn-primary me-2" onClick={submit}>
+      <button className="mr-2 px-4 py-2 rounded-lg bg-primary text-primary-fg font-semibold hover:bg-primary-hover transition-colors" onClick={submit}>
         Save
       </button>
-      <button className="btn btn-secondary" onClick={onCancel}>
+      <button className="px-4 py-2 rounded-lg bg-surface-2 text-fg border border-line font-semibold hover:bg-surface-3 transition-colors" onClick={onCancel}>
         Cancel
       </button>
     </div>

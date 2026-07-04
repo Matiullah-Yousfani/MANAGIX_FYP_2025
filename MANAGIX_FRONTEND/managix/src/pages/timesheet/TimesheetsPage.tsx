@@ -68,7 +68,7 @@ const TimesheetsPage: React.FC = () => {
 
   if (!isAdmin && !isManager) {
     return (
-      <div className="p-12 text-center text-gray-500">
+      <div className="p-12 text-center text-fg-muted">
         Managers and admins can review submitted timesheets here.
       </div>
     );
@@ -76,8 +76,8 @@ const TimesheetsPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-black text-gray-900 mb-2">Team timesheets</h1>
-      <p className="text-gray-500 mb-6">
+      <h1 className="text-2xl font-bold text-fg mb-2">Team timesheets</h1>
+      <p className="text-fg-muted mb-6">
         {isAdmin
           ? 'All submitted daily timesheets. Manager submissions require admin approval.'
           : 'Your team members’ timesheets. Your own submissions go to admin for approval.'}
@@ -89,12 +89,12 @@ const TimesheetsPage: React.FC = () => {
           placeholder="Search name, email, or date…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium flex-1 min-w-[200px]"
+          className="border border-line rounded-lg px-4 py-2 text-sm font-medium flex-1 min-w-[200px] bg-surface-2 text-fg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold"
+          className="border border-line rounded-lg px-4 py-2 text-sm font-bold bg-surface-2 text-fg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
         >
           <option value="all">All statuses</option>
           <option value="submitted">Submitted</option>
@@ -105,9 +105,9 @@ const TimesheetsPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-fg-subtle">Loading…</p>
       ) : filtered.length === 0 ? (
-        <p className="text-gray-400 italic">No timesheet submissions match your filters.</p>
+        <p className="text-fg-subtle">No timesheet submissions match your filters.</p>
       ) : (
         <div className="space-y-4">
           {filtered.map((r) => {
@@ -118,26 +118,26 @@ const TimesheetsPage: React.FC = () => {
             const showActions = canReview(r);
 
             return (
-              <div key={id} className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div key={id} className="bg-surface rounded-xl border border-line p-6">
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <p className="font-black text-gray-900">{r.fullName ?? r.FullName}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="font-bold text-fg">{r.fullName ?? r.FullName}</p>
+                    <p className="text-xs text-fg-subtle">
                       {String(r.workDate ?? r.WorkDate).slice(0, 10)} · {r.totalHours ?? r.TotalHours}h ·{' '}
                       <span className="uppercase font-bold">{st}</span>
                       {submitterRole && (
-                        <span className="ml-2 text-indigo-600">· {submitterRole}</span>
+                        <span className="ml-2 text-primary">· {submitterRole}</span>
                       )}
                     </p>
                     {needsAdmin && st === 'Submitted' && (
-                      <p className="text-[10px] font-black uppercase text-amber-700 mt-1">
+                      <p className="text-[10px] font-bold uppercase text-warning mt-1">
                         Manager timesheet — admin approval required
                       </p>
                     )}
                     {r.overtimeReason && (
-                      <p className="text-sm text-amber-700 mt-2">Overtime: {r.overtimeReason}</p>
+                      <p className="text-sm text-warning mt-2">Overtime: {r.overtimeReason}</p>
                     )}
-                    {r.employeeNote && <p className="text-sm text-gray-600 mt-1">{r.employeeNote}</p>}
+                    {r.employeeNote && <p className="text-sm text-fg-muted mt-1">{r.employeeNote}</p>}
                   </div>
                   {showActions && (
                     <div className="flex flex-col gap-2 shrink-0">
@@ -146,20 +146,20 @@ const TimesheetsPage: React.FC = () => {
                         placeholder="Comment"
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        className="border rounded-lg px-2 py-1 text-xs"
+                        className="bg-surface-2 text-fg border border-line rounded-lg px-2 py-1 text-xs"
                       />
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => review(id, true)}
-                          className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-black"
+                          className="px-3 py-1.5 bg-success text-white rounded-lg text-xs font-bold"
                         >
                           Approve
                         </button>
                         <button
                           type="button"
                           onClick={() => review(id, false)}
-                          className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-black"
+                          className="px-3 py-1.5 bg-danger text-white rounded-lg text-xs font-bold"
                         >
                           Reject
                         </button>
@@ -167,7 +167,7 @@ const TimesheetsPage: React.FC = () => {
                     </div>
                   )}
                   {st === 'Submitted' && needsAdmin && isManager && !showActions && (
-                    <span className="text-[10px] font-black uppercase text-gray-400 shrink-0">
+                    <span className="text-[10px] font-bold uppercase text-fg-subtle shrink-0">
                       Awaiting admin
                     </span>
                   )}

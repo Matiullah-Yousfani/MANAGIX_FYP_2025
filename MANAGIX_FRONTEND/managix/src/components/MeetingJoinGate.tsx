@@ -67,7 +67,7 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
 
   if (loading) {
     return (
-      <div className="mb-6 p-4 bg-white rounded-2xl border border-gray-100 text-gray-500 italic">
+      <div className="mb-6 p-4 bg-surface rounded-xl border border-line text-fg-muted">
         Checking meeting status…
       </div>
     );
@@ -75,7 +75,7 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
 
   if (!status) {
     return (
-      <div className="mb-6 p-4 bg-red-50 rounded-2xl border border-red-100 text-red-700 font-bold flex gap-2">
+      <div className="mb-6 p-4 bg-danger-soft rounded-xl border border-danger/25 text-danger font-bold flex gap-2">
         <FiAlertCircle /> Meeting not found or you are not invited.
       </div>
     );
@@ -83,7 +83,7 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
 
   if (!status.isParticipant) {
     return (
-      <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-800 font-bold">
+      <div className="mb-6 p-4 bg-warning-soft rounded-xl border border-warning/25 text-warning font-bold">
         You are not a participant on this meeting.
       </div>
     );
@@ -94,34 +94,34 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
 
   if (status.joinState === 'Expired' || status.status === 'Expired') {
     return (
-      <div className="mb-6 p-6 bg-gray-100 rounded-2xl border border-gray-200">
-        <h2 className="font-black text-gray-800">{status.title}</h2>
-        <p className="text-sm text-gray-600 mt-2">This meeting link has expired (past end time).</p>
-        <p className="text-xs text-gray-400 mt-2">Was scheduled: {fmt(status.scheduledAt)}</p>
+      <div className="mb-6 p-6 bg-surface-2 rounded-xl border border-line">
+        <h2 className="font-bold text-fg">{status.title}</h2>
+        <p className="text-sm text-fg-muted mt-2">This meeting link has expired (past end time).</p>
+        <p className="text-xs text-fg-subtle mt-2">Was scheduled: {fmt(status.scheduledAt)}</p>
       </div>
     );
   }
 
   if (status.joinState === 'BeforeStart') {
     return (
-      <div className="mb-6 p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-        <h2 className="font-black text-indigo-900">{status.title}</h2>
+      <div className="mb-6 p-6 bg-primary-soft rounded-xl border border-primary-border">
+        <h2 className="font-bold text-fg">{status.title}</h2>
         {status.sprintNumber != null && (
-          <p className="text-xs font-black text-indigo-500 uppercase mt-1">Sprint {status.sprintNumber}</p>
+          <p className="text-xs font-bold text-primary uppercase mt-1">Sprint {status.sprintNumber}</p>
         )}
-        <p className="text-sm text-indigo-700 mt-2 flex items-center gap-2">
+        <p className="text-sm text-primary mt-2 flex items-center gap-2">
           <FiClock /> Starts {fmt(status.scheduledAt)} — ends {fmt(status.endsAt)}
         </p>
-        <p className="text-xs text-indigo-500 mt-2 flex items-center gap-1">
+        <p className="text-xs text-primary mt-2 flex items-center gap-1">
           <FiLink /> {link}
         </p>
-        <p className="text-xs text-indigo-600 mt-3 flex items-center gap-1">
+        <p className="text-xs text-primary mt-3 flex items-center gap-1">
           <FiKey /> You will need the join code from your notification when the meeting starts.
         </p>
         <button
           type="button"
           disabled
-          className="mt-4 px-6 py-3 bg-gray-300 text-gray-600 font-black rounded-xl cursor-not-allowed flex items-center gap-2"
+          className="mt-4 px-6 py-3 bg-surface-3 text-fg-subtle font-bold rounded-lg cursor-not-allowed flex items-center gap-2"
         >
           <FiVideo /> Join (not yet active)
         </button>
@@ -131,16 +131,16 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
 
   if (status.joinState === 'LinkDisabled' || (status.joinState === 'Expired' && status.isParticipant)) {
     return (
-      <div className="mb-6 p-6 bg-amber-50 rounded-2xl border border-amber-100">
-        <h2 className="font-black text-amber-900">{status.title}</h2>
-        <p className="text-sm text-amber-800 mt-2">
+      <div className="mb-6 p-6 bg-warning-soft rounded-xl border border-warning/25">
+        <h2 className="font-bold text-fg">{status.title}</h2>
+        <p className="text-sm text-warning mt-2">
           This meeting has ended. The join link is no longer active.
         </p>
-        <p className="text-xs text-amber-600 mt-2">Was scheduled until {fmt(status.endsAt)}</p>
+        <p className="text-xs text-warning mt-2">Was scheduled until {fmt(status.endsAt)}</p>
         <button
           type="button"
           disabled
-          className="mt-4 px-6 py-3 bg-gray-300 text-gray-600 font-black rounded-xl cursor-not-allowed flex items-center gap-2"
+          className="mt-4 px-6 py-3 bg-surface-3 text-fg-subtle font-bold rounded-lg cursor-not-allowed flex items-center gap-2"
         >
           <FiVideo /> Meeting ended
         </button>
@@ -150,13 +150,13 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
 
   if (status.canJoin) {
     return (
-      <div className="mb-6 p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
-        <h2 className="font-black text-emerald-900">{status.title}</h2>
-        <p className="text-sm text-emerald-700 mt-1">
+      <div className="mb-6 p-6 bg-success-soft rounded-xl border border-success/25">
+        <h2 className="font-bold text-fg">{status.title}</h2>
+        <p className="text-sm text-success mt-1">
           Meeting is live — enter your join code to enter the room (active until {fmt(status.endsAt)}).
         </p>
         <label className="block mt-4">
-          <span className="text-xs font-black uppercase text-emerald-600 tracking-widest flex items-center gap-1">
+          <span className="text-xs font-bold uppercase text-success tracking-widest flex items-center gap-1">
             <FiKey /> Join code
           </span>
           <input
@@ -168,11 +168,11 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
             }}
             placeholder="e.g. A3K9X2"
             maxLength={8}
-            className="mt-2 w-full border border-emerald-200 rounded-xl px-4 py-3 text-lg font-mono tracking-widest uppercase bg-white focus:ring-2 focus:ring-emerald-400 outline-none"
+            className="mt-2 w-full border border-line rounded-lg px-4 py-3 text-lg font-mono tracking-widest uppercase bg-surface-2 text-fg focus:ring-2 focus:ring-primary/25 focus:border-primary outline-none"
           />
         </label>
         {codeError && (
-          <p className="text-sm text-red-600 font-semibold mt-2 flex items-center gap-1">
+          <p className="text-sm text-danger font-semibold mt-2 flex items-center gap-1">
             <FiAlertCircle size={14} /> {codeError}
           </p>
         )}
@@ -180,7 +180,7 @@ const MeetingJoinGate: React.FC<Props> = ({ meetingId, initialCode, onCanJoin })
           type="button"
           onClick={handleVerifyAndJoin}
           disabled={verifying}
-          className="mt-4 px-6 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 flex items-center gap-2 disabled:opacity-60"
+          className="mt-4 px-6 py-3 bg-success text-primary-fg font-bold rounded-lg hover:opacity-90 flex items-center gap-2 disabled:opacity-60"
         >
           <FiVideo /> {verifying ? 'Verifying…' : 'Join video meeting'}
         </button>

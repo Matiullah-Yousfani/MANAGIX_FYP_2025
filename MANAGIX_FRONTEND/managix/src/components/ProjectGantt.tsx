@@ -122,10 +122,10 @@ const ProjectGantt: React.FC<Props> = ({
       .finally(() => setLoading(false));
   }, [projectId, refreshKey]);
 
-  if (loading) return <p className="text-gray-400 italic text-sm">Loading timeline…</p>;
+  if (loading) return <p className="text-fg-subtle text-sm">Loading timeline…</p>;
   if (!data) {
     return (
-      <p className="text-gray-400 text-sm">
+      <p className="text-fg-subtle text-sm">
         Timeline unavailable — ensure milestones have deadlines and restart the backend if this persists.
       </p>
     );
@@ -135,48 +135,48 @@ const ProjectGantt: React.FC<Props> = ({
   const totalFlex = milestones.reduce((s: number, m: any) => s + Math.max(m.widthPct || 8, 8), 0) || 1;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6">
+    <div className="bg-surface rounded-xl border border-line p-6">
       <div className="flex justify-between items-start mb-4 gap-4">
         <div>
-          <h3 className="font-black text-gray-900 uppercase tracking-widest text-sm">Project timeline</h3>
+          <h3 className="font-bold text-fg uppercase tracking-widest text-sm">Project timeline</h3>
           {data.title && (
-            <p className="text-indigo-700 font-bold text-sm mt-1">{data.title}</p>
+            <p className="text-primary font-bold text-sm mt-1">{data.title}</p>
           )}
           {usedFallback && (
-            <p className="text-xs text-amber-600 mt-1 font-medium">
+            <p className="text-xs text-warning mt-1 font-medium">
               Showing simplified timeline (API unavailable). Restart Functions host for full Gantt dates.
             </p>
           )}
         </div>
-        <span className="text-indigo-600 font-bold text-sm shrink-0">{data.overallProgressPct}% complete</span>
+        <span className="text-primary font-bold text-sm shrink-0">{data.overallProgressPct}% complete</span>
       </div>
-      <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-6">
+      <div className="h-3 bg-surface-3 rounded-full overflow-hidden mb-6">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
             data.overallProgressPct >= 100
-              ? 'bg-emerald-500'
+              ? 'bg-success'
               : data.overallProgressPct >= 50
-                ? 'bg-indigo-500'
-                : 'bg-indigo-400'
+                ? 'bg-primary'
+                : 'bg-primary/70'
           }`}
           style={{ width: `${Math.min(100, data.overallProgressPct)}%` }}
         />
       </div>
       {milestones.length > 0 ? (
-        <div className="flex h-20 gap-1 mb-4 rounded-xl overflow-hidden border border-gray-100">
+        <div className="flex h-20 gap-1 mb-4 rounded-lg overflow-hidden border border-line">
           {milestones.map((m: any) => {
             const done = isMilestoneCompleted(m.status);
             const pendingReview = Boolean(m.hasPendingReview);
             const flexGrow = Math.max(m.widthPct || 8, 8) / totalFlex;
             const pct = Math.min(100, Number(m.progressPct ?? 0));
             const fillColor = done
-              ? 'bg-emerald-500'
+              ? 'bg-success'
               : pendingReview
-                ? 'bg-amber-400'
+                ? 'bg-warning'
                 : pct >= 50
-                  ? 'bg-indigo-500'
-                  : 'bg-indigo-400';
-            const trackColor = done ? 'bg-emerald-100' : pendingReview ? 'bg-amber-100' : 'bg-indigo-100';
+                  ? 'bg-primary'
+                  : 'bg-primary/70';
+            const trackColor = done ? 'bg-success-soft' : pendingReview ? 'bg-warning-soft' : 'bg-primary-soft';
             return (
               <div
                 key={m.milestoneId}
@@ -188,7 +188,7 @@ const ProjectGantt: React.FC<Props> = ({
                   className={`absolute inset-y-0 left-0 transition-all duration-500 ${fillColor}`}
                   style={{ width: `${pct}%` }}
                 />
-                <span className={`relative z-10 truncate px-1 ${pct > 40 ? 'text-white' : 'text-gray-700'}`}>
+                <span className={`relative z-10 truncate px-1 ${pct > 40 ? 'text-primary-fg' : 'text-fg-muted'}`}>
                   {m.title}
                 </span>
               </div>
@@ -196,19 +196,19 @@ const ProjectGantt: React.FC<Props> = ({
           })}
         </div>
       ) : (
-        <p className="text-gray-400 text-sm mb-4">No milestones yet.</p>
+        <p className="text-fg-subtle text-sm mb-4">No milestones yet.</p>
       )}
       <ul className="space-y-2">
         {milestones.map((m: any) => (
-          <li key={m.milestoneId} className="flex justify-between text-xs text-gray-600">
+          <li key={m.milestoneId} className="flex justify-between text-xs text-fg-muted">
             <span className="font-bold">{m.title}</span>
             <span>
               {m.completedTasks}/{m.totalTasks} tasks · {m.progressPct}%
               {isMilestoneCompleted(m.status) && (
-                <span className="ml-2 text-emerald-600 font-black">Completed</span>
+                <span className="ml-2 text-success font-bold">Completed</span>
               )}
               {m.hasPendingReview && !isMilestoneCompleted(m.status) && (
-                <span className="ml-2 text-amber-600 font-black">Awaiting QA</span>
+                <span className="ml-2 text-warning font-bold">Awaiting QA</span>
               )}
             </span>
           </li>

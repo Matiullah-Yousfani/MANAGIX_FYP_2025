@@ -63,13 +63,13 @@ const Meeting = () => {
 
   if (!activeLoading && !hasActive && !scheduledMeetingId) {
     return (
-      <div className="max-w-lg mx-auto mt-16 p-10 bg-white rounded-2xl border border-gray-100 shadow-sm text-center space-y-4">
-        <h1 className="text-xl font-black text-gray-900">No active meeting</h1>
-        <p className="text-gray-500 text-sm">
+      <div className="max-w-lg mx-auto mt-16 p-10 bg-surface rounded-xl border border-line shadow-e1 text-center space-y-4">
+        <h1 className="text-xl font-bold text-fg">No active meeting</h1>
+        <p className="text-fg-muted text-sm">
           The meeting room is only available during a scheduled meeting window.
           Check notifications for your join link when a meeting starts.
         </p>
-        <Link to="/meeting/transcripts" className="inline-block text-indigo-600 font-bold text-sm hover:underline">
+        <Link to="/meeting/transcripts" className="inline-block text-primary font-bold text-sm hover:underline">
           View past meeting transcripts →
         </Link>
       </div>
@@ -79,7 +79,7 @@ const Meeting = () => {
   if (active.length > 1 && !scheduledMeetingId) {
     return (
       <div className="max-w-xl mx-auto mt-12 space-y-4">
-        <h1 className="text-2xl font-black text-gray-900">Choose active meeting</h1>
+        <h1 className="text-2xl font-bold text-fg">Choose active meeting</h1>
         <ul className="space-y-3">
           {active.map((m) => {
             const id = m.meetingId ?? (m as any).MeetingId;
@@ -87,7 +87,7 @@ const Meeting = () => {
               <li key={id}>
                 <Link
                   to={`/meeting?meetingId=${id}`}
-                  className="block bg-white rounded-xl border p-4 hover:border-indigo-300 font-bold text-gray-800"
+                  className="block bg-surface rounded-xl border border-line p-4 hover:border-primary-border font-bold text-fg"
                 >
                   {m.title ?? (m as any).Title}
                 </Link>
@@ -100,15 +100,15 @@ const Meeting = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f4f9] p-4 md:p-6">
+    <div className="min-h-screen bg-bg p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-4 px-2">
-          <h1 className="text-xl font-semibold text-gray-800">Video meeting</h1>
-          <p className="text-sm text-gray-500">Active meeting window only — recording & AI transcript on leave</p>
+          <h1 className="text-xl font-semibold text-fg">Video meeting</h1>
+          <p className="text-sm text-fg-muted">Active meeting window only — recording & AI transcript on leave</p>
         </div>
 
         {gateError && !canJoin && (
-          <div className="mb-4 p-4 bg-amber-50 border border-amber-100 rounded-xl text-amber-800 font-bold text-sm">
+          <div className="mb-4 p-4 bg-warning-soft border border-warning/25 rounded-xl text-warning font-bold text-sm">
             {gateError}
           </div>
         )}

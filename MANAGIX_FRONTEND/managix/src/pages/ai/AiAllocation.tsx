@@ -45,11 +45,11 @@ const splitTeamMembers = (team: TeamSuggestion[]) => ({
 
 function TeamMemberLine({ roleLabel, name }: { roleLabel: string; name: string }) {
   return (
-    <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-gray-50/80 border border-gray-100">
-      <span className="text-[10px] font-bold text-gray-400 uppercase shrink-0 w-20">
+    <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg bg-surface-2 border border-line">
+      <span className="text-[10px] font-bold text-fg-subtle uppercase shrink-0 w-20">
         {roleLabel}
       </span>
-      <span className="text-sm font-semibold text-gray-900 truncate flex-1">
+      <span className="text-sm font-semibold text-fg truncate flex-1">
         {name || '—'}
       </span>
     </div>
@@ -78,13 +78,13 @@ function ToastNotification({ toast, onClose }: { toast: Toast; onClose: () => vo
       initial={{ opacity: 0, x: 60 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 60 }}
-      className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold ${
+      className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-e2 text-sm font-semibold border ${
         toast.type === 'success'
-          ? 'bg-green-600 text-white'
-          : 'bg-red-600 text-white'
+          ? 'bg-surface border-line text-fg'
+          : 'bg-danger-soft border-danger/25 text-danger'
       }`}
     >
-      {toast.type === 'success' ? <Check size={18} /> : <X size={18} />}
+      {toast.type === 'success' ? <Check size={18} className="text-success" /> : <X size={18} />}
       {toast.message}
     </motion.div>
   );
@@ -94,7 +94,7 @@ function ToastNotification({ toast, onClose }: { toast: Toast; onClose: () => vo
 function ConfidenceBadge({ confidence }: { confidence: number }) {
   if (!confidence || confidence <= 0) {
     return (
-      <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
+      <span className="px-3 py-1 rounded-full text-xs font-bold bg-surface-2 text-fg-muted">
         N/A
       </span>
     );
@@ -102,10 +102,10 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
   const pct = confidence <= 1 ? Math.round(confidence * 100) : Math.round(confidence);
   const color =
     pct >= 80
-      ? 'bg-green-100 text-green-700'
+      ? 'bg-success-soft text-success'
       : pct >= 60
-        ? 'bg-yellow-100 text-yellow-700'
-        : 'bg-red-100 text-red-700';
+        ? 'bg-warning-soft text-warning'
+        : 'bg-danger-soft text-danger';
 
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-bold ${color}`}>
@@ -124,14 +124,14 @@ function LoadingOverlay() {
       className="flex flex-col items-center justify-center py-20 gap-4"
     >
       <div className="relative">
-        <Loader2 size={40} className="animate-spin text-gray-400" />
+        <Loader2 size={40} className="animate-spin text-fg-subtle" />
         <Sparkles
           size={16}
-          className="absolute -top-1 -right-1 text-yellow-500 animate-pulse"
+          className="absolute -top-1 -right-1 text-warning animate-pulse"
         />
       </div>
-      <p className="text-gray-500 font-semibold text-sm">AI is analyzing...</p>
-      <p className="text-gray-400 text-xs">This may take a moment</p>
+      <p className="text-fg-muted font-semibold text-sm">AI is analyzing...</p>
+      <p className="text-fg-subtle text-xs">This may take a moment</p>
     </motion.div>
   );
 }
@@ -457,30 +457,30 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
   // ---------- Render Helpers ----------
   const renderProjectSelector = () => (
     <div
-      className={`bg-white rounded-2xl shadow-sm p-6 ${embedded ? 'mb-0 border border-gray-100' : 'mb-6'}`}
+      className={`bg-surface rounded-xl shadow-e1 p-6 ${embedded ? 'mb-0 border border-line' : 'mb-6'}`}
     >
-      <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+      <label className="block text-xs font-bold text-fg-subtle uppercase tracking-widest mb-3">
         Select Project
       </label>
 
       {projectsLoading ? (
-        <div className="flex items-center gap-2 text-gray-400 text-sm">
+        <div className="flex items-center gap-2 text-fg-subtle text-sm">
           <Loader2 size={16} className="animate-spin" /> Loading projects...
         </div>
       ) : (
         <div className="relative">
           <button
             onClick={() => setDropdownOpen((v) => !v)}
-            className="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-5 py-4 text-left transition-colors"
+            className="w-full flex items-center justify-between bg-surface-2 hover:bg-surface-3 border border-line rounded-lg px-5 py-4 text-left transition-colors"
           >
-            <span className={`font-semibold ${selectedProject ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span className={`font-semibold ${selectedProject ? 'text-fg' : 'text-fg-subtle'}`}>
               {selectedProject
                 ? selectedProject.Title || selectedProject.title
                 : 'Choose a project...'}
             </span>
             <ChevronDown
               size={18}
-              className={`text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+              className={`text-fg-subtle transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -491,10 +491,10 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="absolute z-20 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-64 overflow-y-auto"
+                className="absolute z-20 mt-2 w-full bg-surface rounded-lg shadow-e2 border border-line max-h-64 overflow-y-auto"
               >
                 {projectListForSelector.length === 0 ? (
-                  <div className="p-4 text-sm text-gray-500 text-center">
+                  <div className="p-4 text-sm text-fg-muted text-center">
                     {activeTab === 'team'
                       ? 'All your projects already have a team assigned.'
                       : activeTab === 'tasks'
@@ -513,21 +513,21 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                           setSelectedProject(p);
                           setDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-5 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${
-                          selId === pid ? 'bg-gray-50 font-bold' : ''
+                        className={`w-full text-left px-5 py-3 hover:bg-surface-2 transition-colors border-b border-line last:border-0 ${
+                          selId === pid ? 'bg-surface-2 font-bold' : ''
                         }`}
                       >
-                        <p className="font-semibold text-gray-900 text-sm">
+                        <p className="font-semibold text-fg text-sm">
                           {p.Title || p.title}
                         </p>
                         {activeTab === 'tasks' && (p.unassignedTaskCount ?? 0) > 0 && (
-                          <p className="text-xs text-amber-700 mt-0.5 font-medium">
+                          <p className="text-xs text-warning mt-0.5 font-medium">
                             {p.unassignedTaskCount} unassigned task
                             {p.unassignedTaskCount === 1 ? '' : 's'}
                           </p>
                         )}
                         {activeTab !== 'tasks' && (p.Description || p.description) && (
-                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                          <p className="text-xs text-fg-subtle mt-0.5 line-clamp-1">
                             {p.Description || p.description}
                           </p>
                         )}
@@ -545,13 +545,13 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="mt-4 bg-gray-50 rounded-xl p-4"
+          className="mt-4 bg-surface-2 rounded-lg p-4"
         >
-          <p className="text-sm font-bold text-gray-800">
+          <p className="text-sm font-bold text-fg">
             {selectedProject.Title || selectedProject.title}
           </p>
           {(selectedProject.Description || selectedProject.description) && (
-            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+            <p className="text-xs text-fg-muted mt-1 line-clamp-2">
               {selectedProject.Description || selectedProject.description}
             </p>
           )}
@@ -564,8 +564,8 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">AI Team Formation</h3>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h3 className="text-lg font-bold text-fg">AI Team Formation</h3>
+          <p className="text-sm text-fg-subtle mt-0.5">
             Suggests up to 3 teams from <strong>unassigned</strong> employees only (not on other project teams).
             Each team: 1 QA +{' '}
             {suggestedDevCount != null
@@ -573,13 +573,13 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
               : '2–4 developers based on scope'}.
           </p>
           {availabilityMessage && (
-            <p className="text-sm text-amber-700 mt-2 font-medium">{availabilityMessage}</p>
+            <p className="text-sm text-warning mt-2 font-medium">{availabilityMessage}</p>
           )}
         </div>
         <button
           onClick={handleSuggestTeam}
           disabled={!selectedProject || loading}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+          className="flex items-center gap-2 bg-primary text-primary-fg px-6 py-3 rounded-lg font-semibold text-sm hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
         >
           <Sparkles size={16} />
           Generate Team Options
@@ -603,29 +603,29 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
               <motion.div
                 key={card.id}
                 variants={fadeUp}
-                className={`rounded-2xl p-5 shadow-sm flex flex-col relative overflow-visible ${
+                className={`rounded-xl p-5 shadow-e1 flex flex-col relative overflow-visible ${
                   card.isRecommended
-                    ? 'bg-gradient-to-b from-amber-50 to-white border-2 border-amber-300 ring-2 ring-amber-200/60'
-                    : 'bg-white border border-gray-100'
+                    ? 'bg-warning-soft border-2 border-warning/25 ring-2 ring-warning/25'
+                    : 'bg-surface border border-line'
                 }`}
               >
                 {card.isRecommended && (
-                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-bl-xl flex items-center gap-1">
+                  <div className="absolute top-0 right-0 bg-warning text-primary-fg text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-bl-xl flex items-center gap-1">
                     <Sparkles size={10} />
                     Best for this project
                   </div>
                 )}
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${
-                  card.isRecommended ? 'text-amber-800' : 'text-indigo-600'
+                <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${
+                  card.isRecommended ? 'text-warning' : 'text-primary'
                 }`}>
                   {card.label}
                 </p>
-                <label className="text-[10px] font-bold text-gray-400 uppercase">Team name</label>
+                <label className="text-[10px] font-bold text-fg-subtle uppercase">Team name</label>
                 <input
                   type="text"
                   value={card.teamName}
                   onChange={(e) => updateCardTeamName(card.id, e.target.value)}
-                  className="mt-1 mb-3 w-full px-3 py-2 rounded-xl border border-gray-200 font-bold text-gray-900 text-sm"
+                  className="mt-1 mb-3 w-full px-3 py-2 rounded-lg border border-line font-bold text-fg text-sm bg-surface-2"
                 />
 
                 <div className="space-y-1.5 mb-3 flex-1">
@@ -642,7 +642,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 <button
                   type="button"
                   onClick={() => toggleCardExpanded(card.id)}
-                  className="text-xs font-bold text-indigo-600 mb-3 flex items-center gap-1"
+                  className="text-xs font-bold text-primary mb-3 flex items-center gap-1"
                 >
                   {card.expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   {card.expanded ? 'Hide AI notes' : 'Why this lineup?'}
@@ -652,9 +652,9 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                     {card.team.map((member, i) => (
                       <li
                         key={member.userId + i}
-                        className="p-2 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500"
+                        className="p-2 rounded-lg bg-surface-2 border border-line text-xs text-fg-muted"
                       >
-                        <span className="font-bold text-gray-700">{member.name}</span>
+                        <span className="font-bold text-fg">{member.name}</span>
                         {' — '}
                         {member.reason}
                       </li>
@@ -665,7 +665,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                   type="button"
                   onClick={() => handleCreateTeamFromCard(card)}
                   disabled={applyingCardId === card.id}
-                  className="mt-auto w-full flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 disabled:opacity-50"
+                  className="mt-auto w-full flex items-center justify-center gap-2 bg-success text-primary-fg py-3 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-50"
                 >
                   {applyingCardId === card.id ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -692,8 +692,8 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Smart Task Allocation</h3>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h3 className="text-lg font-bold text-fg">Smart Task Allocation</h3>
+          <p className="text-sm text-fg-subtle mt-0.5">
             Only projects with unassigned open tasks appear below. AI suggests owners for those tasks
             only — already-assigned tasks are skipped.
           </p>
@@ -701,7 +701,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         <button
           onClick={handleSuggestTasks}
           disabled={!selectedProject || loading}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+          className="flex items-center gap-2 bg-primary text-primary-fg px-6 py-3 rounded-lg font-semibold text-sm hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
         >
           <ListTodo size={16} />
           Suggest Task Assignments
@@ -718,22 +718,22 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 <motion.div
                   key={task.taskId + i}
                   variants={fadeUp}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
+                  className="bg-surface border border-line rounded-xl p-5 hover:shadow-e2 transition-shadow"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <ListTodo size={16} className="text-blue-600" />
+                      <div className="w-9 h-9 rounded-lg bg-info-soft flex items-center justify-center flex-shrink-0">
+                        <ListTodo size={16} className="text-info" />
                       </div>
-                      <p className="font-bold text-gray-900 truncate">
+                      <p className="font-bold text-fg truncate">
                         {task.taskTitle}
                       </p>
-                      <ArrowRight size={16} className="text-gray-300 flex-shrink-0" />
+                      <ArrowRight size={16} className="text-fg-subtle flex-shrink-0" />
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-rose-600 flex items-center justify-center text-white font-bold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-fg font-bold text-xs">
                           {task.employeeName?.charAt(0) || '?'}
                         </div>
-                        <p className="font-semibold text-gray-700 text-sm">
+                        <p className="font-semibold text-fg-muted text-sm">
                           {task.employeeName}
                         </p>
                       </div>
@@ -742,7 +742,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                       <ConfidenceBadge confidence={task.confidence} />
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 leading-relaxed">
+                  <p className="text-sm text-fg-muted leading-relaxed">
                     {task.reason}
                   </p>
                 </motion.div>
@@ -753,7 +753,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
               <button
                 onClick={handleApplyTaskAssignments}
                 disabled={applying}
-                className="flex items-center gap-2 bg-green-600 text-white px-8 py-3 rounded-xl font-semibold text-sm hover:bg-green-700 disabled:opacity-50 transition-all active:scale-[0.97]"
+                className="flex items-center gap-2 bg-success text-primary-fg px-8 py-3 rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-all active:scale-[0.97]"
               >
                 {applying ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -779,17 +779,17 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         : TABS;
 
   const tabsCard = (
-        <div className={`bg-white rounded-2xl shadow-sm ${embedded ? 'border border-gray-100' : ''}`}>
+        <div className={`bg-surface rounded-xl shadow-e1 ${embedded ? 'border border-line' : ''}`}>
           {/* Tab Bar */}
-          <div className="flex border-b border-gray-100 overflow-hidden rounded-t-2xl">
+          <div className="flex border-b border-line overflow-hidden rounded-t-xl">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-semibold transition-colors relative ${
                   activeTab === tab.key
-                    ? 'text-gray-900'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'text-fg'
+                    : 'text-fg-subtle hover:text-fg-muted'
                 }`}
               >
                 {tab.icon}
@@ -797,7 +797,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 {activeTab === tab.key && (
                   <motion.div
                     layoutId="tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -809,11 +809,11 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
           <div className="p-6 overflow-visible">
             {!selectedProject ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                  <AlertCircle size={28} className="text-gray-400" />
+                <div className="w-16 h-16 bg-surface-2 rounded-xl flex items-center justify-center mb-4">
+                  <AlertCircle size={28} className="text-fg-subtle" />
                 </div>
-                <p className="text-gray-500 font-semibold">Select a project first</p>
-                <p className="text-gray-400 text-sm mt-1">
+                <p className="text-fg-muted font-semibold">Select a project first</p>
+                <p className="text-fg-subtle text-sm mt-1">
                   Choose a project from the dropdown above to get started
                 </p>
               </div>
@@ -846,25 +846,25 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
     return (
       <div className="relative">
         {toastWrap}
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-          <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-indigo-50/80">
+        <div className="bg-surface rounded-xl border border-line shadow-e1">
+          <div className="p-8 border-b border-line bg-primary-soft">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
-                <Brain size={22} className="text-white" />
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shrink-0">
+                <Brain size={22} className="text-primary-fg" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2 flex-wrap">
+                <h2 className="text-2xl font-bold text-fg flex items-center gap-2 flex-wrap">
                   AI assistant
-                  <Sparkles size={18} className="text-yellow-500" />
+                  <Sparkles size={18} className="text-warning" />
                 </h2>
-                <p className="text-sm text-gray-600 mt-1 max-w-3xl leading-relaxed">
+                <p className="text-sm text-fg-muted mt-1 max-w-3xl leading-relaxed">
                   Build project teams (1 QA + developers), then allocate tasks. Change members anytime using Assign
                   Member above. Task allocation needs a team on the project first.
                 </p>
               </div>
             </div>
           </div>
-          <div className="p-6 md:p-8 space-y-6 bg-[#F8FAFC]/50">
+          <div className="p-6 md:p-8 space-y-6 bg-bg">
             {renderProjectSelector()}
             {tabsCard}
           </div>
@@ -874,19 +874,19 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-bg pb-20">
       {toastWrap}
 
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+      <div className="bg-surface border-b border-line mb-8 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Brain size={22} className="text-white" />
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+              <Brain size={22} className="text-primary-fg" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900">AI Resource Allocation</h1>
-            <Sparkles size={20} className="text-yellow-500" />
+            <h1 className="text-2xl font-bold text-fg">AI Resource Allocation</h1>
+            <Sparkles size={20} className="text-warning" />
           </div>
-          <p className="text-gray-500 font-medium ml-[52px]">
+          <p className="text-fg-muted font-medium ml-[52px]">
             Intelligent team formation and task assignment powered by AI
           </p>
         </div>
@@ -909,10 +909,10 @@ function EmptyState({ message }: { message: string }) {
       exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center py-16 text-center"
     >
-      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
-        <Sparkles size={24} className="text-gray-300" />
+      <div className="w-14 h-14 bg-surface-2 rounded-xl flex items-center justify-center mb-4">
+        <Sparkles size={24} className="text-fg-subtle" />
       </div>
-      <p className="text-gray-400 text-sm font-medium max-w-xs">{message}</p>
+      <p className="text-fg-subtle text-sm font-medium max-w-xs">{message}</p>
     </motion.div>
   );
 }

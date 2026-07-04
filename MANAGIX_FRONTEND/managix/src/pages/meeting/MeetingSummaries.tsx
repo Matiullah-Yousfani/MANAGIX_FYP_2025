@@ -51,8 +51,8 @@ const MeetingSummaries: React.FC = () => {
 
   if (role !== 'Manager') {
     return (
-      <div className="max-w-lg mx-auto mt-20 p-8 bg-white rounded-2xl border text-center">
-        <p className="font-bold text-gray-600">Only managers can view project meeting summaries.</p>
+      <div className="max-w-lg mx-auto mt-20 p-8 bg-surface rounded-xl border border-line text-center">
+        <p className="font-bold text-fg-muted">Only managers can view project meeting summaries.</p>
       </div>
     );
   }
@@ -60,19 +60,19 @@ const MeetingSummaries: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-          <FiFileText className="text-indigo-600" /> Meeting Summaries & Backlog
+        <h1 className="text-2xl font-bold text-fg tracking-tight flex items-center gap-3">
+          <FiFileText className="text-primary" /> Meeting Summaries & Backlog
         </h1>
-        <p className="text-gray-500 mt-2">
+        <p className="text-fg-muted mt-2">
           After meetings end, AI combines transcripts and generates summaries, notes, backlog items, and task suggestions.
           Allocate tasks to your project from here.
         </p>
       </div>
 
       {loading ? (
-        <p className="text-gray-400 italic">Loading conducted meetings…</p>
+        <p className="text-fg-subtle">Loading conducted meetings…</p>
       ) : meetings.length === 0 ? (
-        <div className="bg-white rounded-2xl border p-8 text-center text-gray-500">
+        <div className="bg-surface rounded-xl border border-line p-8 text-center text-fg-muted">
           No completed meetings yet. Schedule a meeting and conduct it during the active window.
         </div>
       ) : (
@@ -86,24 +86,24 @@ const MeetingSummaries: React.FC = () => {
             const transcript = m.transcriptText ?? (m as any).TranscriptText;
 
             return (
-              <li key={id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <li key={id} className="bg-surface rounded-xl border border-line shadow-e1 overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggle(id)}
-                  className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-gray-50"
+                  className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-surface-3"
                 >
                   <div>
-                    <p className="font-black text-gray-900 flex items-center gap-2">
-                      <FiVideo className="text-indigo-600" />
+                    <p className="font-bold text-fg flex items-center gap-2">
+                      <FiVideo className="text-primary" />
                       {m.title ?? (m as any).Title}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-fg-muted mt-1 flex items-center gap-1">
                       <FiCalendar size={12} />
                       {fmt(m.scheduledAt ?? (m as any).ScheduledAt)}
                       {(m.endsAt ?? (m as any).EndsAt) && ` → ${fmt(m.endsAt ?? (m as any).EndsAt)}`}
                     </p>
                     {(m.sprintNumber ?? (m as any).SprintNumber) != null && (
-                      <p className="text-xs text-indigo-600 font-bold mt-1">
+                      <p className="text-xs text-primary font-bold mt-1">
                         Sprint {m.sprintNumber ?? (m as any).SprintNumber}
                       </p>
                     )}
@@ -112,39 +112,39 @@ const MeetingSummaries: React.FC = () => {
                 </button>
 
                 {expanded && (
-                  <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+                  <div className="px-5 pb-5 space-y-4 border-t border-line pt-4">
                     {summary && (
-                      <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
-                        <p className="text-xs font-black uppercase text-indigo-500 mb-2">AI Summary</p>
-                        <p className="text-sm text-gray-800">{summary}</p>
+                      <div className="bg-primary-soft rounded-xl p-4 border border-primary-border">
+                        <p className="text-xs font-bold uppercase text-primary mb-2">AI Summary</p>
+                        <p className="text-sm text-fg">{summary}</p>
                       </div>
                     )}
                     {notes && (
-                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                        <p className="text-xs font-black uppercase text-amber-600 mb-2">Meeting Notes</p>
-                        <pre className="text-sm whitespace-pre-wrap font-sans text-gray-700">{notes}</pre>
+                      <div className="bg-warning-soft rounded-xl p-4 border border-warning/25">
+                        <p className="text-xs font-bold uppercase text-warning mb-2">Meeting Notes</p>
+                        <pre className="text-sm whitespace-pre-wrap font-sans text-fg-muted">{notes}</pre>
                       </div>
                     )}
                     {backlog.length > 0 && (
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-500 mb-3 flex items-center gap-1">
+                      <div className="bg-surface-2 rounded-xl p-4 border border-line">
+                        <p className="text-xs font-bold uppercase text-fg-muted mb-3 flex items-center gap-1">
                           <FiList /> Backlog
                         </p>
                         <ul className="space-y-2">
                           {backlog.map((b: any, i: number) => (
-                            <li key={i} className="bg-white rounded-lg px-3 py-2 border text-sm">
+                            <li key={i} className="bg-surface rounded-lg px-3 py-2 border border-line text-sm text-fg">
                               <span className="font-bold">{b.title}</span>
-                              {b.priority && <span className="ml-2 text-xs text-indigo-600">{b.priority}</span>}
-                              {b.description && <p className="text-gray-600 mt-1">{b.description}</p>}
+                              {b.priority && <span className="ml-2 text-xs text-primary">{b.priority}</span>}
+                              {b.description && <p className="text-fg-muted mt-1">{b.description}</p>}
                             </li>
                           ))}
                         </ul>
                       </div>
                     )}
                     {(transcript || participantTexts[id]) && (
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-500 mb-2">Combined Transcript</p>
-                        <pre className="text-xs whitespace-pre-wrap max-h-48 overflow-y-auto text-gray-700">
+                      <div className="bg-surface-2 rounded-xl p-4 border border-line">
+                        <p className="text-xs font-bold uppercase text-fg-muted mb-2">Combined Transcript</p>
+                        <pre className="text-xs whitespace-pre-wrap max-h-48 overflow-y-auto text-fg-muted">
                           {transcript || participantTexts[id]}
                         </pre>
                       </div>
@@ -152,7 +152,7 @@ const MeetingSummaries: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openAllocate(m)}
-                      className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold text-sm"
+                      className="flex items-center gap-2 bg-success hover:bg-success text-primary-fg px-6 py-3 rounded-lg font-bold text-sm"
                     >
                       <FiZap /> Allocate tasks to project
                     </button>

@@ -41,20 +41,20 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             key={p.projectId}
             layout
             onClick={() => onOpen(p.projectId)}
-            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-300 cursor-pointer relative overflow-hidden"
+            className="group bg-surface rounded-xl p-5 border border-line hover:border-line-strong hover:bg-surface-2 hover:shadow-e2 transition-all duration-200 cursor-pointer relative overflow-hidden"
           >
-            <FiLayers className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-orange-50 transition-colors pointer-events-none" />
+            <FiLayers className="absolute -bottom-4 -right-4 text-white/3 size-32 group-hover:text-warning/10 transition-colors pointer-events-none" />
 
-            <div className="flex justify-between items-start mb-6 relative">
+            <div className="flex justify-between items-start mb-5 relative">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors mb-2">
+                <h3 className="text-lg font-bold text-fg group-hover:text-warning transition-colors mb-1">
                   {p.title}
                 </h3>
-                <p className="text-gray-500 text-sm font-medium leading-relaxed line-clamp-2">
+                <p className="text-fg-muted text-sm leading-relaxed line-clamp-2">
                   {p.description || 'No description.'}
                 </p>
                 {p.deadline && (
-                  <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-gray-500">
+                  <div className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-fg-subtle">
                     <FiCalendar /> Final: {new Date(p.deadline).toLocaleDateString()}
                   </div>
                 )}
@@ -63,10 +63,10 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             </div>
 
             {/* Phase strip — sequential milestones rendered as a horizontal track */}
-            <div className="relative mb-6">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Phases</div>
+            <div className="relative mb-5">
+              <div className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide mb-3">Phases</div>
               {p.milestones.length === 0 ? (
-                <div className="text-sm text-gray-400 italic">No milestones defined yet.</div>
+                <div className="text-sm text-fg-subtle">No milestones defined yet.</div>
               ) : (
                 <div className="flex items-stretch gap-2 overflow-x-auto pb-2">
                   {p.milestones.map((m, idx) => {
@@ -74,23 +74,23 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
                     return (
                       <div key={m.milestoneId} className="min-w-[180px] flex-1">
                         <div className="flex items-center mb-1">
-                          <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${
-                            done ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-gray-200 text-gray-500'
+                          <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 ${
+                            done ? 'bg-success border-success text-primary-fg' : 'bg-surface-2 border-line-strong text-fg-subtle'
                           }`}>
                             {done ? <FiCheckCircle className="size-3" /> : idx + 1}
                           </div>
                           {idx < p.milestones.length - 1 && (
-                            <div className={`flex-1 h-0.5 ${done ? 'bg-emerald-300' : 'bg-gray-200'}`} />
+                            <div className={`flex-1 h-0.5 ${done ? 'bg-success/50' : 'bg-line-strong'}`} />
                           )}
                         </div>
-                        <div className={`rounded-2xl p-3 border ${
-                          done ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'
+                        <div className={`rounded-lg p-3 border ${
+                          done ? 'bg-success-soft border-success/25' : 'bg-surface-2 border-line'
                         }`}>
-                          <div className="text-xs font-bold text-gray-800 line-clamp-1">{m.title}</div>
-                          <div className="text-[10px] font-bold text-gray-500 mt-1">
+                          <div className="text-xs font-semibold text-fg line-clamp-1">{m.title}</div>
+                          <div className="text-[10px] font-medium text-fg-subtle mt-1">
                             {new Date(m.deadline).toLocaleDateString()}
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-widest mt-1">
+                          <div className="text-[10px] font-semibold uppercase tracking-wide mt-1 text-fg-muted">
                             {m.status}
                           </div>
                         </div>
@@ -101,24 +101,24 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
               )}
             </div>
 
-            <div className="mt-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-5" onClick={(e) => e.stopPropagation()}>
               <ProjectGantt projectId={p.projectId} />
             </div>
 
-            <div className="relative pt-4 border-t border-gray-50 flex items-center justify-between mt-4">
+            <div className="relative pt-4 border-t border-line flex items-center justify-between mt-4">
               <div className="flex-1 mr-6">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Overall progress</span>
-                  <span className="text-xs font-black text-orange-600">{completionPct}%</span>
+                  <span className="text-[10px] font-semibold text-fg-subtle uppercase tracking-wide">Overall progress</span>
+                  <span className="text-xs font-bold text-warning">{completionPct}%</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-orange-500" style={{ width: `${completionPct}%` }} />
+                <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
+                  <div className="h-full bg-warning" style={{ width: `${completionPct}%` }} />
                 </div>
               </div>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onOpen(p.projectId); }}
-                className="flex items-center text-orange-600 font-bold text-sm hover:translate-x-1 transition-transform"
+                className="flex items-center gap-1 text-warning font-semibold text-sm hover:translate-x-1 transition-transform"
               >
                 Open Plan <FiChevronRight />
               </button>

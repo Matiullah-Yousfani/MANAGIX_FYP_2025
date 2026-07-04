@@ -36,10 +36,10 @@ const OvertimeReasonModal: React.FC<Props> = ({ requestId, onClose, onSubmitted 
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/50 z-[200] flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
-        <h2 className="text-lg font-black text-gray-900 mb-2">Daily hours exceeded</h2>
-        <p className="text-sm text-gray-500 mb-4">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+      <div className="bg-surface rounded-xl max-w-md w-full p-8 shadow-e3">
+        <h2 className="text-lg font-bold text-fg mb-2">Daily hours exceeded</h2>
+        <p className="text-sm text-fg-muted mb-4">
           You logged {detail?.totalHoursThatDay ?? detail?.TotalHoursThatDay ?? '—'}h today.
           Please briefly explain why you worked past your daily limit.
         </p>
@@ -47,19 +47,19 @@ const OvertimeReasonModal: React.FC<Props> = ({ requestId, onClose, onSubmitted 
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={4}
-          className="w-full border border-gray-200 rounded-xl p-3 text-sm mb-3"
+          className="w-full border border-line rounded-lg p-3 text-sm mb-3 bg-surface-2 text-fg"
           placeholder="Reason for overtime…"
         />
-        {error && <p className="text-xs text-red-600 mb-2 font-bold">{error}</p>}
+        {error && <p className="text-xs text-danger mb-2 font-bold">{error}</p>}
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold text-gray-500">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold text-fg-muted">
             Later
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={submit}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-black disabled:opacity-50"
+            className="px-5 py-2 bg-primary text-primary-fg rounded-lg text-sm font-bold disabled:opacity-50"
           >
             Submit
           </button>

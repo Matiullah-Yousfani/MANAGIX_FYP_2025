@@ -14,11 +14,11 @@ const ToastStack: React.FC<Props> = ({ toasts }) => {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold animate-in slide-in-from-bottom-4 ${
-            t.type === 'success' ? 'bg-gray-900 text-white' : 'bg-red-600 text-white'
+          className={`px-5 py-4 rounded-xl shadow-e3 border flex items-center gap-3 text-sm font-bold animate-in slide-in-from-bottom-4 ${
+            t.type === 'success' ? 'bg-surface border-line text-fg' : 'bg-danger-soft border-danger/25 text-danger'
           }`}
         >
-          {t.type === 'success' ? <FiCheckCircle size={18} /> : <FiXCircle size={18} />}
+          {t.type === 'success' ? <FiCheckCircle size={18} className="text-success" /> : <FiXCircle size={18} />}
           {t.message}
         </div>
       ))}

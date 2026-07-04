@@ -64,8 +64,8 @@ const ScheduleMeeting: React.FC = () => {
 
   if (role !== 'Manager') {
     return (
-      <div className="max-w-lg mx-auto mt-20 p-8 bg-white rounded-2xl border border-gray-100 shadow-sm text-center">
-        <p className="text-gray-600 font-bold">Only managers can schedule project meetings.</p>
+      <div className="max-w-lg mx-auto mt-20 p-8 bg-surface rounded-xl border border-line shadow-e1 text-center">
+        <p className="text-fg-muted font-bold">Only managers can schedule project meetings.</p>
       </div>
     );
   }
@@ -165,33 +165,33 @@ const ScheduleMeeting: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Schedule Project Meeting</h1>
-        <p className="text-gray-500 mt-2">
+        <h1 className="text-2xl font-bold text-fg tracking-tight">Schedule Project Meeting</h1>
+        <p className="text-fg-muted mt-2">
           Select project, sprint window, and description. A join link is generated for your project team only
           (manager, developers, QA). The link works from start time until end time.
         </p>
       </div>
 
       {createdMeeting ? (
-        <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm p-8 space-y-6">
-          <div className="flex items-center gap-3 text-emerald-700">
+        <div className="bg-surface rounded-xl border border-success/25 shadow-e1 p-8 space-y-6">
+          <div className="flex items-center gap-3 text-success">
             <FiVideo size={28} />
             <div>
-              <h2 className="text-xl font-black text-gray-900">Meeting link created</h2>
+              <h2 className="text-xl font-bold text-fg">Meeting link created</h2>
               <p className="text-sm">Sprint {sprint} — {participantCount} team member(s) notified</p>
             </div>
           </div>
 
-          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-            <p className="text-xs font-black uppercase text-indigo-400 tracking-widest">Join code</p>
-            <p className="text-xs text-indigo-600 mt-1">Team members need this code to enter the meeting room (also sent in notifications).</p>
+          <div className="bg-primary-soft border border-primary-border rounded-xl p-4">
+            <p className="text-xs font-bold uppercase text-primary tracking-widest">Join code</p>
+            <p className="text-xs text-primary mt-1">Team members need this code to enter the meeting room (also sent in notifications).</p>
             <div className="flex items-center gap-2 mt-2">
-              <p className="text-2xl font-mono font-black text-indigo-900 flex-1">{joinCode || '—'}</p>
+              <p className="text-2xl font-mono font-bold text-fg flex-1">{joinCode || '—'}</p>
               {joinCode && (
                 <button
                   type="button"
                   onClick={() => copyCode(joinCode)}
-                  className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 flex items-center gap-2 text-sm"
+                  className="px-4 py-2 bg-primary text-primary-fg font-bold rounded-lg hover:bg-primary-hover flex items-center gap-2 text-sm"
                 >
                   <FiCopy /> {codeCopied ? 'Copied!' : 'Copy code'}
                 </button>
@@ -200,19 +200,19 @@ const ScheduleMeeting: React.FC = () => {
           </div>
 
           <div>
-            <p className="text-xs font-black uppercase text-gray-400 tracking-widest mb-2 flex items-center gap-1">
+            <p className="text-xs font-bold uppercase text-fg-subtle tracking-widest mb-2 flex items-center gap-1">
               <FiLink /> Share link (includes join code)
             </p>
             <div className="flex gap-2">
               <input
                 readOnly
                 value={shareUrl}
-                className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono bg-gray-50"
+                className="flex-1 border border-line rounded-lg px-4 py-3 text-sm font-mono bg-surface-2 text-fg"
               />
               <button
                 type="button"
                 onClick={() => copyLink(shareUrl)}
-                className="px-4 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 flex items-center gap-2"
+                className="px-4 py-3 bg-primary text-primary-fg font-bold rounded-lg hover:bg-primary-hover flex items-center gap-2"
               >
                 <FiCopy /> {copied ? 'Copied!' : 'Copy link'}
               </button>
@@ -221,21 +221,21 @@ const ScheduleMeeting: React.FC = () => {
               <button
                 type="button"
                 onClick={() => copyLinkAndCode(shareUrl, joinCode)}
-                className="mt-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                className="mt-2 text-sm font-bold text-primary hover:text-primary-hover hover:underline"
               >
                 Copy link + code together
               </button>
             )}
           </div>
 
-          <div className="text-sm text-gray-600 space-y-1">
+          <div className="text-sm text-fg-muted space-y-1">
             <p className="flex items-center gap-2"><FiClock /> Active: {date} {startTime} → {endTime}</p>
             <p>After end time the link expires automatically.</p>
           </div>
 
           <a
             href={shareUrl}
-            className="block w-full text-center bg-emerald-600 text-white font-black py-4 rounded-xl hover:bg-emerald-700"
+            className="block w-full text-center bg-success text-primary-fg font-bold py-4 rounded-lg hover:opacity-90"
           >
             Open meeting room
           </a>
@@ -243,19 +243,19 @@ const ScheduleMeeting: React.FC = () => {
           <button
             type="button"
             onClick={() => setCreatedMeeting(null)}
-            className="w-full text-gray-500 font-bold py-2 hover:text-gray-800"
+            className="w-full text-fg-muted font-bold py-2 hover:text-fg"
           >
             Schedule another meeting
           </button>
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
+        <form onSubmit={onSubmit} className="bg-surface rounded-xl border border-line shadow-e1 p-8 space-y-6">
           <div>
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Project</label>
+            <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest">Project</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-800"
+              className="mt-2 w-full border border-line rounded-lg px-4 py-3 font-bold text-fg bg-surface-2"
               required
             >
               <option value="">Select project…</option>
@@ -268,40 +268,40 @@ const ScheduleMeeting: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Meeting title</label>
+            <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest">Meeting title</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3 font-bold"
+              className="mt-2 w-full border border-line rounded-lg px-4 py-3 font-bold bg-surface-2 text-fg"
               placeholder="Sprint standup"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Description</label>
+            <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3"
+              className="mt-2 w-full border border-line rounded-lg px-4 py-3 bg-surface-2 text-fg"
               rows={3}
               placeholder="Agenda, goals, topics to cover…"
             />
           </div>
 
           {projectId && date && sprintNumber != null && (
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center gap-3">
-              <FiFlag className="text-indigo-600 shrink-0" size={20} />
+            <div className="bg-primary-soft border border-primary-border rounded-lg p-4 flex items-center gap-3">
+              <FiFlag className="text-primary shrink-0" size={20} />
               <div>
-                <p className="text-xs font-black uppercase text-indigo-400 tracking-widest">Sprint (auto)</p>
-                <p className="text-lg font-black text-indigo-900">Sprint {sprintNumber}</p>
+                <p className="text-xs font-bold uppercase text-primary tracking-widest">Sprint (auto)</p>
+                <p className="text-lg font-bold text-fg">Sprint {sprintNumber}</p>
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+              <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest flex items-center gap-1">
                 <FiCalendar /> Date
               </label>
               <input
@@ -309,50 +309,50 @@ const ScheduleMeeting: React.FC = () => {
                 min={minDateToday()}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3"
+                className="mt-2 w-full border border-line rounded-lg px-4 py-3 bg-surface-2 text-fg"
                 required
               />
             </div>
             <div>
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Start time</label>
+              <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest">Start time</label>
               <input
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3"
+                className="mt-2 w-full border border-line rounded-lg px-4 py-3 bg-surface-2 text-fg"
                 required
               />
             </div>
             <div>
-              <label className="text-xs font-black text-gray-400 uppercase tracking-widest">End time</label>
+              <label className="text-xs font-bold text-fg-subtle uppercase tracking-widest">End time</label>
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3"
+                className="mt-2 w-full border border-line rounded-lg px-4 py-3 bg-surface-2 text-fg"
                 required
               />
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-xs text-amber-800 font-medium space-y-1">
+          <div className="bg-warning-soft border border-warning/25 rounded-lg p-4 text-xs text-warning font-medium space-y-1">
             <p><strong>Access:</strong> Only invited project team members can join.</p>
             <p><strong>Active window:</strong> Link works from start time until end time.</p>
             <p><strong>After end:</strong> Link expires; transcripts are combined and analyzed by AI.</p>
           </div>
 
           {projectId && (
-            <p className="text-sm text-indigo-700 font-bold flex items-center gap-2">
+            <p className="text-sm text-primary font-bold flex items-center gap-2">
               <FiUsers /> {participantCount} team member(s) will receive the link via notification
             </p>
           )}
 
-          {error && <p className="text-red-600 text-sm font-bold">{error}</p>}
+          {error && <p className="text-danger text-sm font-bold">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white font-black py-4 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full bg-primary text-primary-fg font-bold py-4 rounded-lg hover:bg-primary-hover flex items-center justify-center gap-2 disabled:opacity-60"
           >
             <FiLink />
             {loading ? 'Creating link…' : 'Create meeting link'}

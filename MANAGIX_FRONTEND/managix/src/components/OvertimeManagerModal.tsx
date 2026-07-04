@@ -71,16 +71,16 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
   const reason = detail?.employeeReason ?? detail?.EmployeeReason ?? '';
 
   return (
-    <div className="fixed inset-0 bg-gray-900/50 z-[200] flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl">
-        <h2 className="text-lg font-black text-gray-900 mb-2">Overtime — manager action</h2>
-        <p className="text-sm text-gray-600 mb-1">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-6">
+      <div className="bg-surface rounded-xl max-w-lg w-full p-8 shadow-e3">
+        <h2 className="text-lg font-bold text-fg mb-2">Overtime — manager action</h2>
+        <p className="text-sm text-fg-muted mb-1">
           <strong>{employeeName}</strong> — {detail?.totalHoursThatDay ?? detail?.TotalHoursThatDay}h today
         </p>
         {detail?.taskTitle && (
-          <p className="text-xs text-indigo-600 font-bold mb-2">Task: {detail.taskTitle}</p>
+          <p className="text-xs text-primary font-bold mb-2">Task: {detail.taskTitle}</p>
         )}
-        <p className="text-sm text-gray-500 mb-4 italic">"{reason}"</p>
+        <p className="text-sm text-fg-muted mb-4">"{reason}"</p>
 
         <div className="space-y-3 mb-4">
           <label className="flex items-center gap-2 text-sm font-bold">
@@ -96,7 +96,7 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
               type="date"
               value={newDeadline}
               onChange={(e) => setNewDeadline(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-line rounded-lg px-3 py-2 text-sm bg-surface-2 text-fg"
             />
           )}
           <label className="flex items-center gap-2 text-sm font-bold">
@@ -111,7 +111,7 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
             <select
               value={newAssigneeId}
               onChange={(e) => setNewAssigneeId(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 text-sm"
+              className="w-full border border-line rounded-lg px-3 py-2 text-sm bg-surface-2 text-fg"
             >
               <option value="">Select assignee…</option>
               {members.map((m: any) => {
@@ -127,16 +127,16 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
           )}
         </div>
 
-        {error && <p className="text-xs text-red-600 mb-2 font-bold">{error}</p>}
+        {error && <p className="text-xs text-danger mb-2 font-bold">{error}</p>}
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold text-gray-500">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold text-fg-muted">
             Cancel
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={resolve}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-black disabled:opacity-50"
+            className="px-5 py-2 bg-primary text-primary-fg rounded-lg text-sm font-bold disabled:opacity-50"
           >
             Apply
           </button>
