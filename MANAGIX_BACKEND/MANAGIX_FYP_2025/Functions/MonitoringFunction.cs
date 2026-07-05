@@ -74,5 +74,29 @@ namespace MANAGIX_FYP_2025.Functions
                 return errorResp;
             }
         }
+
+        // GET /monitoring/dashboard — org-wide control center for administrators
+        [Function("AdminDashboard")]
+        public async Task<HttpResponseData> Dashboard(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "monitoring/dashboard")] HttpRequestData req)
+        {
+            var (_, err) = await AuthHttpHelper.RequireAdminAsync(req);
+            if (err != null) return err;
+
+            try
+            {
+                var data = await _monitor.GetAdminDashboardAsync();
+                var resp = req.CreateResponse(HttpStatusCode.OK);
+                resp.Headers.Add("Content-Type", "application/json");
+                await resp.WriteStringAsync(JsonSerializer.Serialize(data, _json));
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var errorResp = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await errorResp.WriteAsJsonAsync(new { message = ex.Message });
+                return errorResp;
+            }
+        }
     }
 }

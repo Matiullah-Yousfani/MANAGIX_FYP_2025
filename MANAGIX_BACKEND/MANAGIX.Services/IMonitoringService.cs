@@ -10,5 +10,6 @@ namespace MANAGIX.Services
     {
         Task<SystemHealthDto> GetSystemHealthAsync();
         Task<ProjectHealthDto> GetProjectHealthAsync(Guid projectId);
+        Task<AdminDashboardDto> GetAdminDashboardAsync();
     }
 }

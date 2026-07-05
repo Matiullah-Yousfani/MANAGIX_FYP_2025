@@ -42,6 +42,12 @@ namespace MANAGIX.DataAccess.Repositories
         }
 
         // Bulk update — avoids per-row round-trip when a user clicks "Mark all read".
+        public async Task<List<Notification>> GetRecentOrgAsync(int limit = 30) =>
+            await _context.Notifications
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(limit)
+                .ToListAsync();
+
         public async Task<int> MarkAllReadAsync(Guid userId)
         {
             var unread = await _context.Notifications

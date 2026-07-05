@@ -89,5 +89,8 @@ namespace MANAGIX.DataAccess.Repositories
             await _context.Tasks
                 .Where(t => t.ProjectId == projectId && t.Status != "Done")
                 .ToListAsync();
+
+        public async Task<List<TaskItem>> GetAllAsync() =>
+            await _context.Tasks.ToListAsync();
     }
 }
