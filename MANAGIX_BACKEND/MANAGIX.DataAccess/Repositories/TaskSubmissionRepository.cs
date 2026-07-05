@@ -21,8 +21,16 @@ namespace MANAGIX.DataAccess.Repositories
             await _context.TaskSubmissions
                 .Include(s => s.Task)
                 .Include(s => s.Employee)
-                .Where(s => s.Status == "Submitted" && s.Task != null &&
-                            (s.Task.Status == "Done" || s.Task.Status == "Submitted"))
+                .Where(s => s.Status == "Submitted" && s.Task != null)
+                .ToListAsync();
+
+        public async Task<List<TaskSubmission>> GetReviewHistoryAsync() =>
+            await _context.TaskSubmissions
+                .Include(s => s.Task)
+                .Include(s => s.Employee)
+                .Where(s => s.Task != null &&
+                            (s.Status == "Approved" || s.Status == "Rejected" || s.Status == "Submitted"))
+                .OrderByDescending(s => s.ReviewedAt ?? s.SubmittedAt)
                 .ToListAsync();
 
         public async Task<TaskSubmission?> GetByTaskIdAsync(Guid taskId) =>

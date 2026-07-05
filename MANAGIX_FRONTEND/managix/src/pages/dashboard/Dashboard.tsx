@@ -12,7 +12,7 @@ import DashboardTimesheetCard from '../../components/DashboardTimesheetCard';
 import EmployeeDashboardWidgets from '../../components/EmployeeDashboardWidgets';
 import ManagerDashboardWidgets from '../../components/ManagerDashboardWidgets';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
-import { normalizeAppRole } from '../../utils/roles';
+import { normalizeAppRole, isQaRole } from '../../utils/roles';
 import { Card, EmptyState } from '../../components/ui';
 
 const Dashboard = () => {
@@ -329,8 +329,8 @@ const Dashboard = () => {
             projects={filteredProjects}
             aggregatesById={aggregates}
             onOpen={(pId) => {
-              if (userRole === 'Admin') fetchProjectDetails(pId);
-              else if (userRole === 'QA') navigate(`/qa/review?projectId=${pId}`);
+              if (normalizeAppRole(userRole) === 'Admin') fetchProjectDetails(pId);
+              else if (isQaRole(userRole)) navigate(`/qa/review?projectId=${pId}`);
               else navigate(`/projects/${pId}`);
             }}
           />

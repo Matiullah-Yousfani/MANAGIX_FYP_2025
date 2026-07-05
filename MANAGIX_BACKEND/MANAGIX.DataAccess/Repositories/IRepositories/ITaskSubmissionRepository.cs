@@ -12,6 +12,7 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task AddAsync(TaskSubmission submission);
         Task<TaskSubmission?> GetByTaskIdAsync(Guid taskId);
         Task<List<TaskSubmission>> GetPendingSubmissionsAsync();
+        Task<List<TaskSubmission>> GetReviewHistoryAsync();
         void Update(TaskSubmission submission);
         void Remove(TaskSubmission submission);
     }

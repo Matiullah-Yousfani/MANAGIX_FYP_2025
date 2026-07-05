@@ -99,6 +99,17 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
     return m ? m[1] : null;
   };
 
+  const parseTaskId = (link?: string | null): string | null => {
+    if (!link) return null;
+    const m = link.match(/taskId=([0-9a-f-]{36})/i);
+    return m ? m[1] : null;
+  };
+
+  const qaReviewPath = (link?: string | null) => {
+    const taskId = parseTaskId(link);
+    return taskId ? `/qa/review?taskId=${taskId}` : '/qa/review';
+  };
+
   const onItemClick = async (n: NotificationItem) => {
     if (!userId) return;
     if (!n.isRead) {
@@ -107,6 +118,11 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
       setUnread((u) => Math.max(0, u - 1));
     }
     const t = (n.type || '').toLowerCase();
+    if (t.includes('tasksubmittedforreview') || (t.includes('task') && t.includes('review') && !t.includes('rejected') && !t.includes('approved'))) {
+      setOpen(false);
+      navigate(qaReviewPath(n.link));
+      return;
+    }
     const oid = parseOvertimeId(n.link);
     if (oid && onOvertimeClick && (t.includes('overtime') || t.includes('explanation'))) {
       setOpen(false);
