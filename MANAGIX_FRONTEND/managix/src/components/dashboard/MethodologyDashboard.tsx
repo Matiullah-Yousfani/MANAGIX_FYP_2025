@@ -126,6 +126,7 @@ function renderViewFor(
         title: (p.title || p.Title) ?? 'Untitled',
         description: p.description || p.Description,
         status: p.status || p.Status,
+        deadline: p.deadline || p.Deadline,
         methodology: m,
         ...agg,
       };
@@ -142,6 +143,7 @@ function renderViewFor(
         title: (p.title || p.Title) ?? 'Untitled',
         description: p.description || p.Description,
         status: p.status || p.Status,
+        deadline: p.deadline || p.Deadline,
         methodology: m,
         ...agg,
       };

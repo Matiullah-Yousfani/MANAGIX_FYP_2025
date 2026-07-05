@@ -7,6 +7,7 @@ import {
   FiArrowRight, FiBriefcase, FiXCircle, FiSearch 
 } from 'react-icons/fi';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
+import { normalizeAppRole } from '../../utils/roles';
 
 const Projects = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -25,6 +26,9 @@ const Projects = () => {
 
   const userId = localStorage.getItem('userId');
   const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
+  const appRole = normalizeAppRole(role);
+  const canManageProjects = appRole === 'Manager' || appRole === 'Admin';
+  const isEmployee = appRole === 'Employee';
 
   const addToast = (message: string, type: 'error' | 'success' = 'error') => {
     const id = Date.now();
@@ -149,7 +153,9 @@ const Projects = () => {
     <div className="min-h-screen bg-[#F8FAFC]">
       {/* Sticky Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-black tracking-tight text-gray-900">Welcome</h1>
+        <h1 className="text-2xl font-black tracking-tight text-gray-900">
+          {isEmployee ? 'My Assignments' : 'Welcome'}
+        </h1>
         <div className="relative w-96">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input 
@@ -164,8 +170,15 @@ const Projects = () => {
         {/* Page Action Bar */}
         <div className="flex justify-between items-end mb-10">
           <div>
-            <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 block">Enterprise Portal</label>
-            <h2 className="text-4xl font-black text-gray-900 tracking-tight">Manage Projects</h2>
+            <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 block">
+              {isEmployee ? 'Employee Portal' : 'Enterprise Portal'}
+            </label>
+            <h2 className="text-4xl font-black text-gray-900 tracking-tight">
+              {isEmployee ? 'My Assignments' : 'Manage Projects'}
+            </h2>
+            {isEmployee && (
+              <p className="text-sm text-gray-500 mt-2">View-only access to projects you are assigned to.</p>
+            )}
           </div>
           {/* <button 
             onClick={openCreateModal}
@@ -180,7 +193,14 @@ const Projects = () => {
           {projects.length === 0 ? (
             <div className="col-span-full py-24 bg-white rounded-[2.5rem] border border-dashed border-gray-200 text-center">
                <FiBriefcase size={48} className="mx-auto mb-4 opacity-10" />
-               <p className="font-black uppercase tracking-widest text-[10px] text-gray-400">No active projects found</p>
+               <p className="font-black text-gray-700 mb-1">
+                 {isEmployee ? "You don't have any assigned projects yet." : 'No active projects found'}
+               </p>
+               <p className="text-sm text-gray-400">
+                 {isEmployee
+                   ? 'Your manager will assign you to a project team. Check back later or contact your manager.'
+                   : 'Create a project or assign a team to get started.'}
+               </p>
             </div>
           ) : (
             projects.map(p => {
@@ -212,29 +232,33 @@ const Projects = () => {
                     </p>
 
                     <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                      <div className="flex gap-1">
-                        <button 
-                          onClick={() => openEditModal(p)}
-                          className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                        >
-                          <FiEdit3 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => confirmDelete(p)}
-                          className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                        >
-                          <FiTrash2 size={18} />
-                        </button>
-                        {!isClosed && (
+                      {canManageProjects ? (
+                        <div className="flex gap-1">
                           <button 
-                            onClick={() => handleCloseProject(pId)}
-                            className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                            title="Complete Project"
+                            onClick={() => openEditModal(p)}
+                            className="p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                           >
-                            <FiCheckCircle size={18} />
+                            <FiEdit3 size={18} />
                           </button>
-                        )}
-                      </div>
+                          <button 
+                            onClick={() => confirmDelete(p)}
+                            className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                          >
+                            <FiTrash2 size={18} />
+                          </button>
+                          {!isClosed && (
+                            <button 
+                              onClick={() => handleCloseProject(pId)}
+                              className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                              title="Complete Project"
+                            >
+                              <FiCheckCircle size={18} />
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">View only</span>
+                      )}
 
                       <div className="flex flex-col items-end gap-1">
                         <button

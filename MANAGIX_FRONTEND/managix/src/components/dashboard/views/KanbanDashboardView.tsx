@@ -11,12 +11,13 @@ export interface KanbanDashboardProject {
   title: string;
   description?: string;
   status?: string;
+  deadline?: string;
   methodology: Methodology;
   totalTasks: number;
   completedTasks: number;
   inProgressTasks: number;
   pendingTasks: number;
-  wipLimit?: number; // soft visual cue — defaults to 5 if not provided
+  wipLimit?: number;
 }
 
 interface Props {
@@ -30,6 +31,7 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
       {projects.map((p) => {
         const wip = p.wipLimit ?? 5;
         const overWip = p.inProgressTasks > wip;
+        const completionPct = p.totalTasks ? Math.round((p.completedTasks / p.totalTasks) * 100) : 0;
         return (
           <motion.div
             key={p.projectId}
@@ -53,7 +55,7 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
 
             {/* The three Kanban columns rendered as mini-stacks */}
             <div className="grid grid-cols-3 gap-3 mb-6 relative">
-              <KanbanColumn label="Backlog" count={p.pendingTasks} colorClass="bg-orange-50 text-orange-700 border-orange-100" />
+              <KanbanColumn label="Todo" count={p.pendingTasks} colorClass="bg-orange-50 text-orange-700 border-orange-100" />
               <KanbanColumn
                 label="In Progress"
                 count={p.inProgressTasks}
@@ -65,7 +67,18 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             </div>
 
             <div className="flex items-center justify-between relative pt-4 border-t border-gray-50">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{p.status || 'Active'}</span>
+              <div className="flex-1 mr-4">
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progress</span>
+                  <span className="text-xs font-black text-blue-600">{completionPct}%</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+                  <div className="h-full bg-blue-600" style={{ width: `${completionPct}%` }} />
+                </div>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {p.deadline ? `Due ${new Date(p.deadline).toLocaleDateString()}` : p.status || 'Active'}
+                </span>
+              </div>
               <div className="flex items-center text-blue-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
                 Open Board <FiChevronRight />
               </div>

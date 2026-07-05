@@ -68,7 +68,7 @@ namespace MANAGIX.Services
                 : input.ScheduledAt.ToUniversalTime();
 
             var durationMinutes = ResolveDurationMinutes(input, scheduledUtc);
-            var sprintNumber = ComputeSprintNumber(project.CreatedAt, scheduledUtc);
+            var sprintNumber = await GetNextSprintNumberAsync(input.ProjectId.Value);
 
             var participantIds = input.ParticipantUserIds?.Where(id => id != Guid.Empty).Distinct().ToList()
                                  ?? new List<Guid>();
@@ -171,13 +171,18 @@ namespace MANAGIX.Services
 
         public async Task<SprintPreviewDto> GetSprintPreviewAsync(Guid projectId, DateTime scheduledAt)
         {
-            var project = await _unitOfWork.Projects.GetByIdAsync(projectId)
+            _ = await _unitOfWork.Projects.GetByIdAsync(projectId)
                 ?? throw new InvalidOperationException("Project not found.");
-            var utc = scheduledAt.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(scheduledAt, DateTimeKind.Utc)
-                : scheduledAt.ToUniversalTime();
-            var sprint = ComputeSprintNumber(project.CreatedAt, utc);
+            var sprint = await GetNextSprintNumberAsync(projectId);
             return new SprintPreviewDto { SprintNumber = sprint, ProjectWeek = sprint };
+        }
+
+        /// <summary>Next sprint = highest existing sprint number for this project + 1.</summary>
+        public async Task<int> GetNextSprintNumberAsync(Guid projectId)
+        {
+            var meetings = await _unitOfWork.Meetings.GetByProjectAsync(projectId);
+            var max = meetings.Where(m => m.SprintNumber > 0).Select(m => m.SprintNumber).DefaultIfEmpty(0).Max();
+            return max + 1;
         }
 
         public static int ComputeSprintNumber(DateTime projectCreatedAt, DateTime scheduledAtUtc)
@@ -687,7 +692,8 @@ namespace MANAGIX.Services
             {
                 var project = await _unitOfWork.Projects.GetByIdAsync(m.ProjectId.Value);
                 if (project == null) return m.SprintNumber > 0 ? m.SprintNumber : 1;
-                return ComputeSprintNumber(project.CreatedAt, m.ScheduledAt);
+                if (m.SprintNumber > 0) return m.SprintNumber;
+                return await GetNextSprintNumberAsync(m.ProjectId.Value);
             }
             catch
             {

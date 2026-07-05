@@ -60,4 +60,9 @@ export const timesheetService = {
     const r = await api.get(`/timesheet/manager/${managerId}`);
     return r.data;
   },
+
+  myHistory: async (userId: string) => {
+    const r = await api.get(`/timesheet/history/${userId}`);
+    return r.data ?? [];
+  },
 };

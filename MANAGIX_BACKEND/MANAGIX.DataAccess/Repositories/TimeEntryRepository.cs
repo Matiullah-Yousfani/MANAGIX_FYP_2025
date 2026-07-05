@@ -53,6 +53,18 @@ namespace MANAGIX.DataAccess.Repositories
                 .SumAsync(t => t.Hours);
         }
 
+        public async Task<int> SumClosedSecondsByUserForUtcDayAsync(Guid userId, DateTime utcDay)
+        {
+            var start = utcDay.Date;
+            var end = start.AddDays(1);
+            var entries = await _context.Set<TimeEntry>()
+                .Where(t => t.UserId == userId && t.EndedAt != null
+                    && t.StartedAt >= start && t.StartedAt < end)
+                .Select(t => new { t.StartedAt, t.EndedAt })
+                .ToListAsync();
+            return entries.Sum(e => (int)Math.Max(0, (e.EndedAt!.Value - e.StartedAt).TotalSeconds));
+        }
+
         public async Task<decimal> SumHoursByProjectAsync(Guid projectId) =>
             await _context.Set<TimeEntry>()
                 .Where(t => t.ProjectId == projectId && t.EndedAt != null)

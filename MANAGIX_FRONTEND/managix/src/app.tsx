@@ -27,6 +27,7 @@ import WorkloadPanel from './pages/workload/WorkloadPanel';
 import EmployeeInsights from './pages/employee/EmployeeInsights';
 import PayrollPanel from './pages/payroll/PayrollPanel';
 import TimesheetsPage from './pages/timesheet/TimesheetsPage';
+import EmployeeTimesheetPage from './pages/timesheet/EmployeeTimesheetPage';
 
 function App() {
   return (
@@ -72,6 +73,7 @@ function App() {
        {/* PHASE 3: Workload panel — accessible to managers and admins. */}
        <Route path="/workload" element={<Layout><WorkloadPanel /></Layout>} />
        <Route path="/timesheets" element={<Layout><TimesheetsPage /></Layout>} />
+       <Route path="/my-timesheet" element={<Layout><EmployeeTimesheetPage /></Layout>} />
        <Route
               path="/projects/:projectId/milestones/:milestoneId/tasks"
               element={<Task />}

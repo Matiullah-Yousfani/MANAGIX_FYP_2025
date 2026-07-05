@@ -13,6 +13,7 @@ export interface AgileDashboardProject {
   title: string;
   description?: string;
   status?: string;
+  deadline?: string;
   methodology: Methodology;
   totalTasks: number;
   completedTasks: number;
@@ -51,9 +52,14 @@ const AgileDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
               <h3 className="text-2xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors mb-3 line-clamp-1">
                 {p.title}
               </h3>
-              <p className="text-gray-500 text-sm font-medium leading-relaxed mb-6 line-clamp-2">
+              <p className="text-gray-500 text-sm font-medium leading-relaxed mb-2 line-clamp-2">
                 {p.description || 'No description.'}
               </p>
+              {p.deadline && (
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+                  Deadline: {new Date(p.deadline).toLocaleDateString()}
+                </p>
+              )}
 
               {/* Sprint snapshot — small KPI strip */}
               <div className="grid grid-cols-3 gap-2 mb-6">
@@ -69,7 +75,7 @@ const AgileDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
                 </div>
                 <div className="bg-orange-50 text-orange-700 rounded-2xl p-3 text-center">
                   <FiClock className="mx-auto mb-1" />
-                  <div className="text-xs font-black uppercase tracking-widest">Backlog</div>
+                  <div className="text-xs font-black uppercase tracking-widest">Todo</div>
                   <div className="text-xl font-black">{p.pendingTasks}</div>
                 </div>
               </div>

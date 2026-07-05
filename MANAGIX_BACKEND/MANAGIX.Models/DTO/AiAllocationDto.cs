@@ -40,6 +40,13 @@ namespace MANAGIX.Models.DTO
         public string Name { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string Reason { get; set; } = string.Empty;
+        public int ConfidenceScore { get; set; }
+        public List<string> MatchingSkills { get; set; } = new();
+        public int ActiveTasks { get; set; }
+        public decimal CurrentLoadHours { get; set; }
+        public string? ExperienceSummary { get; set; }
+        /// <summary>False when QA workload exceeds threshold.</summary>
+        public bool IsRecommendedForRole { get; set; } = true;
     }
 
     public class SuggestTeamResponseDto
@@ -125,6 +132,8 @@ namespace MANAGIX.Models.DTO
         public double? ScoreApproval { get; set; }
         public double? ScoreTotal { get; set; }
         public bool OverrodeLlm { get; set; }
+        public DateTime? TaskDeadline { get; set; }
+        public string? SuggestedDueDate { get; set; }
     }
 
     public class SuggestTaskAllocationResponseDto

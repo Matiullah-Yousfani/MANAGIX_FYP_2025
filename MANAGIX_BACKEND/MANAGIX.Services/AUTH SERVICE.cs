@@ -318,5 +318,28 @@ namespace MANAGIX.Services
             await _db.SaveChangesAsync();
             return (true, "User deleted.");
         }
+
+        public async Task<(bool ok, string message)> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+        {
+            if (userId == Guid.Empty)
+                return (false, "User is required.");
+
+            if (string.IsNullOrWhiteSpace(currentPassword))
+                return (false, "Current password is required.");
+
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+                return (false, "New password must be at least 6 characters.");
+
+            var user = await _db.users.FindAsync(userId);
+            if (user == null)
+                return (false, "User not found.");
+
+            if (!PasswordService.Verify(currentPassword, user.PasswordHash))
+                return (false, "Current password is incorrect.");
+
+            user.PasswordHash = PasswordService.Hash(newPassword);
+            await _db.SaveChangesAsync();
+            return (true, "Password updated successfully.");
+        }
     }
 }

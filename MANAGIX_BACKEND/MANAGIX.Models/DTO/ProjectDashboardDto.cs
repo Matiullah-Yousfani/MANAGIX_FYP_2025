@@ -12,7 +12,9 @@ namespace MANAGIX.Models.DTO
         public Guid ProjectId { get; set; }
         public int TotalTasks { get; set; }
         public int CompletedTasks { get; set; }
+        /// <summary>Todo-status tasks (industry backlog).</summary>
         public int PendingTasks { get; set; }
+        public int InProgressTasks { get; set; }
         public int TotalMilestones { get; set; }
         public int CompletedMilestones { get; set; }
         public double ProgressPercentage { get; set; }

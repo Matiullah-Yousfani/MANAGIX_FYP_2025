@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axiosInstance';
 import { userService } from '../../api/userService';
+import { authService } from '../../api/authService';
 import { resumeService, ResumeParsedDataDto, ResumeSaveProfileDto, EducationDto, ProjectDto, ExperienceDto } from '../../api/resumeService';
 import { User, FileText, Shield, Upload, CheckCircle, Edit3, X, Brain, Plus, Save } from 'lucide-react';
 import { canUploadResume, normalizeAppRole } from '../../utils/roles';
@@ -43,6 +44,9 @@ const Profile = () => {
     });
     
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
+    const [passwordBusy, setPasswordBusy] = useState(false);
     
     const userId = localStorage.getItem('userId');
     const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
@@ -315,6 +319,34 @@ const Profile = () => {
                 i === index ? { ...exp, [field]: value } : exp
             )
         }));
+    };
+
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!userId) return;
+        if (passwordForm.next !== passwordForm.confirm) {
+            setMessage({ type: 'error', text: 'New password and confirmation do not match.' });
+            return;
+        }
+        if (passwordForm.next.length < 6) {
+            setMessage({ type: 'error', text: 'New password must be at least 6 characters.' });
+            return;
+        }
+        setPasswordBusy(true);
+        try {
+            const res = await authService.changePassword(userId, passwordForm.current, passwordForm.next);
+            if (res?.ok) {
+                setMessage({ type: 'success', text: res.message || 'Password updated successfully.' });
+                setPasswordForm({ current: '', next: '', confirm: '' });
+                setShowPasswordForm(false);
+            } else {
+                setMessage({ type: 'error', text: res?.message || 'Could not update password.' });
+            }
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err?.response?.data?.message || 'Could not update password.' });
+        } finally {
+            setPasswordBusy(false);
+        }
     };
 
     if (!userProfile) return <div className="p-10 font-bold animate-pulse text-gray-400 uppercase">Loading Profile...</div>;
@@ -650,7 +682,50 @@ const Profile = () => {
                     )}
                 </div>
 
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                        <h3 className="text-lg font-black text-gray-900 mb-2">Security</h3>
+                        <p className="text-sm text-gray-500 mb-4">Update your account password.</p>
+                        {!showPasswordForm ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowPasswordForm(true)}
+                                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700"
+                            >
+                                Change Password
+                            </button>
+                        ) : (
+                            <form onSubmit={handleChangePassword} className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Old Password</label>
+                                    <input type="password" required value={passwordForm.current}
+                                        onChange={(e) => setPasswordForm((p) => ({ ...p, current: e.target.value }))}
+                                        className="w-full p-3 bg-gray-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">New Password</label>
+                                    <input type="password" required minLength={6} value={passwordForm.next}
+                                        onChange={(e) => setPasswordForm((p) => ({ ...p, next: e.target.value }))}
+                                        className="w-full p-3 bg-gray-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Confirm Password</label>
+                                    <input type="password" required minLength={6} value={passwordForm.confirm}
+                                        onChange={(e) => setPasswordForm((p) => ({ ...p, confirm: e.target.value }))}
+                                        className="w-full p-3 bg-gray-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-indigo-500" />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button type="submit" disabled={passwordBusy}
+                                        className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase disabled:opacity-50">
+                                        {passwordBusy ? 'Saving…' : 'Save Password'}
+                                    </button>
+                                    <button type="button" onClick={() => setShowPasswordForm(false)}
+                                        className="px-4 py-3 text-gray-500 font-bold text-xs">Cancel</button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+
                     {showResumeUpload && !showParsedForm && (
                         <div className="bg-black text-white p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
                             <div className="relative z-10">

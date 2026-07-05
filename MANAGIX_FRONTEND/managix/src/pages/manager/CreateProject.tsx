@@ -7,6 +7,7 @@ import { aiService } from '../../api/aiService';
 import { validateProjectStep2 } from '../../utils/formValidation';
 import { formatLocalDateYmd, parseYmdLocal, compareYmd } from '../../utils/dateOnlyLocal';
 import { minDateToday } from '../../utils/dateInput';
+import { preprocessTextForAi } from '../../utils/textPreprocess';
 import {
   FiCalendar,
   FiDollarSign,
@@ -89,7 +90,7 @@ const CreateProject = () => {
     try {
       const res = await aiService.generateProjectPlan({
         projectName: formData.title.trim(),
-        projectDescription: formData.description.trim(),
+        projectDescription: preprocessTextForAi(formData.description.trim()),
         deadline: formData.deadline,
         budget: formData.budget,
       });

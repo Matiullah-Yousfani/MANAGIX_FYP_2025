@@ -17,5 +17,6 @@ namespace MANAGIX.Models.DTO
         public string Status { get; set; } = "Todo";
         public decimal? EstimatedHours { get; set; }
         public string? Priority { get; set; }
+        public DateTime? Deadline { get; set; }
     }
 }

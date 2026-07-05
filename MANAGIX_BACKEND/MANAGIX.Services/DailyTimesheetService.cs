@@ -63,11 +63,38 @@ namespace MANAGIX.Services
             var policy = await _uow.TimesheetPolicy.GetOrCreateAsync();
             var today = DateTime.UtcNow.Date;
             var hours = await ComputeDayHoursAsync(userId, today);
+            var closedSeconds = await _uow.TimeEntries.SumClosedSecondsByUserForUtcDayAsync(userId, today);
             var sheet = await _uow.DailyTimesheets.GetByUserAndDateAsync(userId, today);
             var threshold = policy.StandardHoursPerDay + policy.OvertimeGraceHours;
             var open = await _uow.TimeEntries.GetOpenEntryAsync(userId);
             var status = sheet?.Status ?? StatusDraft;
             var minSubmit = policy.MinimumSubmitHours;
+
+            // After submit/approve, show zero hours and no active clock for the day.
+            if (status == StatusSubmitted || status == StatusApproved)
+            {
+                return new TimesheetTodayDto
+                {
+                    UserId = userId,
+                    TodayHours = 0,
+                    IsClockedIn = false,
+                    ClosedSecondsToday = 0,
+                    OpenSessionStartedAt = null,
+                    StandardHoursPerDay = policy.StandardHoursPerDay,
+                    OvertimeGraceHours = policy.OvertimeGraceHours,
+                    DailyMaxHours = policy.DailyMaxHours,
+                    OvertimeThresholdHours = threshold,
+                    DailyLimitHours = policy.DailyMaxHours,
+                    MinimumSubmitHours = minSubmit,
+                    HoursRemainingToSubmit = 0,
+                    CanSubmitToday = false,
+                    OvertimeTriggered = false,
+                    RequiresOvertimeReasonOnSubmit = false,
+                    DailyTimesheetStatus = status,
+                    DailyTimesheetId = sheet?.DailyTimesheetId,
+                };
+            }
+
             var meetsMinimum = minSubmit <= 0 || hours >= minSubmit;
             var canSubmit = meetsMinimum
                 && open == null
@@ -80,6 +107,7 @@ namespace MANAGIX.Services
                 UserId = userId,
                 TodayHours = hours,
                 IsClockedIn = open != null,
+                ClosedSecondsToday = closedSeconds,
                 OpenSessionStartedAt = open?.StartedAt,
                 StandardHoursPerDay = policy.StandardHoursPerDay,
                 OvertimeGraceHours = policy.OvertimeGraceHours,
@@ -229,7 +257,7 @@ namespace MANAGIX.Services
             var rows = await _uow.DailyTimesheets.GetByUserIdsAsync(memberIds, from, to);
             var list = new List<DailyTimesheetDto>();
             foreach (var r in rows.OrderByDescending(x => x.WorkDate))
-                list.Add(await ToDtoAsync(r, false));
+                list.Add(await ToDtoAsync(r, true));
             return list;
         }
 

@@ -57,6 +57,8 @@ namespace MANAGIX.Models.DTO
         public string? DailyTimesheetStatus { get; set; }
         public Guid? DailyTimesheetId { get; set; }
         public bool IsClockedIn { get; set; }
+        /// <summary>Sum of completed clock-in sessions today (seconds), excluding the open session.</summary>
+        public int ClosedSecondsToday { get; set; }
         /// <summary>UTC start of open clock-in session (for live H:M:S display).</summary>
         public DateTime? OpenSessionStartedAt { get; set; }
         public decimal MinimumSubmitHours { get; set; }

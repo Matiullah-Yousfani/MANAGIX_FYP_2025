@@ -13,6 +13,8 @@ export interface TaskCreateRequest {
   status?: string;
   estimatedHours?: number;
   priority?: string;
+  /** ISO date string (yyyy-MM-dd) */
+  deadline?: string;
 }
 
 /** `TaskUpdateDto` */
@@ -25,6 +27,8 @@ export interface TaskUpdateRequest {
   /** Manager/admin: set true to leave task unassigned */
   clearAssignee?: boolean;
   priority?: string;
+  /** ISO date string (yyyy-MM-dd) */
+  deadline?: string;
 }
 
 /** `TaskSubmissionDto` */

@@ -6,6 +6,12 @@ export interface TeamSuggestion {
   name: string;
   role: string;
   reason: string;
+  confidenceScore?: number;
+  matchingSkills?: string[];
+  activeTasks?: number;
+  currentLoadHours?: number;
+  experienceSummary?: string;
+  isRecommendedForRole?: boolean;
 }
 
 export interface EmployeeRecommendation {
@@ -22,6 +28,8 @@ export interface TaskAssignment {
   employeeName: string;
   reason: string;
   confidence: number;
+  taskDeadline?: string;
+  suggestedDueDate?: string;
 }
 
 export interface SuggestTeamResponse {

@@ -409,8 +409,13 @@ namespace MANAGIX_FYP_2025.Functions
             var milestones = await _unitOfWork.Milestones.GetByProjectIdAsync(pid);
 
             int completedCount = tasks.Count(t =>
-                TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Approved ||
-                t.Status == "Completed");
+            {
+                var n = TaskWorkflow.Normalize(t.Status);
+                return n == TaskWorkflow.Approved || n == TaskWorkflow.Done;
+            });
+
+            int todoCount = tasks.Count(t => TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Todo);
+            int inProgressCount = tasks.Count(t => TaskWorkflow.Normalize(t.Status) == TaskWorkflow.InProgress);
 
             int completedMilestones = milestones.Count(m =>
                 string.Equals(m.Status, "Completed", StringComparison.OrdinalIgnoreCase));
@@ -421,7 +426,8 @@ namespace MANAGIX_FYP_2025.Functions
                 TeamId = teamAssignment?.TeamId,
                 TotalTasks = tasks.Count,
                 CompletedTasks = completedCount,
-                PendingTasks = tasks.Count - completedCount,
+                PendingTasks = todoCount,
+                InProgressTasks = inProgressCount,
                 TotalMilestones = milestones.Count,
                 CompletedMilestones = completedMilestones,
                 ProgressPercentage = tasks.Count > 0

@@ -24,12 +24,12 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [employees, setEmployees] = useState<any[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '', milestoneId: '', assignedEmployeeId: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', milestoneId: '', assignedEmployeeId: '', deadline: '' });
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [submission, setSubmission] = useState({ file: null as File | null, comment: '' });
   const [projectTeam, setProjectTeam] = useState<any | null>(null);
   const [editTask, setEditTask] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', status: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', status: '', deadline: '' });
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -112,21 +112,45 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
     fetchAndFilterMembers();
   }, [selectedTeamId]);
 
+  const todayYmd = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const milestoneDeadlineYmd = (milestoneId?: string) => {
+    if (!milestoneId) return '';
+    const m = (milestones || []).find(
+      (x: any) => String(x.milestoneId ?? x.MilestoneId) === String(milestoneId)
+    );
+    const raw = m?.deadline ?? m?.Deadline;
+    return raw ? String(raw).split('T')[0] : '';
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newTask.deadline && newTask.deadline < todayYmd()) {
+      alert('Due date must be today or a future date.');
+      return;
+    }
+    const maxDl = milestoneDeadlineYmd(newTask.milestoneId);
+    if (newTask.deadline && maxDl && newTask.deadline > maxDl) {
+      alert(`Due date cannot exceed milestone deadline (${maxDl}).`);
+      return;
+    }
     setIsSaving(true);
     try {
       await api.post('/tasks', {
         projectId,
         ...newTask,
         milestoneId: newTask.milestoneId === "" ? null : newTask.milestoneId,
+        deadline: newTask.deadline || undefined,
         estimatedHours: 4,
       });
       setShowTaskModal(false);
       refresh();
-      setNewTask({ title: '', description: '', milestoneId: '', assignedEmployeeId: '' });
+      setNewTask({ title: '', description: '', milestoneId: '', assignedEmployeeId: '', deadline: '' });
       setSelectedTeamId('');
-    } catch (err) { alert("Error creating task"); }
+    } catch (err: any) { alert(err?.response?.data?.message || "Error creating task"); }
     finally { setIsSaving(false); }
   };
 
@@ -175,6 +199,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
         title: editForm.title,
         description: editForm.description,
         status: editForm.status,
+        deadline: editForm.deadline || undefined,
       });
       setEditTask(null);
       refresh();
@@ -234,6 +259,11 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-900 text-lg line-clamp-1">{t.title || t.Title}</h4>
                   <p className="text-sm text-gray-500 font-medium line-clamp-2 max-w-xl">{t.description || t.Description}</p>
+                  {(t.deadline || t.Deadline) && (
+                    <p className="text-xs text-indigo-600 font-bold mt-1">
+                      Due {new Date(t.deadline || t.Deadline).toLocaleDateString()}
+                    </p>
+                  )}
                   {t.qaComment && <p className="text-xs text-red-500 mt-2 font-medium italic bg-red-50 inline-block px-2 py-1 rounded-lg">Note: {t.qaComment}</p>}
                 </div>
                 
@@ -273,6 +303,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                             title: t.title || t.Title || '',
                             description: t.description || t.Description || '',
                             status: status || 'Todo',
+                            deadline: (t.deadline || t.Deadline || '').split('T')[0] || '',
                           });
                         }}
                         className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100"
@@ -370,6 +401,19 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                   </select>
                 </div>
 
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Due Date</label>
+                  <input
+                    type="date"
+                    className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white transition-all rounded-2xl outline-none"
+                    min={todayYmd()}
+                    max={milestoneDeadlineYmd(newTask.milestoneId) || undefined}
+                    value={newTask.deadline}
+                    onChange={e => setNewTask({ ...newTask, deadline: e.target.value })}
+                  />
+                  <p className="text-[10px] text-gray-400 px-1">Optional — must be on or before the milestone deadline.</p>
+                </div>
+
                 <div className="flex gap-4 pt-6">
                   <button type="submit" disabled={isSaving || !newTask.assignedEmployeeId} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black disabled:bg-gray-200 transition-all hover:bg-indigo-700 shadow-lg shadow-indigo-100 uppercase tracking-widest">
                     {isSaving ? "Creating..." : "Assign Task"}
@@ -406,6 +450,17 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 <option value="Todo">Todo</option>
                 <option value="InProgress">In Progress</option>
               </select>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Due date</label>
+                <input
+                  type="date"
+                  className="w-full p-3 border rounded-xl mt-1"
+                  min={todayYmd()}
+                  max={milestoneDeadlineYmd(editTask.milestoneId ?? editTask.MilestoneId) || undefined}
+                  value={editForm.deadline}
+                  onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                />
+              </div>
               <p className="text-xs text-gray-500">
                 Managers cannot mark Done without an employee file submission. Use QA review after submit.
               </p>

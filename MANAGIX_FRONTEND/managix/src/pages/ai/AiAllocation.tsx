@@ -648,17 +648,34 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                   {card.expanded ? 'Hide AI notes' : 'Why this lineup?'}
                 </button>
                 {card.expanded && (
-                  <ul className="space-y-2 mb-4 max-h-36 overflow-y-auto">
-                    {card.team.map((member, i) => (
+                  <ul className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                    {card.team.map((member, i) => {
+                      const conf = member.confidenceScore ?? (member as any).ConfidenceScore;
+                      const skills = member.matchingSkills ?? (member as any).MatchingSkills ?? [];
+                      const notRec = member.isRecommendedForRole === false || (member as any).IsRecommendedForRole === false;
+                      return (
                       <li
                         key={member.userId + i}
-                        className="p-2 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500"
+                        className="p-3 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500"
                       >
-                        <span className="font-bold text-gray-700">{member.name}</span>
-                        {' — '}
-                        {member.reason}
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <span className="font-bold text-gray-800">{member.name}</span>
+                          <span className="text-[10px] uppercase text-gray-400">{member.role}</span>
+                          {conf > 0 && <ConfidenceBadge confidence={conf} />}
+                          {notRec && (
+                            <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                              Busy
+                            </span>
+                          )}
+                        </div>
+                        {skills.length > 0 && (
+                          <p className="text-[10px] text-indigo-600 font-bold mb-1">
+                            Skills: {skills.join(', ')}
+                          </p>
+                        )}
+                        <p>{member.reason}</p>
                       </li>
-                    ))}
+                    );})}
                   </ul>
                 )}
                 <button
@@ -742,6 +759,11 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                       <ConfidenceBadge confidence={task.confidence} />
                     </div>
                   </div>
+                  {(task.suggestedDueDate ?? (task as any).SuggestedDueDate) && (
+                    <p className="text-xs font-bold text-indigo-600 mb-2">
+                      Due date: {task.suggestedDueDate ?? (task as any).SuggestedDueDate}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-500 leading-relaxed">
                     {task.reason}
                   </p>

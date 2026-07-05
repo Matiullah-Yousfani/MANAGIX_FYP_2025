@@ -65,6 +65,10 @@ namespace MANAGIX.Services
 
             var policy = await _uow.TimesheetPolicy.GetOrCreateAsync();
             var today = DateTime.UtcNow.Date;
+            var sheet = await _uow.DailyTimesheets.GetByUserAndDateAsync(dto.UserId, today);
+            if (sheet != null && (sheet.Status == DailyTimesheetService.StatusSubmitted || sheet.Status == DailyTimesheetService.StatusApproved))
+                throw new InvalidOperationException("Today's timesheet is already submitted. Clock resets tomorrow.");
+
             var dayHours = await _uow.TimeEntries.SumHoursByUserForUtcDayAsync(dto.UserId, today);
             if (dayHours >= policy.DailyMaxHours)
                 throw new InvalidOperationException(

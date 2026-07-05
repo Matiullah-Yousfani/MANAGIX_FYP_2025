@@ -186,7 +186,8 @@ namespace MANAGIX.Services
         }
 
         private static bool IsStopWord(string w) =>
-            w is "the" or "and" or "for" or "with" or "from" or "this" or "that" or "are" or "was" or "will" or "have" or "has" or "not" or "but" or "can" or "all" or "any" or "our" or "your" or "project";
+            w is "the" or "and" or "for" or "with" or "from" or "this" or "that" or "are" or "was" or "will" or "have" or "has" or "not" or "but" or "can" or "all" or "any" or "our" or "your" or "project"
+                or "web" or "app" or "post" or "real" or "time" or "track" or "manage" or "using" or "into" or "also" or "each" or "more" or "than" or "such" or "their" or "them" or "they" or "what" or "when" or "where" or "which" or "while" or "would" or "about" or "after" or "before" or "being" or "between" or "both" or "could" or "during" or "every" or "other" or "some" or "these" or "those" or "through" or "under" or "until" or "very" or "system" or "based" or "powered" or "platform" or "solution" or "application";
 
         private static double ScoreMemberForProject(IReadOnlyList<string> projectKeywords, EmployeeInfoDto m)
         {
@@ -420,34 +421,117 @@ namespace MANAGIX.Services
             }
         }
 
+        private static List<string> GetMatchingSkills(IReadOnlyList<string> projectKeywords, EmployeeInfoDto m) =>
+            m.Skills
+                .Where(s => !string.IsNullOrWhiteSpace(s) &&
+                            projectKeywords.Any(k => AllocationScoring.SkillTokensMatch(k, s)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(6)
+                .ToList();
+
+        private async Task<(int PendingReviews, int ActiveProjects, double WorkloadScore)> GetQaWorkloadAsync(Guid qaId)
+        {
+            const int pendingThreshold = 10;
+            const double overloadScore = 20;
+            var teamIds = await _unitOfWork.TeamEmployees.GetTeamIdsForMemberAsync(qaId);
+            var projectIds = new HashSet<Guid>();
+            foreach (var tid in teamIds)
+            {
+                var pt = await _unitOfWork.ProjectTeams.GetByTeamIdAsync(tid);
+                if (pt != null)
+                    projectIds.Add(pt.ProjectId);
+            }
+
+            var pending = 0;
+            foreach (var pid in projectIds)
+            {
+                var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(pid);
+                pending += tasks.Count(t =>
+                {
+                    var n = TaskWorkflow.Normalize(t.Status);
+                    return n == TaskWorkflow.Done || string.Equals(t.Status, "Submitted", StringComparison.OrdinalIgnoreCase);
+                });
+            }
+
+            var score = pending + projectIds.Count * 2.0;
+            _ = pendingThreshold;
+            _ = overloadScore;
+            return (pending, projectIds.Count, score);
+        }
+
+        private static TeamSuggestionDto BuildMemberSuggestion(
+            EmployeeInfoDto member,
+            string role,
+            IReadOnlyList<string> projectKeywords,
+            string projectTitle,
+            bool isQa,
+            double qaWorkloadScore = 0,
+            int qaPending = 0)
+        {
+            var skillScore = AllocationScoring.SkillMatchScore(projectKeywords, member.Skills);
+            var cap = AllocationScoring.CapacityScore(member.CurrentLoadHours, member.WeeklyCapacityHours);
+            var composite = AllocationScoring.Composite(skillScore, cap, member.RecentApprovalRate);
+            var matching = GetMatchingSkills(projectKeywords, member);
+            var confidence = (int)Math.Round(Math.Clamp(composite, 0, 1) * 100);
+
+            var reasonParts = new List<string>();
+            if (matching.Count > 0)
+                reasonParts.Add($"Skills: {string.Join(", ", matching)}");
+            else if (member.Skills.Count > 0)
+                reasonParts.Add($"Skills: {string.Join(", ", member.Skills.Take(4))}");
+            else
+                reasonParts.Add("Add résumé/skills for better matching");
+
+            reasonParts.Add($"{member.ActiveTasks} active tasks · {member.CurrentLoadHours:0.#}h workload");
+            if (member.Experience.Count > 0)
+                reasonParts.Add($"{member.Experience[0].Title} ({member.Experience[0].Company})");
+
+            var qaRecommended = true;
+            if (isQa)
+            {
+                if (qaPending >= 10 || qaWorkloadScore >= 20)
+                {
+                    qaRecommended = false;
+                    reasonParts.Add($"Busy — {qaPending} pending reviews");
+                }
+                else if (qaWorkloadScore >= 12)
+                    reasonParts.Add($"Moderate load — {qaPending} pending reviews");
+                else
+                    reasonParts.Add("Available for QA");
+            }
+
+            return new TeamSuggestionDto
+            {
+                UserId = member.UserId.ToString(),
+                Name = member.Name,
+                Role = role,
+                Reason = string.Join(". ", reasonParts) + ".",
+                ConfidenceScore = confidence,
+                MatchingSkills = matching,
+                ActiveTasks = member.ActiveTasks,
+                CurrentLoadHours = member.CurrentLoadHours,
+                ExperienceSummary = member.Experience.FirstOrDefault()?.Title,
+                IsRecommendedForRole = qaRecommended,
+            };
+        }
+
         private static TeamOptionDto BuildTeamOption(
             string label,
             string suggestedTeamName,
             EmployeeInfoDto qa,
             IReadOnlyList<EmployeeInfoDto> devs,
+            IReadOnlyList<string> projectKeywords,
             string projectTitle,
-            double fitScore)
+            double fitScore,
+            double qaWorkloadScore,
+            int qaPending)
         {
             var team = new List<TeamSuggestionDto>
             {
-                new()
-                {
-                    UserId = qa.UserId.ToString(),
-                    Name = qa.Name,
-                    Role = "QA",
-                    Reason = "Dedicated QA for quality gate (one per team).",
-                },
+                BuildMemberSuggestion(qa, "QA", projectKeywords, projectTitle, isQa: true, qaWorkloadScore, qaPending),
             };
             foreach (var e in devs)
-            {
-                team.Add(new TeamSuggestionDto
-                {
-                    UserId = e.UserId.ToString(),
-                    Name = e.Name,
-                    Role = "Developer",
-                    Reason = $"Matched to {projectTitle} based on skills: {string.Join(", ", e.Skills.Take(5))}.",
-                });
-            }
+                team.Add(BuildMemberSuggestion(e, "Developer", projectKeywords, projectTitle, isQa: false));
 
             return new TeamOptionDto
             {
@@ -484,14 +568,23 @@ namespace MANAGIX.Services
                 .Select(x => x.Member)
                 .ToList();
 
-            var rankedQas = qas
-                .Select(q => (Member: q, Score: ScoreMemberForProject(projectKeywords, q)))
+            var rankedQas = new List<(EmployeeInfoDto Member, double Score, double Workload, int Pending)>();
+            foreach (var q in qas)
+            {
+                var (pending, _, workload) = await GetQaWorkloadAsync(q.UserId);
+                var skillScore = ScoreMemberForProject(projectKeywords, q);
+                // Prefer lowest workload, then best skill fit
+                var rank = skillScore - workload * 0.02;
+                rankedQas.Add((q, rank, workload, pending));
+            }
+            rankedQas = rankedQas
                 .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.Workload)
                 .ThenBy(x => x.Member.UserId)
-                .Select(x => x.Member)
                 .ToList();
+            var rankedQaMembers = rankedQas.Select(x => x.Member).ToList();
 
-            var maxTeams = Math.Min(3, Math.Min(rankedQas.Count, employees.Count / devCount));
+            var maxTeams = Math.Min(3, Math.Min(rankedQaMembers.Count, employees.Count / devCount));
             if (maxTeams < 1 && employees.Count >= 1)
                 maxTeams = 1;
 
@@ -506,7 +599,8 @@ namespace MANAGIX.Services
 
             for (int t = 0; t < maxTeams; t++)
             {
-                var qa = rankedQas[t % rankedQas.Count];
+                var qa = rankedQaMembers[t % rankedQaMembers.Count];
+                var qaMeta = rankedQas.First(x => x.Member.UserId == qa.UserId);
                 var devs = new List<EmployeeInfoDto>();
                 for (int d = 0; d < devCount; d++)
                 {
@@ -523,8 +617,11 @@ namespace MANAGIX.Services
                     isFirst ? $"{shortTitle} Core Team" : $"{shortTitle} Squad {options.Count + 1}",
                     qa,
                     devs,
+                    projectKeywords,
                     project.Title,
-                    fit));
+                    fit,
+                    qaMeta.Workload,
+                    qaMeta.Pending));
             }
 
             ApplyRecommendedByFitScore(options);
@@ -541,7 +638,7 @@ namespace MANAGIX.Services
             {
                 Options = options,
                 SuggestedDeveloperCount = devCount,
-                AvailableQa = ToPoolDtos(rankedQas),
+                AvailableQa = ToPoolDtos(rankedQaMembers),
                 AvailableEmployees = ToPoolDtos(rankedEmps),
                 AvailabilityMessage = availabilityMessage,
             };
@@ -690,12 +787,50 @@ namespace MANAGIX.Services
             List<EmployeeInfoDto> teamMembers)
         {
             var result = new SuggestTaskAllocationResponseDto();
+            if (pendingTasks.Count == 0 || teamMembers.Count == 0)
+                return result;
+
             var capacityByMember = teamMembers.ToDictionary(m => m.UserId, m => m.WeeklyCapacityHours);
             var approvalByMember = teamMembers.ToDictionary(m => m.UserId, m => m.RecentApprovalRate);
             var baselineHours = teamMembers.ToDictionary(m => m.UserId, m => m.CurrentLoadHours);
             var batchAssignmentCount = teamMembers.ToDictionary(m => m.UserId, _ => 0);
 
-            foreach (var task in pendingTasks.OrderBy(t => t.TaskId))
+            var remaining = pendingTasks.OrderBy(t => t.TaskId).ToList();
+
+            // Phase 1: every team member gets at least one task when possible
+            if (remaining.Count >= teamMembers.Count)
+            {
+                foreach (var member in teamMembers.OrderBy(m => baselineHours[m.UserId]).ThenBy(m => m.UserId))
+                {
+                    if (remaining.Count == 0) break;
+                    TaskItem? bestTask = null;
+                    (EmployeeInfoDto Member, double Score, double SkillScore, double CapacityScore, double ApprovalScore)? bestRank = null;
+                    foreach (var task in remaining)
+                    {
+                        var requiredSkills = RefineRequiredSkillsForTeam(RequiredSkillsForTask(task), teamMembers);
+                        var ranked = AllocationScoring.RankMembers(
+                            requiredSkills,
+                            new List<EmployeeInfoDto> { member },
+                            baselineHours,
+                            capacityByMember,
+                            approvalByMember);
+                        var top = ranked.FirstOrDefault();
+                        if (top.Member.UserId == Guid.Empty) continue;
+                        if (bestRank == null || top.Score > bestRank.Value.Score)
+                        {
+                            bestRank = top;
+                            bestTask = task;
+                        }
+                    }
+                    if (bestTask == null || bestRank == null) continue;
+                    result.TaskAssignments.Add(MakeAssignment(bestTask, bestRank.Value, teamMembers));
+                    batchAssignmentCount[member.UserId] = batchAssignmentCount.GetValueOrDefault(member.UserId, 0) + 1;
+                    remaining.Remove(bestTask);
+                }
+            }
+
+            // Phase 2: distribute remaining tasks fairly (lowest assignment count first, then best score)
+            foreach (var task in remaining)
             {
                 var requiredSkills = RefineRequiredSkillsForTeam(RequiredSkillsForTask(task), teamMembers);
                 var ranked = AllocationScoring.RankMembers(
@@ -705,41 +840,52 @@ namespace MANAGIX.Services
                     capacityByMember,
                     approvalByMember);
 
-                // Spread tasks across the team: prefer members with fewest assignments this batch, then best score.
                 var top = ranked
                     .OrderBy(r => batchAssignmentCount.GetValueOrDefault(r.Member.UserId, 0))
                     .ThenByDescending(r => r.Score)
                     .First();
+
                 batchAssignmentCount[top.Member.UserId] = batchAssignmentCount.GetValueOrDefault(top.Member.UserId, 0) + 1;
-                var assignment = new TaskAssignmentDto
-                {
-                    TaskId = task.TaskId.ToString(),
-                    TaskTitle = task.Title,
-                    UserId = top.Member.UserId.ToString(),
-                    EmployeeName = top.Member.Name,
-                    ScoreSkill = Math.Round(top.SkillScore, 3),
-                    ScoreCapacity = Math.Round(top.CapacityScore, 3),
-                    ScoreApproval = Math.Round(top.ApprovalScore, 3),
-                    ScoreTotal = Math.Round(top.Score, 3),
-                    Confidence = (int)Math.Round(top.Score * 100),
-                    OverrodeLlm = false,
-                };
-
-                if (top.Member.Skills.Count == 0)
-                {
-                    assignment.Confidence = 0;
-                    assignment.Reason =
-                        "No skills on file — upload résumé and add skills for a confidence score.";
-                }
-                else
-                {
-                    assignment.Reason = BuildStableAssignmentReason(top, task, requiredSkills);
-                }
-
-                result.TaskAssignments.Add(assignment);
+                result.TaskAssignments.Add(MakeAssignment(task, top, teamMembers));
             }
 
             return result;
+        }
+
+        private TaskAssignmentDto MakeAssignment(
+            TaskItem task,
+            (EmployeeInfoDto Member, double Score, double SkillScore, double CapacityScore, double ApprovalScore) top,
+            List<EmployeeInfoDto> teamMembers)
+        {
+            var requiredSkills = RefineRequiredSkillsForTeam(RequiredSkillsForTask(task), teamMembers);
+            var assignment = new TaskAssignmentDto
+            {
+                TaskId = task.TaskId.ToString(),
+                TaskTitle = task.Title,
+                UserId = top.Member.UserId.ToString(),
+                EmployeeName = top.Member.Name,
+                TaskDeadline = task.Deadline,
+                SuggestedDueDate = FormatTaskDueDate(task.Deadline),
+                ScoreSkill = Math.Round(top.SkillScore, 3),
+                ScoreCapacity = Math.Round(top.CapacityScore, 3),
+                ScoreApproval = Math.Round(top.ApprovalScore, 3),
+                ScoreTotal = Math.Round(top.Score, 3),
+                Confidence = (int)Math.Round(top.Score * 100),
+                OverrodeLlm = false,
+            };
+
+            if (top.Member.Skills.Count == 0)
+            {
+                assignment.Confidence = 0;
+                assignment.Reason =
+                    "No skills on file — upload résumé and add skills for a confidence score.";
+            }
+            else
+            {
+                assignment.Reason = BuildStableAssignmentReason(top, task, requiredSkills);
+            }
+
+            return assignment;
         }
 
         private static List<string> RequiredSkillsForTask(TaskItem task)
@@ -804,6 +950,9 @@ namespace MANAGIX.Services
         //      pull their *lowest-priority* extra task and reassign it to the next best
         //      ranked member that's still under capacity.
         // ────────────────────────────────────────────────────────────────────
+        private static string FormatTaskDueDate(DateTime? deadline) =>
+            deadline.HasValue ? deadline.Value.ToString("yyyy-MM-dd") : "Not set — add a due date on the task";
+
         private static string BuildStableAssignmentReason(
             (EmployeeInfoDto Member, double Score, double SkillScore, double CapacityScore, double ApprovalScore) pick,
             TaskItem task,
@@ -817,14 +966,14 @@ namespace MANAGIX.Services
 
             var pct = (int)Math.Round(Math.Clamp(pick.Score, 0, 1) * 100);
             var skillPct = (int)Math.Round(Math.Clamp(pick.SkillScore, 0, 1) * 100);
+            var due = FormatTaskDueDate(task.Deadline);
             if (matched.Count > 0)
             {
-                return $"Best match for \"{task.Title}\": {pick.Member.Name} — skills ({string.Join(", ", matched)}), " +
-                       $"capacity, approval rate (skill {skillPct}%, overall {pct}%).";
+                return $"Assign to {pick.Member.Name} — skills ({string.Join(", ", matched)}), " +
+                       $"due {due}, overall match {pct}% (skill {skillPct}%).";
             }
 
-            return $"Best match for \"{task.Title}\": {pick.Member.Name} — highest merit score " +
-                   $"(skill {skillPct}%, capacity, performance — overall {pct}%).";
+            return $"Assign to {pick.Member.Name} — best workload/skill fit, due {due}, overall match {pct}%.";
         }
 
         private void ApplyDeterministicPostPass(

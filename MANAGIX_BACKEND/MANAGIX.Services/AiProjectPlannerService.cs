@@ -1,4 +1,5 @@
 using MANAGIX.Models.DTO;
+using MANAGIX.Utility;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ namespace MANAGIX.Services
             var payload = new
             {
                 projectName = request.ProjectName,
-                projectDescription = request.ProjectDescription,
+                projectDescription = TextPreprocess.CleanForAi(request.ProjectDescription),
                 deadline = request.Deadline,
                 budget = request.Budget,
                 methodologyOptions = methodologyNames?.ToList() ?? new List<string>()

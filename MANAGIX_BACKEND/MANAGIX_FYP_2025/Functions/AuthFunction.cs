@@ -172,6 +172,57 @@ namespace MANAGIX_FYP_2025.Functions
             }
         }
 
+        [Function("ChangePassword")]
+        public async Task<HttpResponseData> ChangePassword(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/change-password")] HttpRequestData req)
+        {
+            try
+            {
+                var (callerId, authErr) = await AuthHttpHelper.RequireAuthenticatedAsync(req);
+                if (authErr != null) return authErr;
+
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                var dto = JsonSerializer.Deserialize<ChangePasswordDto>(body, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                });
+
+                if (dto == null || dto.UserId == Guid.Empty
+                    || string.IsNullOrWhiteSpace(dto.CurrentPassword)
+                    || string.IsNullOrWhiteSpace(dto.NewPassword))
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = "userId, currentPassword, and newPassword are required.", ok = false });
+                    return bad;
+                }
+
+                if (callerId != dto.UserId && !req.JwtHasAnyRole("Admin"))
+                {
+                    var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                    await forbidden.WriteAsJsonAsync(new { message = "You can only change your own password.", ok = false });
+                    return forbidden;
+                }
+
+                if (dto.NewPassword != dto.NewPassword.Trim() || dto.NewPassword.Length < 6)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = "New password must be at least 6 characters.", ok = false });
+                    return bad;
+                }
+
+                var (ok, message) = await _authService.ChangePasswordAsync(dto.UserId, dto.CurrentPassword, dto.NewPassword);
+                var resp = req.CreateResponse(ok ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
+                await resp.WriteAsJsonAsync(new { ok, message });
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                var err = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await err.WriteAsJsonAsync(new { message = "Server error", detail = ex.Message, ok = false });
+                return err;
+            }
+        }
+
         // Add this to your Backend AuthFunction or Management section
         [Function("GetAllUsers")]
         public async Task<HttpResponseData> GetAllUsers(

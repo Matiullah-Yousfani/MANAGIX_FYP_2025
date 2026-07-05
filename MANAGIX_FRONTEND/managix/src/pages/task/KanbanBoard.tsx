@@ -6,6 +6,7 @@ import { milestoneService } from "../../api/milestoneService";
 import { projectService } from "../../api/projectService";
 import { teamService } from "../../api/teamService";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+import PriorityBadge, { normalizePriority } from "../../components/PriorityBadge";
 
 // --- Constants ---
 const KANBAN_COLUMNS = ["Todo", "InProgress", "Done"];
@@ -19,18 +20,7 @@ const STATUS_MAP: Record<string, string> = {
   Approved: "Done",
 };
 
-const priorityNorm = (p?: string) => {
-  const v = (p || "Medium").trim().toLowerCase();
-  if (v === "high") return "High";
-  if (v === "low") return "Low";
-  return "Medium";
-};
-
-const priorityStyle = (p: string) => {
-  if (p === "High") return "bg-red-50 text-red-700 border-red-100";
-  if (p === "Low") return "bg-gray-100 text-gray-500 border-gray-100";
-  return "bg-amber-50 text-amber-700 border-amber-100";
-};
+const priorityNorm = normalizePriority;
 
 // --- Sub-Component: Task Card ---
 const TaskCard = ({
@@ -128,9 +118,7 @@ const TaskCard = ({
           )}
 
           <div className="flex flex-wrap gap-2 mb-4">
-            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${priorityStyle(priority)}`}>
-              {priority}
-            </span>
+            <PriorityBadge priority={priority} />
           </div>
 
           <div className="flex justify-between items-center gap-2">
@@ -148,14 +136,73 @@ const TaskCard = ({
 };
 
 // --- Sub-Component: Task Detail Modal ---
+const TaskDetailsPanel: React.FC<{ task: any; milestoneTitle?: string; assigneeName?: string }> = ({
+  task,
+  milestoneTitle,
+  assigneeName,
+}) => {
+  const status = task.Status || task.status || 'Todo';
+  const priority = priorityNorm(task.Priority || task.priority);
+  const created = task.CreatedAt || task.createdAt;
+  const deadline = task.Deadline || task.deadline;
+  const description = task.Description || task.description;
+
+  return (
+    <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100 mb-4">
+      <div>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Description</label>
+        <p className="text-sm font-medium text-gray-700 leading-relaxed whitespace-pre-wrap">
+          {description || 'No description provided.'}
+        </p>
+      </div>
+      {milestoneTitle && (
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">User Story / Milestone</label>
+          <p className="text-sm font-bold text-indigo-700">{milestoneTitle}</p>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Assigned To</label>
+          <p className="text-sm font-bold text-gray-800">{assigneeName || 'Unassigned'}</p>
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Priority</label>
+          <PriorityBadge priority={priority} />
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Created</label>
+          <p className="text-sm font-medium text-gray-600">
+            {created ? new Date(created).toLocaleDateString() : '—'}
+          </p>
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Due Date</label>
+          <p className="text-sm font-medium text-gray-600">
+            {deadline ? new Date(deadline).toLocaleDateString() : 'Not set'}
+          </p>
+        </div>
+        <div className="col-span-2">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Current Status</label>
+          <p className="text-sm font-black text-indigo-600">{status === 'Pending' ? 'Todo' : status}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TaskModal = ({
   task,
   projectId,
+  milestoneTitle,
+  assigneeName,
   onClose,
   onRefresh,
 }: {
   task: any;
   projectId: string;
+  milestoneTitle?: string;
+  assigneeName?: string;
   onClose: () => void;
   onRefresh: () => void;
 }) => {
@@ -178,6 +225,9 @@ const TaskModal = ({
   const [priority, setPriority] = useState(
     priorityNorm(task.Priority || task.priority)
   );
+  const [deadline, setDeadline] = useState(
+    (task.Deadline || task.deadline || '').split('T')[0] || ''
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const roleRaw = localStorage.getItem("roleName") || localStorage.getItem("userRole") || "";
@@ -195,7 +245,8 @@ const TaskModal = ({
     const id = task.AssignedEmployeeId ?? task.assignedEmployeeId;
     setAssigneeId(id ? String(id) : "");
     setPriority(priorityNorm(task.Priority || task.priority));
-  }, [task.TaskId, task.taskId, task.AssignedEmployeeId, task.assignedEmployeeId, task.Priority, task.priority]);
+    setDeadline((task.Deadline || task.deadline || '').split('T')[0] || '');
+  }, [task.TaskId, task.taskId, task.AssignedEmployeeId, task.assignedEmployeeId, task.Priority, task.priority, task.Deadline, task.deadline]);
 
   useEffect(() => {
     if (!isManagerOrAdmin || !projectId) return;
@@ -239,6 +290,7 @@ const TaskModal = ({
         title: titleStr,
         description: descStr,
         priority,
+        deadline: deadline || undefined,
       };
       if (!assigneeId) payload.clearAssignee = true;
       else payload.assignedEmployeeId = assigneeId;
@@ -257,7 +309,7 @@ const TaskModal = ({
   const assigneeForDelete = members.find(
     (m) => String(m.Id ?? m.UserId ?? m.userId ?? m.id) === assigneeId
   );
-  const assigneeName = assigneeForDelete ? memberLabel(assigneeForDelete) : "Unassigned";
+  const deleteAssigneeName = assigneeForDelete ? memberLabel(assigneeForDelete) : "Unassigned";
 
   const confirmDeleteTask = async () => {
     const taskId = task.TaskId || task.taskId;
@@ -326,16 +378,22 @@ const TaskModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-[100] p-6 backdrop-blur-md">
-      <div className="bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
-        <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-2">Task Editor</label>
-        <h2 className="text-3xl font-sans font-black text-gray-900 tracking-tight mb-8">
-          {task.Title || task.title}
-        </h2>
+    <div className="fixed inset-0 bg-gray-900/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6 md:p-8 shadow-2xl my-4">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-1">Task details</label>
+            <h2 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight break-words">
+              {task.Title || task.title}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="shrink-0 text-gray-400 hover:text-gray-700 text-2xl leading-none px-2" aria-label="Close">×</button>
+        </div>
 
         {isReadOnly ? (
-          <div className="space-y-6">
-            <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+          <div className="space-y-4">
+            <TaskDetailsPanel task={task} milestoneTitle={milestoneTitle} assigneeName={assigneeName} />
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current Status</label>
                 <p className="text-lg font-sans font-black text-indigo-600 mb-4">
                   {taskStatus === "Approved" || submission?.status === "Approved"
@@ -361,6 +419,7 @@ const TaskModal = ({
           </div>
         ) : (
           <div className="space-y-8">
+            <TaskDetailsPanel task={task} milestoneTitle={milestoneTitle} assigneeName={assigneeName} />
             {isEmployee ? (
               <>
                 <div className="space-y-2">
@@ -388,24 +447,33 @@ const TaskModal = ({
                 </div>
               </>
             ) : isManagerOrAdmin ? (
-              <div className="space-y-6">
-                <p className="text-gray-500 font-medium leading-relaxed">
-                  {task.Description || task.description || "No description provided."}
-                </p>
+              <div className="space-y-4">
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Priority
                   </label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none"
+                    className="w-full p-3 bg-gray-50 rounded-xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border border-gray-100"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Due date
+                  </label>
+                  <input
+                    type="date"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    className="w-full p-3 bg-gray-50 rounded-xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border border-gray-100"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -493,11 +561,11 @@ const TaskModal = ({
         message={`Delete task "${taskTitle}"? You won't be able to revert this!`}
         details={[
           { label: "Task", value: taskTitle || "—" },
-          { label: "Assigned to", value: assigneeName },
+          { label: "Assigned to", value: deleteAssigneeName },
         ]}
         warning={
-          assigneeName !== "Unassigned"
-            ? `This task is assigned to ${assigneeName}. Deleting it will remove their assignment.`
+          deleteAssigneeName !== "Unassigned"
+            ? `This task is assigned to ${deleteAssigneeName}. Deleting it will remove their assignment.`
             : undefined
         }
         busy={deleteBusy}
@@ -793,6 +861,12 @@ const KanbanBoard = () => {
         <TaskModal
           task={selectedTask}
           projectId={selectedProjectId}
+          milestoneTitle={(() => {
+            const mid = selectedTask.MilestoneId ?? selectedTask.milestoneId;
+            const m = milestones.find((x) => String(x.MilestoneId ?? x.milestoneId) === String(mid));
+            return m?.Title ?? m?.title;
+          })()}
+          assigneeName={resolveAssignee(selectedTask)}
           onClose={() => setSelectedTask(null)}
           onRefresh={() => {
             setSelectedTask(null);

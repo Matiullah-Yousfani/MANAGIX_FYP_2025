@@ -9,7 +9,10 @@ import { adminService } from '../../api/adminService';
 // PHASE 2: methodology-aware dashboard dispatcher.
 import MethodologyDashboard, { type ProjectAggregates } from '../../components/dashboard/MethodologyDashboard';
 import DashboardTimesheetCard from '../../components/DashboardTimesheetCard';
+import EmployeeDashboardWidgets from '../../components/EmployeeDashboardWidgets';
+import ManagerDashboardWidgets from '../../components/ManagerDashboardWidgets';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
+import { normalizeAppRole } from '../../utils/roles';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -82,7 +85,8 @@ const Dashboard = () => {
             projectService.getProjectDashboard(id),
             api.get(`/milestones/project/${id}`).catch(() => ({ data: [] })),
           ]);
-          const inProgress = Math.max(0, (dash?.totalTasks ?? 0) - (dash?.completedTasks ?? 0) - (dash?.pendingTasks ?? 0));
+          const inProgress = dash?.inProgressTasks ?? dash?.InProgressTasks
+            ?? Math.max(0, (dash?.totalTasks ?? 0) - (dash?.completedTasks ?? 0) - (dash?.pendingTasks ?? 0));
           const rawMiles = mileRes.data;
           const milestones = (Array.isArray(rawMiles) ? rawMiles : []).map((m: any) => ({
             milestoneId: String(m.milestoneId ?? m.MilestoneId ?? ''),
@@ -241,6 +245,14 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-6">
         {userRole?.toLowerCase() !== 'admin' && userRole?.toLowerCase() !== 'qa' && <DashboardTimesheetCard />}
 
+        {normalizeAppRole(userRole) === 'Employee' && userId && (
+          <EmployeeDashboardWidgets userId={userId} />
+        )}
+
+        {normalizeAppRole(userRole) === 'Manager' && userId && (
+          <ManagerDashboardWidgets userId={userId} />
+        )}
+
         {/* METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
@@ -287,7 +299,16 @@ const Dashboard = () => {
         {filteredProjects.length === 0 ? (
           <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
             <FiBriefcase className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-400 font-bold italic">No projects matching your search.</p>
+            <p className="text-gray-600 font-bold">
+              {normalizeAppRole(userRole) === 'Employee'
+                ? "You don't have any assigned projects yet."
+                : 'No projects matching your search.'}
+            </p>
+            <p className="text-sm text-gray-400 mt-2">
+              {normalizeAppRole(userRole) === 'Employee'
+                ? 'Your manager will add you to a project team.'
+                : 'Try adjusting your search or show archived projects.'}
+            </p>
           </div>
         ) : (
           /*

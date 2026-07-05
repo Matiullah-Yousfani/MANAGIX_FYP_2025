@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AiAllocation from '../ai/AiAllocation';
 import { teamService } from '../../api/teamService';
 import { projectService } from '../../api/projectService';
@@ -52,6 +52,7 @@ const Teams = () => {
     const [deleteTeamTarget, setDeleteTeamTarget] = useState<any>(null);
     const [removeMemberTarget, setRemoveMemberTarget] = useState<any>(null);
     const [deleteBusy, setDeleteBusy] = useState(false);
+    const [excludedMemberIds, setExcludedMemberIds] = useState<Set<string>>(new Set());
     const { toasts, push: pushToast } = useToast();
 
     const QA_ROLE_ID = "8DA96376-659A-40B2-A3D4-34165984E90F".toUpperCase();
@@ -74,6 +75,58 @@ const Teams = () => {
         resolveRole(member, creatorId) === 'QA';
 
     useEffect(() => { loadData(); }, []);
+
+    useEffect(() => {
+        if (!selectedTeamForMember) {
+            setExcludedMemberIds(new Set());
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            const excluded = new Set<string>();
+            try {
+                const selectedTeam = teams.find((t) => t.TeamId === selectedTeamForMember);
+                const members = await teamService.getTeamMembers(selectedTeamForMember);
+                members.forEach((m: any) => {
+                    const id = String(m.UserId ?? m.userId ?? m.Id ?? m.id ?? '');
+                    if (id) excluded.add(id);
+                });
+
+                if (selectedTeam?.ProjectId) {
+                    const others = teams.filter(
+                        (t) => t.ProjectId === selectedTeam.ProjectId && t.TeamId !== selectedTeamForMember
+                    );
+                    await Promise.all(
+                        others.map(async (t) => {
+                            const mem = await teamService.getTeamMembers(t.TeamId);
+                            mem.forEach((m: any) => {
+                                const id = String(m.UserId ?? m.userId ?? m.Id ?? m.id ?? '');
+                                if (id) excluded.add(id);
+                            });
+                        })
+                    );
+                }
+            } catch {
+                /* keep partial exclusions */
+            }
+            if (!cancelled) {
+                setExcludedMemberIds(excluded);
+                if (selectedEmployee && excluded.has(selectedEmployee)) setSelectedEmployee('');
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedTeamForMember, teams]);
+
+    const availableEmployees = useMemo(
+        () =>
+            employees.filter((e: any) => {
+                const id = String(e.Id ?? e.UserId ?? e.id ?? '');
+                return id && !excludedMemberIds.has(id);
+            }),
+        [employees, excludedMemberIds]
+    );
 
     const loadData = async () => {
         try {
@@ -431,17 +484,28 @@ const Teams = () => {
                                 onChange={(e) => setSelectedEmployee(e.target.value)}
                             >
                                 <option value="">Select Member (Emp/QA)</option>
-                                {employees.length > 0 ? (
-                                    employees.map((e: any) => (
+                                {availableEmployees.length > 0 ? (
+                                    availableEmployees.map((e: any) => (
                                         <option key={e.Id || e.UserId || e.id} value={e.Id || e.UserId || e.id}>
                                             {e.FullName}
                                         </option>
                                     ))
+                                ) : selectedTeamForMember ? (
+                                    <option disabled>Everyone is already on this team / project</option>
                                 ) : (
-                                    <option disabled>No Employees/QA found</option>
+                                    <option disabled>Select a team first</option>
                                 )}
                             </select>
                         </div>
+                        {selectedTeamForMember && (
+                            <p className="text-[10px] text-gray-400 mt-2">
+                                Showing only members not already on this team
+                                {teams.find((t) => t.TeamId === selectedTeamForMember)?.ProjectId
+                                    ? ' or another team on the same project'
+                                    : ''}
+                                .
+                            </p>
+                        )}
                         <button onClick={handleAddMember} className="w-full mt-4 bg-gray-900 text-white p-4 rounded-2xl font-bold hover:bg-black transition-all active:scale-[0.98]">
                             Add to Team
                         </button>

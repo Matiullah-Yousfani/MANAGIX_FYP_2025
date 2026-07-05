@@ -26,6 +26,7 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<'today' | 'previous'>('today');
   const [toasts, setToasts] = useState<Toast[]>([]);
   const prevUnreadRef = useRef(0);
   const userId = localStorage.getItem('userId');
@@ -67,7 +68,7 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
     if (!userId) return;
     setLoading(true);
     try {
-      const list = await notificationService.list(userId, 25);
+      const list = await notificationService.list(userId, 50);
       setItems(list);
     } catch {
       setItems([]);
@@ -155,6 +156,11 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
 
   if (!userId) return null; // not logged in
 
+  const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
+  const filtered = tab === 'today'
+    ? items.filter((n) => isToday(n.createdAt))
+    : items.filter((n) => !isToday(n.createdAt));
+
   return (
     <>
     <div className="fixed top-6 right-24 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
@@ -207,16 +213,33 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
               )}
             </div>
 
+            <div className="flex gap-1 px-4 py-2 border-b border-gray-50 bg-gray-50/50">
+              {(['today', 'previous'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                    tab === t ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t === 'today' ? 'Today' : 'Previous'}
+                </button>
+              ))}
+            </div>
+
             <div className="max-h-96 overflow-y-auto">
               {loading ? (
                 <div className="p-8 text-center text-gray-400 italic">Loading…</div>
-              ) : items.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <div className="p-8 text-center">
                   <FiBell className="mx-auto text-gray-200 mb-3" size={32} />
-                  <p className="text-sm font-bold text-gray-400 italic">You're all caught up.</p>
+                  <p className="text-sm font-bold text-gray-400 italic">
+                    {tab === 'today' ? 'No notifications today.' : 'No previous notifications.'}
+                  </p>
                 </div>
               ) : (
-                items.map((n) => (
+                filtered.map((n) => (
                   <MeetingNotificationRow
                     key={n.notificationId}
                     n={n}
@@ -282,6 +305,8 @@ const MeetingNotificationRow: React.FC<{
         <div className="text-sm font-bold text-gray-900 truncate">{n.title}</div>
         {n.body && <div className="text-xs text-gray-500 line-clamp-2">{n.body}</div>}
         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+          <span className="text-indigo-500">{n.type}</span>
+          {' · '}
           {new Date(n.createdAt).toLocaleString()}
         </div>
         {isMeeting && meetingId && (

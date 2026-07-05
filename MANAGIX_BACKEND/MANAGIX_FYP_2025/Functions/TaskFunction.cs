@@ -757,6 +757,27 @@ namespace MANAGIX_FYP_2025.Functions
                     return badResp;
                 }
 
+                DateTime? taskDeadline = null;
+                if (dto.Deadline.HasValue)
+                {
+                    if (CalendarDate.IsBeforeUtcCalendarToday(dto.Deadline.Value))
+                    {
+                        var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                        await badResp.WriteAsJsonAsync(new { message = "Task due date must be today or a future date." });
+                        return badResp;
+                    }
+                    if (CalendarDate.IsAfterCalendarDate(dto.Deadline.Value, milestone.Deadline))
+                    {
+                        var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                        await badResp.WriteAsJsonAsync(new
+                        {
+                            message = $"Task due date cannot exceed milestone deadline ({milestone.Deadline:yyyy-MM-dd})."
+                        });
+                        return badResp;
+                    }
+                    taskDeadline = dto.Deadline.Value;
+                }
+
                 var newTask = new TaskItem
                 {
                     TaskId = Guid.NewGuid(),
@@ -768,6 +789,7 @@ namespace MANAGIX_FYP_2025.Functions
                     AssignedEmployeeId = hasAssignee ? dto.AssignedEmployeeId : null,
                     EstimatedHours = dto.EstimatedHours > 0 ? dto.EstimatedHours : 4m,
                     Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Medium" : dto.Priority,
+                    Deadline = taskDeadline,
                     CreatedAt = DateTime.UtcNow
                 };
 
