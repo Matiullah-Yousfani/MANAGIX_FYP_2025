@@ -23,5 +23,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         // Bulk: marks all unread for a user as read in a single update.
         Task<int> MarkAllReadAsync(Guid userId);
+        Task<List<Notification>> GetRecentOrgAsync(int limit = 30);
     }
 }

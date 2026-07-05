@@ -30,5 +30,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
 
         // PHASE 5: Project-wide active workload — used by MonitoringSnapshot.
         Task<List<TaskItem>> GetActiveTasksByProjectAsync(Guid projectId);
+        Task<List<TaskItem>> GetAllAsync();
     }
 }

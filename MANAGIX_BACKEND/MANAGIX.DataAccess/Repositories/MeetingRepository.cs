@@ -85,6 +85,11 @@ namespace MANAGIX.DataAccess.Repositories
                     m.MeetingLink != null)
                 .ToListAsync();
 
+        public async Task<List<Meeting>> GetAllAsync() =>
+            await _context.Meetings
+                .OrderByDescending(m => m.ScheduledAt)
+                .ToListAsync();
+
         public async Task<List<Meeting>> GetMeetingsNeedingExpirationAsync(DateTime utcNow) =>
             await _context.Meetings
                 .Where(m =>

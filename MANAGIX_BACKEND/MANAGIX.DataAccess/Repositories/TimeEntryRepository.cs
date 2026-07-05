@@ -79,6 +79,9 @@ namespace MANAGIX.DataAccess.Repositories
                 .ToListAsync();
         }
 
+        public async Task<int> CountOpenEntriesAsync() =>
+            await _context.Set<TimeEntry>().CountAsync(t => t.EndedAt == null);
+
         public void RemoveRange(IEnumerable<TimeEntry> entries) => _context.Set<TimeEntry>().RemoveRange(entries);
     }
 }

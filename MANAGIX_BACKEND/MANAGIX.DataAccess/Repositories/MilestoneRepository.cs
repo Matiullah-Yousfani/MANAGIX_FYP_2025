@@ -26,6 +26,9 @@ namespace MANAGIX.DataAccess.Repositories
                           .Where(m => m.ProjectId == projectId)
                           .ToListAsync();
 
+        public async Task<List<Milestone>> GetAllAsync() =>
+            await _context.Milestones.ToListAsync();
+
         public void Update(Milestone milestone) =>
             _context.Milestones.Update(milestone);
         public void Remove(Milestone milestone)

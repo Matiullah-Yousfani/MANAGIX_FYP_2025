@@ -66,7 +66,7 @@ const Sidebar = () => {
 
                 <Link to="/dashboard" className={`${linkBase} ${isActive('/dashboard')}`}>
                     <svg className="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                    <span className="text-sm tracking-tight">Dashboard</span>
+                    <span className="text-sm tracking-tight">{appRole === 'Admin' ? 'Control Center' : 'Dashboard'}</span>
                 </Link>
 
                 {appRole !== 'Admin' && (
@@ -121,6 +121,14 @@ const Sidebar = () => {
                         <Link to="/admin?tab=overview" className={`${linkBase} ${location.pathname.startsWith('/admin') ? activeCls : idleCls}`}>
                             <svg className="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                             <span className="text-sm tracking-tight">Admin Portal</span>
+                        </Link>
+                        <Link to="/workload" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/workload')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                            <span className="text-sm tracking-tight">Workload</span>
+                        </Link>
+                        <Link to="/payroll" className={`flex items-center gap-3 p-3 rounded-r-xl transition-all duration-300 ${isActive('/payroll')}`}>
+                            <svg className="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-sm tracking-tight">Compensation</span>
                         </Link>
                     </>
                 )}

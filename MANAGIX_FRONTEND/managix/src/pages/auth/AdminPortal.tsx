@@ -241,6 +241,9 @@ const AdminPortal = () => {
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-10 mb-8 shadow-sm">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#9CA3AF] mb-4">Quick access</p>
             <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => navigate('/dashboard')} className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-indigo-700">
+                Control Center
+              </button>
               <button type="button" onClick={() => setTab('all-users')} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-zinc-800">
                 User directory
               </button>
@@ -261,8 +264,8 @@ const AdminPortal = () => {
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-6">
-              Set <strong>hourly rates</strong> under <strong>Compensation</strong> and view <strong>all timesheets</strong> in the Timesheets tab above.
-              Project creation stays on the main Dashboard; use Projects here for oversight and Gantt timelines.
+              The main <strong>Dashboard</strong> is now your organization control center — KPIs, charts, workload, and system alerts.
+              Use this portal for user management, project oversight, compensation, and detailed monitoring.
             </p>
           </div>
         )}

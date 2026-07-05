@@ -14,6 +14,7 @@ import ManagerDashboardWidgets from '../../components/ManagerDashboardWidgets';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 import { normalizeAppRole, isQaRole } from '../../utils/roles';
 import { Card, EmptyState } from '../../components/ui';
+import AdminDashboard from '../../components/admin/AdminDashboard';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -62,6 +63,10 @@ const Dashboard = () => {
 
   const fetchDashboardData = async (role: string | null, id: string | null) => {
     if (!id || !role) { setLoading(false); return; }
+    if (normalizeAppRole(role) === 'Admin') {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       let projectData = [];
@@ -211,12 +216,24 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
-      <p className="text-slate-400 font-bold">Refreshing workspace...</p>
-    </div>
-  );
+  if (loading && normalizeAppRole(userRole) !== 'Admin') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
+        <p className="text-slate-400 font-bold">Refreshing workspace...</p>
+      </div>
+    );
+  }
+
+  if (normalizeAppRole(userRole) === 'Admin') {
+    return (
+      <div className="min-h-screen pb-20 font-sans">
+        <div className="max-w-7xl mx-auto px-6 pt-8">
+          <AdminDashboard />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20 font-sans">
