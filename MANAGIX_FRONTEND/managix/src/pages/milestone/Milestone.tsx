@@ -5,7 +5,7 @@ import { projectService } from '../../api/projectService';
 import { taskService } from '../../api/taskService';
 import AiAllocation from '../ai/AiAllocation';
 import { minDateToday } from '../../utils/dateInput';
-import { DatePicker } from '../../components/ui';
+import { DatePicker, Select } from '../../components/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiCalendar, FiDollarSign, FiTrash2, FiEdit3, 
@@ -380,15 +380,16 @@ const Milestones = () => {
                   onChange={(e) => setMilestoneSearch(e.target.value)}
                   className="flex-1 min-w-[180px] p-3 bg-white border border-gray-200/70 rounded-xl text-sm font-medium"
                 />
-                <select
+                <Select
                   value={milestoneStatusFilter}
-                  onChange={(e) => setMilestoneStatusFilter(e.target.value)}
-                  className="p-3 bg-white border border-gray-200/70 rounded-xl text-sm font-bold"
-                >
-                  <option value="all">All statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="completed">Completed</option>
-                </select>
+                  onChange={setMilestoneStatusFilter}
+                  className="w-44"
+                  options={[
+                    { value: 'all', label: 'All statuses' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'completed', label: 'Completed' },
+                  ]}
+                />
               </div>
 
               <div className="grid gap-6">

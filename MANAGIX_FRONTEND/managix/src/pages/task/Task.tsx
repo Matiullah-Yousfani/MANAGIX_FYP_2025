@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { toast } from '../../components/ui';
+import { toast, Select } from '../../components/ui';
 import { useParams } from "react-router-dom";
 import { taskService } from "../../api/taskService";
 import api from '../../api/axiosInstance';
@@ -200,30 +200,27 @@ const Task = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-extrabold text-gray-400 uppercase ml-4 tracking-widest">Workflow State</label>
-                        <select
+                        <Select
                           value={status}
-                          onChange={(e) => setStatus(e.target.value)}
-                          className="w-full p-5 bg-gray-50 rounded-2xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 border-none appearance-none"
-                        >
-                          <option value="Todo">Todo</option>
-                          <option value="InProgress">In Progress</option>
-                          <option value="Done">Done</option>
-                        </select>
+                          onChange={setStatus}
+                          className="w-full"
+                          options={[
+                            { value: 'Todo', label: 'Todo' },
+                            { value: 'InProgress', label: 'In Progress' },
+                            { value: 'Done', label: 'Done' },
+                          ]}
+                        />
                       </div>
 
                       <div className="space-y-2">
                         <label className="text-[10px] font-extrabold text-gray-400 uppercase ml-4 tracking-widest">Assignee</label>
-                        <select
+                        <Select
                           value={assignedEmployeeId}
-                          onChange={(e) => setAssignedEmployeeId(e.target.value)}
-                          className="w-full p-5 bg-gray-50 rounded-2xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 border-none appearance-none"
-                          required
-                        >
-                          <option value="">Select User</option>
-                          {team.map((member) => (
-                            <option key={member.UserId} value={member.UserId}>{member.FullName}</option>
-                          ))}
-                        </select>
+                          onChange={setAssignedEmployeeId}
+                          className="w-full"
+                          placeholder="Select User"
+                          options={[{ value: '', label: 'Select User' }, ...team.map((member) => ({ value: String(member.UserId), label: member.FullName }))]}
+                        />
                       </div>
                     </div>
 

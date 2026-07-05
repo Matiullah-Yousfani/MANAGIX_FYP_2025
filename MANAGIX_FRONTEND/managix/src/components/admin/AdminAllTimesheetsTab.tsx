@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { toast } from '../ui';
+import { toast, Select } from '../ui';
 import { timesheetService } from '../../api/timesheetService';
 
 const AdminAllTimesheetsTab: React.FC = () => {
@@ -154,16 +154,17 @@ const AdminAllTimesheetsTab: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[160px]"
           />
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm font-bold"
-          >
-            <option value="all">All</option>
-            <option value="submitted">Submitted</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+            onChange={setStatusFilter}
+            className="w-40"
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'submitted', label: 'Submitted' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'rejected', label: 'Rejected' },
+            ]}
+          />
         </div>
         {filteredSheets.length === 0 ? (
           <p className="text-gray-400 italic text-sm">No submissions match your filters.</p>

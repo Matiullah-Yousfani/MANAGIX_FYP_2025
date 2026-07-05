@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Select } from '../../components/ui';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { adminService } from '../../api/adminService';
 import api from '../../api/axiosInstance';
@@ -321,19 +322,18 @@ const AdminPortal = () => {
                         </td>
                         <td className="px-10 py-6">
                           <div className="relative inline-block group/select">
-                            <select 
-                              className="appearance-none bg-[#F3F4F6] border border-transparent hover:border-black px-5 py-2.5 pr-10 rounded-xl text-[10px] font-extrabold uppercase transition-all outline-none cursor-pointer" 
-                              value={u.RoleId} 
-                              onChange={(e) => {
+                            <Select
+                              className="w-44"
+                              value={String(u.RoleId)}
+                              onChange={(v) => {
                                 if (activeTab === 'users') {
-                                  setUsers(users.map(user => user.RequestId === id ? { ...user, RoleId: e.target.value } : user));
+                                  setUsers(users.map(user => user.RequestId === id ? { ...user, RoleId: v } : user));
                                 } else {
-                                  setAllApprovedUsers(allApprovedUsers.map(user => (user.UserId || user.userId) === id ? { ...user, RoleId: e.target.value } : user));
+                                  setAllApprovedUsers(allApprovedUsers.map(user => (user.UserId || user.userId) === id ? { ...user, RoleId: v } : user));
                                 }
                               }}
-                            >
-                              {roles.map(r => <option key={r.RoleId} value={r.RoleId}>{r.RoleName}</option>)}
-                            </select>
+                              options={roles.map(r => ({ value: String(r.RoleId), label: r.RoleName }))}
+                            />
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-black">
                               <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path d="M19 9l-7 7-7-7" /></svg>
                             </div>

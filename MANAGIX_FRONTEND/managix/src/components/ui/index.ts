@@ -7,4 +7,6 @@ export { default as PageHeader } from './PageHeader';
 export { default as EmptyState } from './EmptyState';
 export { default as Skeleton } from './Skeleton';
 export { default as DatePicker } from './DatePicker';
+export { default as Select } from './Select';
+export type { SelectOption } from './Select';
 export { toast, Toaster } from './toast';

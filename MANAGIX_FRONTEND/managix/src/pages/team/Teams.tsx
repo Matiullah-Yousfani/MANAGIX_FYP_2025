@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { toast } from '../../components/ui';
+import { toast, Select } from '../../components/ui';
 import AiAllocation from '../ai/AiAllocation';
 import { teamService } from '../../api/teamService';
 import { projectService } from '../../api/projectService';
@@ -471,32 +471,24 @@ const Teams = () => {
                             <h2 className="text-xl font-bold text-gray-800">Assign Member</h2>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <select 
-                                className="bg-gray-50 border-none p-4 rounded-2xl outline-none cursor-pointer font-medium" 
-                                value={selectedTeamForMember} 
-                                onChange={(e) => setSelectedTeamForMember(e.target.value)}
-                            >
-                                <option value="">Select Team</option>
-                                {teams.map((t: any) => <option key={t.TeamId} value={t.TeamId}>{t.Name}</option>)}
-                            </select>
-                            <select 
-                                className="bg-gray-50 border-none p-4 rounded-2xl outline-none cursor-pointer font-medium" 
-                                value={selectedEmployee} 
-                                onChange={(e) => setSelectedEmployee(e.target.value)}
-                            >
-                                <option value="">Select Member (Emp/QA)</option>
-                                {availableEmployees.length > 0 ? (
-                                    availableEmployees.map((e: any) => (
-                                        <option key={e.Id || e.UserId || e.id} value={e.Id || e.UserId || e.id}>
-                                            {e.FullName}
-                                        </option>
-                                    ))
-                                ) : selectedTeamForMember ? (
-                                    <option disabled>Everyone is already on this team / project</option>
-                                ) : (
-                                    <option disabled>Select a team first</option>
-                                )}
-                            </select>
+                            <Select
+                                className="w-56"
+                                value={selectedTeamForMember}
+                                onChange={setSelectedTeamForMember}
+                                placeholder="Select Team"
+                                options={[{ value: '', label: 'Select Team' }, ...teams.map((t: any) => ({ value: String(t.TeamId), label: t.Name }))]}
+                            />
+                            <Select
+                                className="w-56"
+                                value={selectedEmployee}
+                                onChange={setSelectedEmployee}
+                                placeholder="Select Member (Emp/QA)"
+                                options={
+                                    availableEmployees.length > 0
+                                        ? [{ value: '', label: 'Select Member (Emp/QA)' }, ...availableEmployees.map((e: any) => ({ value: String(e.Id || e.UserId || e.id), label: e.FullName }))]
+                                        : [{ value: '', label: selectedTeamForMember ? 'Everyone is already on this team / project' : 'Select a team first', disabled: true }]
+                                }
+                            />
                         </div>
                         {selectedTeamForMember && (
                             <p className="text-[10px] text-gray-400 mt-2">
@@ -575,14 +567,13 @@ const Teams = () => {
 
                                 <div onClick={(e) => e.stopPropagation()}>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase block mb-2 px-1">Quick Reassign</label>
-                                    <select 
-                                        onChange={(e) => handleAssignToProject(team.TeamId, e.target.value)}
-                                        className="w-full bg-gray-50 border-none p-3 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
-                                        defaultValue=""
-                                    >
-                                        <option value="" disabled>Change Project...</option>
-                                        {projects.map((p: any) => <option key={p.ProjectId} value={p.ProjectId}>{p.Title}</option>)}
-                                    </select>
+                                    <Select
+                                        value=""
+                                        onChange={(v) => handleAssignToProject(team.TeamId, v)}
+                                        className="w-full"
+                                        placeholder="Change Project..."
+                                        options={[{ value: '', label: 'Change Project...', disabled: true }, ...projects.map((p: any) => ({ value: String(p.ProjectId), label: p.Title }))]}
+                                    />
                                 </div>
                             </div>
                         </div>

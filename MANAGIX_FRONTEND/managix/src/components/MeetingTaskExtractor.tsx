@@ -1,4 +1,5 @@
 // PHASE 4: Modal that turns a meeting transcript into reviewable task suggestions.
+import { Select } from './ui';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiCheckCircle, FiZap, FiClock, FiFlag, FiAlertTriangle } from 'react-icons/fi';
@@ -192,17 +193,13 @@ const MeetingTaskExtractor: React.FC<Props> = ({
               {!projectIdProp && (
                 <div>
                   <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest block mb-2">Target project</label>
-                  <select
+                  <Select
                     value={projectId}
-                    onChange={(e) => setProjectId(e.target.value)}
-                    className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                  >
-                    {projects.length === 0 && <option value="">No projects available</option>}
-                    {projects.map((p) => {
-                      const pid = p.projectId || p.ProjectId;
-                      return <option key={pid} value={pid}>{p.title || p.Title}</option>;
-                    })}
-                  </select>
+                    onChange={setProjectId}
+                    className="w-full"
+                    placeholder={projects.length === 0 ? 'No projects available' : 'Select project'}
+                    options={projects.map((p) => ({ value: String(p.projectId || p.ProjectId), label: p.title || p.Title }))}
+                  />
                 </div>
               )}
               <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs font-bold text-indigo-700">

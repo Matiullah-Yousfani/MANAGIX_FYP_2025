@@ -3,6 +3,7 @@ import { insightsService } from '../../api/insightsService';
 import { timesheetService } from '../../api/timesheetService';
 import { normalizeInsights } from '../../api/normalize';
 import { FiActivity, FiAward, FiClock, FiTrendingUp } from 'react-icons/fi';
+import { Select } from '../../components/ui';
 
 const EmployeeInsights: React.FC = () => {
   const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
@@ -92,17 +93,12 @@ const EmployeeInsights: React.FC = () => {
       </div>
 
       {isManager && teamMembers.length > 0 && (
-        <select
+        <Select
           value={selectedUserId}
-          onChange={(e) => setSelectedUserId(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-3 font-bold w-full max-w-md"
-        >
-          {teamMembers.map((m) => (
-            <option key={m.userId} value={m.userId}>
-              {m.fullName}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedUserId}
+          className="w-full max-w-md"
+          options={teamMembers.map((m) => ({ value: String(m.userId), label: m.fullName }))}
+        />
       )}
 
       {data && (
@@ -163,18 +159,12 @@ const EmployeeInsights: React.FC = () => {
                 {isManager ? 'Your projects (for this employee)' : 'Active projects'}
               </h2>
               {(data.activeProjects || []).length > 1 && (
-                <select
+                <Select
                   value={projectFilter}
-                  onChange={(e) => setProjectFilter(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold"
-                >
-                  <option value="all">All projects</option>
-                  {(data.activeProjects || []).map((p: any) => (
-                    <option key={p.projectId} value={p.projectId}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setProjectFilter}
+                  className="w-48"
+                  options={[{ value: 'all', label: 'All projects' }, ...(data.activeProjects || []).map((p: any) => ({ value: String(p.projectId), label: p.title }))]}
+                />
               )}
             </div>
             <ul className="space-y-2">

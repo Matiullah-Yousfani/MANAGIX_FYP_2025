@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { taskService } from "../../api/taskService";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiPlus, FiUser, FiFlag, FiType, FiAlignLeft, FiXCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
+import { Select } from "../../components/ui";
 
 const CreateTaskModal = ({
   projectId,
@@ -128,19 +129,14 @@ const CreateTaskModal = ({
                 <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                   <FiFlag /> Milestone
                 </label>
-                <select
+                <Select
                   disabled={isSubmitting}
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 font-bold text-sm appearance-none cursor-pointer disabled:opacity-50"
+                  className="w-full"
                   value={form.milestoneId}
-                  onChange={(e) => setForm({ ...form, milestoneId: e.target.value })}
-                >
-                  <option value="">Select milestone…</option>
-                  {milestones.map((m: any) => (
-                    <option key={m.MilestoneId || m.milestoneId} value={m.MilestoneId || m.milestoneId}>
-                      {m.Title || m.title}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, milestoneId: v })}
+                  placeholder="Select milestone…"
+                  options={[{ value: '', label: 'Select milestone…' }, ...milestones.map((m: any) => ({ value: String(m.MilestoneId || m.milestoneId), label: m.Title || m.title }))]}
+                />
               </div>
 
               {/* Employee Select */}
@@ -148,20 +144,14 @@ const CreateTaskModal = ({
                 <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                   <FiUser /> Assignee
                 </label>
-                <select
+                <Select
                   disabled={isSubmitting}
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 font-bold text-sm appearance-none cursor-pointer disabled:opacity-50"
-                  required
+                  className="w-full"
                   value={form.assignedEmployeeId}
-                  onChange={(e) => setForm({ ...form, assignedEmployeeId: e.target.value })}
-                >
-                  <option value="">Select Member</option>
-                  {employees.map((emp: any) => (
-                    <option key={emp.UserId || emp.userId} value={emp.UserId || emp.userId}>
-                      {emp.FullName || emp.fullName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm({ ...form, assignedEmployeeId: v })}
+                  placeholder="Select Member"
+                  options={[{ value: '', label: 'Select Member' }, ...employees.map((emp: any) => ({ value: String(emp.UserId || emp.userId), label: emp.FullName || emp.fullName }))]}
+                />
               </div>
             </div>
 

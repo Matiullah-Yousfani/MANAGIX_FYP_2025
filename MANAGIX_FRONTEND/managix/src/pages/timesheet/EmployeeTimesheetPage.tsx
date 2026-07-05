@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Select } from '../../components/ui';
 import { FiClock, FiSearch, FiFilter } from 'react-icons/fi';
 import { timesheetService } from '../../api/timesheetService';
 import { formatHoursHms } from '../../utils/timeFormat';
@@ -81,17 +82,18 @@ const EmployeeTimesheetPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 bg-white border border-gray-200/70 rounded-xl px-4 py-2">
           <FiFilter className="text-gray-400" size={14} />
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="text-sm font-bold text-gray-700 outline-none bg-transparent"
-          >
-            <option value="all">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="submitted">Submitted</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+            onChange={(v) => { setStatusFilter(v); setPage(1); }}
+            className="w-44"
+            options={[
+              { value: 'all', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'submitted', label: 'Submitted' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'rejected', label: 'Rejected' },
+            ]}
+          />
         </div>
       </div>
 

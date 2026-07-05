@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Select } from '../../components/ui';
 import { payrollService } from '../../api/payrollService';
 import { projectService } from '../../api/projectService';
 import { normalizePayrollSummary } from '../../api/normalize';
@@ -52,17 +53,12 @@ const PayrollPanel: React.FC = () => {
       <p className="text-gray-500 mb-8">Costs use clocked timesheet hours when available; otherwise task estimates.</p>
 
       {role === 'Manager' && (
-        <select
+        <Select
           value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="mb-6 border border-gray-200 rounded-xl px-4 py-3 font-bold w-full max-w-md text-gray-900"
-        >
-          {projects.map((p) => (
-            <option key={p.projectId} value={p.projectId}>
-              {p.title}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedId}
+          className="mb-6 w-full max-w-md"
+          options={projects.map((p) => ({ value: String(p.projectId), label: p.title }))}
+        />
       )}
 
       {selectedProject && role === 'Manager' && (

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { toast } from '../../components/ui';
+import { toast, Select } from '../../components/ui';
 import { timesheetService } from '../../api/timesheetService';
 import { formatHoursHms } from '../../utils/timeFormat';
 import { parseUtcTimestamp } from '../../utils/timeFormat';
@@ -113,17 +113,18 @@ const TimesheetsPage: React.FC = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium flex-1 min-w-[200px]"
         />
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold"
-        >
-          <option value="all">All statuses</option>
-          <option value="submitted">Submitted</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="draft">Draft</option>
-        </select>
+          onChange={setStatusFilter}
+          className="w-44"
+          options={[
+            { value: 'all', label: 'All statuses' },
+            { value: 'submitted', label: 'Submitted' },
+            { value: 'approved', label: 'Approved' },
+            { value: 'rejected', label: 'Rejected' },
+            { value: 'draft', label: 'Draft' },
+          ]}
+        />
       </div>
 
       {loading ? (

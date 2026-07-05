@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Select } from '../../components/ui';
 import { motion } from 'framer-motion';
 import { FiTrendingUp, FiAlertTriangle, FiUsers, FiActivity } from 'react-icons/fi';
 import { workloadService } from '../../api/workloadService';
@@ -119,17 +120,12 @@ const WorkloadPanel: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">
               Active task hours on the selected project only (Todo / In Progress).
             </p>
-            <select
+            <Select
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="mb-6 border border-gray-200 rounded-xl px-4 py-3 font-bold w-full max-w-md"
-            >
-              {projects.map((p) => (
-                <option key={p.projectId} value={p.projectId}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedProjectId}
+              className="mb-6 w-full max-w-md"
+              options={projects.map((p) => ({ value: String(p.projectId), label: p.title }))}
+            />
             {projectLoad && filteredProjectMembers.length > 0 ? (
               <div className="space-y-3">
                 {filteredProjectMembers.map((e) => (

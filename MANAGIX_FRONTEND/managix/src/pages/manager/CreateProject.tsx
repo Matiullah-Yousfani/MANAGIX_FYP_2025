@@ -8,7 +8,7 @@ import { validateProjectStep2 } from '../../utils/formValidation';
 import { formatLocalDateYmd, parseYmdLocal, compareYmd } from '../../utils/dateOnlyLocal';
 import { minDateToday } from '../../utils/dateInput';
 import { preprocessTextForAi } from '../../utils/textPreprocess';
-import { DatePicker, toast } from '../../components/ui';
+import { DatePicker, toast, Select } from '../../components/ui';
 import {
   FiCalendar,
   FiDollarSign,
@@ -528,18 +528,13 @@ const CreateProject = () => {
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <FiLayers className="text-gray-400" /> Project methodology
                 </label>
-                <select
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 font-medium"
+                <Select
+                  className="w-full"
                   value={formData.modelId}
-                  onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
-                >
-                  <option value="">Select methodology…</option>
-                  {projectModels.map((model) => (
-                    <option key={model.ModelId} value={model.ModelId}>
-                      {model.ModelName || model.modelName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setFormData({ ...formData, modelId: v })}
+                  placeholder="Select methodology…"
+                  options={[{ value: '', label: 'Select methodology…' }, ...projectModels.map((model) => ({ value: String(model.ModelId), label: model.ModelName || model.modelName }))]}
+                />
                 <p className="text-xs text-gray-400 mt-1">
                   Pre-filled when AI runs; you can override before launch.
                 </p>

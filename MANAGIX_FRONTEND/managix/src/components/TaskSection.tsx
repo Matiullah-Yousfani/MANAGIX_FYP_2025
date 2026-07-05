@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from './ui';
+import { toast, Select } from './ui';
 import api from '../api/axiosInstance';
 import { FiBriefcase, FiPlus, FiUploadCloud, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { taskService } from '../api/taskService';
@@ -350,10 +350,13 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Milestone</label>
-                    <select className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none appearance-none" onChange={e => setNewTask({...newTask, milestoneId: e.target.value})}>
-                      <option value="">None</option>
-                      {milestones.map((m: any) => (<option key={m.milestoneId || m.MilestoneId} value={m.milestoneId || m.MilestoneId}>{m.title || m.Title}</option>))}
-                    </select>
+                    <Select
+                      className="w-full"
+                      value={newTask.milestoneId || ''}
+                      onChange={v => setNewTask({...newTask, milestoneId: v})}
+                      placeholder="None"
+                      options={[{ value: '', label: 'None' }, ...milestones.map((m: any) => ({ value: String(m.milestoneId || m.MilestoneId), label: m.title || m.Title }))]}
+                    />
                   </div>
 
                   <div className="space-y-1">
@@ -367,39 +370,27 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                         disabled
                       />
                     ) : (
-                      <select
-                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none appearance-none"
-                        required
+                      <Select
+                        className="w-full"
                         value={selectedTeamId}
-                        onChange={e => setSelectedTeamId(e.target.value)}
-                      >
-                        <option value="">Select Team</option>
-                        {teams.map(t => (
-                          <option key={t.teamId || t.TeamId} value={t.teamId || t.TeamId}>
-                            {t.name || t.Name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={setSelectedTeamId}
+                        placeholder="Select Team"
+                        options={[{ value: '', label: 'Select Team' }, ...teams.map(t => ({ value: String(t.teamId || t.TeamId), label: t.name || t.Name }))]}
+                      />
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Assignee</label>
-                  <select 
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none font-bold" 
-                    required 
-                    disabled={!selectedTeamId || isLoadingMembers} 
+                  <Select
+                    className="w-full"
+                    disabled={!selectedTeamId || isLoadingMembers}
                     value={newTask.assignedEmployeeId}
-                    onChange={e => setNewTask({...newTask, assignedEmployeeId: e.target.value})}
-                  >
-                    <option value="">{isLoadingMembers ? "Loading..." : "Select Employee"}</option>
-                    {employees.map(emp => (
-                      <option key={emp.UserId || emp.userId} value={emp.UserId || emp.userId}>
-                        {emp.FullName || emp.fullName}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={v => setNewTask({...newTask, assignedEmployeeId: v})}
+                    placeholder={isLoadingMembers ? "Loading..." : "Select Employee"}
+                    options={[{ value: '', label: isLoadingMembers ? "Loading..." : "Select Employee" }, ...employees.map(emp => ({ value: String(emp.UserId || emp.userId), label: emp.FullName || emp.fullName }))]}
+                  />
                 </div>
 
                 <div className="space-y-1">
@@ -443,14 +434,15 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
               />
-              <select
-                className="w-full p-3 border rounded-xl font-bold"
+              <Select
+                className="w-full"
                 value={editForm.status}
-                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-              >
-                <option value="Todo">Todo</option>
-                <option value="InProgress">In Progress</option>
-              </select>
+                onChange={(v) => setEditForm({ ...editForm, status: v })}
+                options={[
+                  { value: 'Todo', label: 'Todo' },
+                  { value: 'InProgress', label: 'In Progress' },
+                ]}
+              />
               <div>
                 <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Due date</label>
                 <input

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Select } from '../../components/ui';
 import api from '../../api/axiosInstance';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -384,48 +385,45 @@ const QAReview = () => {
         {/* Filters */}
         <div className="mb-6 flex flex-wrap gap-3 items-center bg-white p-4 rounded-2xl border border-gray-200/70">
           <FiFilter className="text-gray-400" />
-          <select
+          <Select
             value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
-            className="text-sm bg-gray-50 rounded-xl px-3 py-2 border-none outline-none focus:ring-2 focus:ring-indigo-600/20"
-          >
-            <option value="">All projects</option>
-            {projectOptions.map((p) => (
-              <option key={p.id} value={p.id}>{p.title}</option>
-            ))}
-          </select>
-          <select
+            onChange={setFilterProject}
+            className="w-44"
+            placeholder="All projects"
+            options={[{ value: '', label: 'All projects' }, ...projectOptions.map((p) => ({ value: p.id, label: p.title }))]}
+          />
+          <Select
             value={filterEmployee}
-            onChange={(e) => setFilterEmployee(e.target.value)}
-            className="text-sm bg-gray-50 rounded-xl px-3 py-2 border-none outline-none focus:ring-2 focus:ring-indigo-600/20"
-          >
-            <option value="">All employees</option>
-            {employeeOptions.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
-            ))}
-          </select>
-          <select
+            onChange={setFilterEmployee}
+            className="w-44"
+            placeholder="All employees"
+            options={[{ value: '', label: 'All employees' }, ...employeeOptions.map((e) => ({ value: e.id, label: e.name }))]}
+          />
+          <Select
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="text-sm bg-gray-50 rounded-xl px-3 py-2 border-none outline-none focus:ring-2 focus:ring-indigo-600/20"
-          >
-            <option value="">All priorities</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-          <select
+            onChange={setFilterPriority}
+            className="w-40"
+            placeholder="All priorities"
+            options={[
+              { value: '', label: 'All priorities' },
+              { value: 'High', label: 'High' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'Low', label: 'Low' },
+            ]}
+          />
+          <Select
             value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="text-sm bg-gray-50 rounded-xl px-3 py-2 border-none outline-none focus:ring-2 focus:ring-indigo-600/20 ml-auto"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="priority">Priority</option>
-            <option value="project">Project</option>
-            <option value="deadline">Deadline</option>
-            <option value="waiting">Days waiting</option>
-          </select>
+            onChange={(v) => setSortKey(v as SortKey)}
+            className="w-44 ml-auto"
+            options={[
+              { value: 'newest', label: 'Newest first' },
+              { value: 'oldest', label: 'Oldest first' },
+              { value: 'priority', label: 'Priority' },
+              { value: 'project', label: 'Project' },
+              { value: 'deadline', label: 'Deadline' },
+              { value: 'waiting', label: 'Days waiting' },
+            ]}
+          />
         </div>
 
         <div className="grid gap-4">

@@ -4,7 +4,7 @@ import { projectService } from '../../api/projectService';
 import { meetingService } from '../../api/meetingService';
 import type { Meeting, Project } from '../../types';
 import { minDateToday } from '../../utils/dateInput';
-import { DatePicker } from '../../components/ui';
+import { DatePicker, Select } from '../../components/ui';
 
 const ScheduleMeeting: React.FC = () => {
   const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
@@ -253,19 +253,13 @@ const ScheduleMeeting: React.FC = () => {
         <form onSubmit={onSubmit} className="bg-white rounded-2xl border border-gray-200/70 shadow-sm p-8 space-y-6">
           <div>
             <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest">Project</label>
-            <select
+            <Select
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="mt-2 w-full border border-gray-200 rounded-xl px-4 py-3 font-bold text-gray-800"
-              required
-            >
-              <option value="">Select project…</option>
-              {projects.map((p) => (
-                <option key={p.projectId} value={p.projectId}>
-                  {p.title || 'Untitled project'}
-                </option>
-              ))}
-            </select>
+              onChange={setProjectId}
+              className="mt-2 w-full"
+              placeholder="Select project…"
+              options={[{ value: '', label: 'Select project…' }, ...projects.map((p) => ({ value: String(p.projectId), label: p.title || 'Untitled project' }))]}
+            />
           </div>
 
           <div>

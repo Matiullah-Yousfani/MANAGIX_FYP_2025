@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { toast, Badge } from '../../components/ui';
+import { toast, Badge, Select } from '../../components/ui';
 import { FiSearch, FiPaperclip, FiInbox } from "react-icons/fi";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import api from "../../api/axiosInstance";
@@ -448,11 +448,16 @@ const TaskModal = ({
               <>
                 <div className="space-y-2">
                     <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-4">Update Progress</label>
-                    <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none">
-                      <option value="Todo">Todo</option>
-                      <option value="InProgress">In Progress</option>
-                      <option value="Done">Done (Attach File)</option>
-                    </select>
+                    <Select
+                      value={status}
+                      onChange={setStatus}
+                      className="w-full"
+                      options={[
+                        { value: 'Todo', label: 'Todo' },
+                        { value: 'InProgress', label: 'In Progress' },
+                        { value: 'Done', label: 'Done (Attach File)' },
+                      ]}
+                    />
                 </div>
                 
                 {status === "Done" && (
@@ -477,15 +482,16 @@ const TaskModal = ({
                   <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
                     Priority
                   </label>
-                  <select
+                  <Select
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full p-3 bg-gray-50 rounded-xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border border-gray-200/70"
-                  >
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
+                    onChange={setPriority}
+                    className="w-full"
+                    options={[
+                      { value: 'High', label: 'High' },
+                      { value: 'Medium', label: 'Medium' },
+                      { value: 'Low', label: 'Low' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -509,22 +515,20 @@ const TaskModal = ({
                       {membersError}
                     </p>
                   )}
-                  <select
+                  <Select
                     value={assigneeId}
-                    onChange={(e) => setAssigneeId(e.target.value)}
+                    onChange={setAssigneeId}
                     disabled={membersLoading || (!!membersError && members.length === 0)}
-                    className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-medium text-gray-700 focus:ring-2 ring-indigo-500/20 border-none disabled:opacity-50"
-                  >
-                    <option value="">Unassigned</option>
-                    {members.map((m) => {
-                      const id = String(m.Id ?? m.UserId ?? m.userId ?? m.id ?? "");
-                      return (
-                        <option key={id} value={id}>
-                          {memberLabel(m)}
-                        </option>
-                      );
-                    })}
-                  </select>
+                    className="w-full"
+                    placeholder="Unassigned"
+                    options={[
+                      { value: '', label: 'Unassigned' },
+                      ...members.map((m) => ({
+                        value: String(m.Id ?? m.UserId ?? m.userId ?? m.id ?? ""),
+                        label: memberLabel(m),
+                      })),
+                    ]}
+                  />
                   {membersLoading && (
                     <p className="text-xs text-gray-400 font-medium px-1">Loading team roster…</p>
                   )}
@@ -782,16 +786,17 @@ const KanbanBoard = () => {
             />
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
-          <select
+          <Select
             value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="p-4 bg-gray-50 border-none rounded-2xl font-bold text-sm"
-          >
-            <option value="all">All priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+            onChange={setPriorityFilter}
+            className="w-44"
+            options={[
+              { value: 'all', label: 'All priorities' },
+              { value: 'high', label: 'High' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'low', label: 'Low' },
+            ]}
+          />
         </div>
       </header>
 
@@ -799,46 +804,47 @@ const KanbanBoard = () => {
         {/* Metric Selectors */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           <div className="card p-5 flex items-center gap-4">
-              <div className="size-12 rounded-2xlbg-indigo-50 flex items-center justify-center text-indigo-600">
+              <div className="size-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
                 <svg className="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
               </div>
               <div className="flex-1">
                   <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">Active Project</label>
-                  <select 
-                      value={selectedProjectId} 
-                      onChange={(e) => setSelectedProjectId(e.target.value)} 
-                      className="w-full bg-transparent border-none p-0 font-sans font-extrabold text-xl text-gray-900 outline-none cursor-pointer"
+                  <Select
+                      value={selectedProjectId}
+                      onChange={setSelectedProjectId}
                       disabled={loadingProjects}
-                  >
-                    <option value="">{loadingProjects ? "Loading..." : "Select Project"}</option>
-                    {projects.map(p => (
-                        <option key={p.projectId || p.ProjectId} value={p.projectId || p.ProjectId}>
-                            {p.title || p.Title}
-                        </option>
-                    ))}
-                  </select>
+                      variant="plain"
+                      className="text-xl font-extrabold text-gray-900"
+                      placeholder={loadingProjects ? "Loading..." : "Select Project"}
+                      options={projects.map(p => ({
+                        value: String(p.projectId || p.ProjectId),
+                        label: p.title || p.Title,
+                      }))}
+                  />
               </div>
           </div>
 
           <div className="card p-5 flex items-center gap-4">
-              <div className="size-12 rounded-2xlbg-emerald-50 flex items-center justify-center text-emerald-600">
+              <div className="size-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                 <svg className="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
               <div className="flex-1">
                   <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">Project Milestone</label>
-                  <select 
-                    value={selectedMilestoneId} 
+                  <Select
+                    value={selectedMilestoneId}
+                    onChange={setSelectedMilestoneId}
                     disabled={!selectedProjectId}
-                    onChange={(e) => setSelectedMilestoneId(e.target.value)} 
-                    className="w-full bg-transparent border-none p-0 font-sans font-extrabold text-xl text-gray-900 outline-none cursor-pointer disabled:opacity-30"
-                  >
-                    <option value="">All Milestone Tasks</option>
-                    {milestones.map(m => (
-                        <option key={m.milestoneId || m.MilestoneId} value={m.milestoneId || m.MilestoneId}>
-                            {m.title || m.Title}
-                        </option>
-                    ))}
-                  </select>
+                    variant="plain"
+                    className="text-xl font-extrabold text-gray-900"
+                    placeholder="All Milestone Tasks"
+                    options={[
+                      { value: '', label: 'All Milestone Tasks' },
+                      ...milestones.map(m => ({
+                        value: String(m.milestoneId || m.MilestoneId),
+                        label: m.title || m.Title,
+                      })),
+                    ]}
+                  />
               </div>
           </div>
         </div>
