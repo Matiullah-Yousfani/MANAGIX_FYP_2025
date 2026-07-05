@@ -765,7 +765,7 @@ const KanbanBoard = () => {
   return (
     <div className=" min-h-screen">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-200/70 px-10 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="sticky top-4 z-30 mx-4 rounded-2xl bg-white/60 backdrop-blur-xl saturate-150 border border-white/50 shadow-[0_8px_30px_rgba(15,23,42,0.08)] px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
            <label className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest block mb-1">Overview</label>
            <h1 className="text-4xl font-sans font-extrabold text-gray-900 tracking-tight">Kanban Board</h1>
