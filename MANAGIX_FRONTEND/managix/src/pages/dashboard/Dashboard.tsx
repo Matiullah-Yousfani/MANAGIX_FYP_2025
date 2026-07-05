@@ -13,6 +13,7 @@ import EmployeeDashboardWidgets from '../../components/EmployeeDashboardWidgets'
 import ManagerDashboardWidgets from '../../components/ManagerDashboardWidgets';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
 import { normalizeAppRole } from '../../utils/roles';
+import { Card, EmptyState } from '../../components/ui';
 
 const Dashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -211,30 +212,33 @@ const Dashboard = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4" />
-      <p className="text-gray-400 font-bold italic">Refreshing workspace...</p>
+      <p className="text-slate-400 font-bold">Refreshing workspace...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      {/* HEADER */}
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="min-h-screen pb-20 font-sans">
+      {/* HEADER — frosted glass, sticks under the notification bar */}
+      <div className="glass rounded-2xl mb-8 sticky top-4 z-30">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
-              <FiActivity className="text-indigo-600" /> Welcome, {userName.split(' ')[0]}
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
+              <span className="grid place-items-center size-11 rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-900/20">
+                <FiActivity className="text-indigo-400" />
+              </span>
+              Welcome, {userName.split(' ')[0]}
             </h1>
-            <p className="text-gray-500 mt-1 font-medium italic">Strategic Project Overview</p>
+            <p className="text-slate-500 mt-1 text-sm font-medium">Strategic Project Overview</p>
           </div>
 
           <div className="relative group w-full md:w-96">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
             <input
               type="text"
               placeholder="Search active projects..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-indigo-200 transition-all font-medium"
+              className="w-full pl-12 pr-4 py-3 bg-white/70 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -255,15 +259,15 @@ const Dashboard = () => {
 
         {/* METRICS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
+          <Card hover padding="lg" className="flex items-center gap-6">
             <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
               <FiBriefcase size={28} />
             </div>
             <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Projects</p>
-              <h3 className="text-3xl font-black text-gray-900">{projects.length}</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Projects</p>
+              <h3 className="text-3xl font-extrabold text-slate-900 nums">{projects.length}</h3>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* PROJECTS GRID */}
@@ -297,19 +301,21 @@ const Dashboard = () => {
         </div>
 
         {filteredProjects.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 rounded-[2.5rem] border-2 border-dashed border-gray-200">
-            <FiBriefcase className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-600 font-bold">
-              {normalizeAppRole(userRole) === 'Employee'
-                ? "You don't have any assigned projects yet."
-                : 'No projects matching your search.'}
-            </p>
-            <p className="text-sm text-gray-400 mt-2">
-              {normalizeAppRole(userRole) === 'Employee'
-                ? 'Your manager will add you to a project team.'
-                : 'Try adjusting your search or show archived projects.'}
-            </p>
-          </div>
+          <Card padding="none" className="border-dashed">
+            <EmptyState
+              icon={<FiBriefcase size={28} />}
+              title={
+                normalizeAppRole(userRole) === 'Employee'
+                  ? "You don't have any assigned projects yet."
+                  : 'No projects matching your search.'
+              }
+              message={
+                normalizeAppRole(userRole) === 'Employee'
+                  ? 'Your manager will add you to a project team.'
+                  : 'Try adjusting your search or show archived projects.'
+              }
+            />
+          </Card>
         ) : (
           /*
            * PHASE 2: replaced the previous flat 3-column grid with a methodology-aware
