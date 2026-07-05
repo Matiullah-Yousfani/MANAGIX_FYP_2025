@@ -38,13 +38,13 @@ const AgileDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             key={p.projectId}
             layout
             onClick={() => onOpen(p.projectId)}
-            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col"
+            className="group card card-hover p-8 cursor-pointer relative overflow-hidden flex flex-col"
           >
             <FiZap className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-indigo-50 transition-colors pointer-events-none" />
             <div className="relative flex-1">
               <div className="flex justify-between items-start mb-6">
                 <MethodologyBadge methodology={p.methodology} />
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
                   {p.status || 'Active'}
                 </span>
               </div>
@@ -56,7 +56,7 @@ const AgileDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
                 {p.description || 'No description.'}
               </p>
               {p.deadline && (
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-4">
                   Deadline: {new Date(p.deadline).toLocaleDateString()}
                 </p>
               )}
@@ -65,25 +65,25 @@ const AgileDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
               <div className="grid grid-cols-3 gap-2 mb-6">
                 <div className="bg-indigo-50 text-indigo-700 rounded-2xl p-3 text-center">
                   <FiActivity className="mx-auto mb-1" />
-                  <div className="text-xs font-black uppercase tracking-widest">Active</div>
-                  <div className="text-xl font-black">{p.inProgressTasks}</div>
+                  <div className="text-xs font-extrabold uppercase tracking-widest">Active</div>
+                  <div className="text-xl font-extrabold">{p.inProgressTasks}</div>
                 </div>
                 <div className="bg-emerald-50 text-emerald-700 rounded-2xl p-3 text-center">
                   <FiCheckCircle className="mx-auto mb-1" />
-                  <div className="text-xs font-black uppercase tracking-widest">Done</div>
-                  <div className="text-xl font-black">{p.completedTasks}</div>
+                  <div className="text-xs font-extrabold uppercase tracking-widest">Done</div>
+                  <div className="text-xl font-extrabold">{p.completedTasks}</div>
                 </div>
                 <div className="bg-orange-50 text-orange-700 rounded-2xl p-3 text-center">
                   <FiClock className="mx-auto mb-1" />
-                  <div className="text-xs font-black uppercase tracking-widest">Todo</div>
-                  <div className="text-xl font-black">{p.pendingTasks}</div>
+                  <div className="text-xs font-extrabold uppercase tracking-widest">Todo</div>
+                  <div className="text-xl font-extrabold">{p.pendingTasks}</div>
                 </div>
               </div>
 
               {/* Burndown sparkline (CSS-only, respects MANAGIX no-extra-deps style) */}
               {p.velocity && p.velocity.length > 0 && (
                 <div className="mb-4">
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Velocity (last sprints)</div>
+                  <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Velocity (last sprints)</div>
                   <div className="flex items-end gap-1 h-12">
                     {p.velocity.map((v, i) => {
                       const max = Math.max(...p.velocity!, 1);
@@ -105,8 +105,8 @@ const AgileDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             <div className="relative pt-6 border-t border-gray-50 flex items-center justify-between">
               <div className="flex-1 mr-4">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Completion</span>
-                  <span className="text-xs font-black text-indigo-600">{completionPct}%</span>
+                  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Completion</span>
+                  <span className="text-xs font-extrabold text-indigo-600">{completionPct}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-indigo-600" style={{ width: `${completionPct}%` }} />

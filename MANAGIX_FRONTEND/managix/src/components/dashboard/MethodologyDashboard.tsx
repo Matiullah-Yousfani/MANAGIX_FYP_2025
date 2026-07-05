@@ -87,11 +87,11 @@ const MethodologyDashboard: React.FC<Props> = ({ projects, aggregatesById, onOpe
               className="space-y-6"
             >
               <div className="flex items-center justify-between">
-                <h2 className={`text-2xl font-black flex items-center gap-3 ${meta.accent}`}>
+                <h2 className={`text-2xl font-extrabold flex items-center gap-3 ${meta.accent}`}>
                   {meta.icon}
                   {meta.label}
                 </h2>
-                <span className="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                <span className="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest">
                   {projectsInGroup.length} {projectsInGroup.length === 1 ? 'project' : 'projects'}
                 </span>
               </div>

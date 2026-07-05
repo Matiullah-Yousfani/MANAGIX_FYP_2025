@@ -130,11 +130,11 @@ const AnimatedDonutChart: React.FC<{
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-2xl font-black text-gray-900"
+            className="text-2xl font-extrabold text-gray-900"
           >
             {total}
           </motion.span>
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{unit}</span>
+          <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">{unit}</span>
         </div>
       </div>
       <div className="space-y-3 flex-1 w-full">
@@ -150,7 +150,7 @@ const AnimatedDonutChart: React.FC<{
               <span className="size-3 rounded-full shrink-0" style={{ background: seg.color }} />
               <span className="font-bold text-gray-700">{seg.label}</span>
             </div>
-            <span className="font-black text-gray-900">{seg.value}</span>
+            <span className="font-extrabold text-gray-900">{seg.value}</span>
           </motion.div>
         ))}
       </div>
@@ -172,7 +172,7 @@ const AnimatedTaskBarChart: React.FC<{
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 + i * 0.1 }}
-            className="text-sm font-black text-gray-700"
+            className="text-sm font-extrabold text-gray-700"
           >
             {d.value}
           </motion.span>
@@ -211,18 +211,18 @@ const SummaryStatCard: React.FC<{
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.45, ease: 'easeOut' }}
     className={`text-left rounded-2xl border p-6 transition-all hover:shadow-md ${
-      active ? 'border-indigo-300 bg-indigo-50/60 shadow-md ring-2 ring-indigo-200' : 'border-gray-100 bg-white hover:border-gray-200'
+      active ? 'border-indigo-300 bg-indigo-50/60 shadow-md ring-2 ring-indigo-200' : 'border-gray-200/70 bg-white hover:border-gray-200'
     }`}
   >
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
+        <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">{label}</p>
         <motion.p
           key={`${animKey}-${label}-${value}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2, duration: 0.5, type: 'spring', stiffness: 200 }}
-          className="text-4xl font-black mt-2"
+          className="text-4xl font-extrabold mt-2"
           style={{ color }}
         >
           {value}
@@ -280,7 +280,7 @@ const BarChart: React.FC<{ data: { label: string; value: number }[]; max?: numbe
     <div className="flex items-end gap-2 h-40">
       {data.map((d) => (
         <div key={d.label} className="flex-1 flex flex-col items-center gap-2 min-w-0">
-          <span className="text-[10px] font-black text-gray-500">{d.value}</span>
+          <span className="text-[10px] font-extrabold text-gray-500">{d.value}</span>
           <div className="w-full rounded-t-lg transition-all" style={{ height: `${Math.max(4, (d.value / peak) * 100)}%`, background: color, minHeight: 4 }} />
           <span className="text-[9px] font-bold text-gray-400 truncate w-full text-center">{d.label}</span>
         </div>
@@ -296,15 +296,15 @@ const DetailShell: React.FC<{ title: string; subtitle?: string; onBack: () => vo
     <button
       type="button"
       onClick={onBack}
-      className="inline-flex items-center gap-2 text-sm font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800"
+      className="inline-flex items-center gap-2 text-sm font-extrabold text-indigo-600 uppercase tracking-widest hover:text-indigo-800"
     >
       <FiArrowLeft /> Control Center
     </button>
     <div>
-      <h2 className="text-3xl font-black text-gray-900">{title}</h2>
+      <h2 className="text-3xl font-extrabold text-gray-900">{title}</h2>
       {subtitle && <p className="text-gray-500 mt-1">{subtitle}</p>}
     </div>
-    <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8">{children}</div>
+    <div className="bg-white rounded-2xl border border-gray-200/70 shadow-sm p-8">{children}</div>
   </motion.div>
 );
 
@@ -340,16 +340,16 @@ const HubCard: React.FC<{
     <button
       type="button"
       onClick={onClick}
-      className={`relative text-left bg-white rounded-2xl border border-gray-100 p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 group ${border[accent] ?? border.indigo}`}
+      className={`relative text-left bg-white rounded-2xl border border-gray-200/70 p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 group ${border[accent] ?? border.indigo}`}
     >
       {badge != null && badge > 0 && (
-        <span className="absolute top-4 right-4 size-6 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+        <span className="absolute top-4 right-4 size-6 bg-red-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center">
           {badge > 9 ? '9+' : badge}
         </span>
       )}
       <div className="text-indigo-600 mb-4 opacity-80 group-hover:scale-110 transition-transform">{icon}</div>
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="text-3xl font-black text-gray-900 mt-1">{value}</p>
+      <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">{label}</p>
+      <p className="text-3xl font-extrabold text-gray-900 mt-1">{value}</p>
       {hint && <p className="text-xs text-gray-400 mt-2">{hint}</p>}
       <FiChevronRight className="absolute bottom-6 right-6 text-gray-300 group-hover:text-indigo-500 transition-colors" />
     </button>
@@ -496,15 +496,15 @@ const AdminDashboard: React.FC = () => {
       <div className="space-y-8 pb-12 max-w-5xl">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">Organization</p>
-            <h1 className="text-3xl font-black text-gray-900">Control Center</h1>
+            <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-[0.3em] mb-1">Organization</p>
+            <h1 className="text-3xl font-extrabold text-gray-900">Control Center</h1>
             <p className="text-sm text-gray-500 mt-1">Tap a card for full details.</p>
           </div>
           {pa.pendingUsers > 0 && (
             <button
               type="button"
               onClick={() => navigate('/admin?tab=users')}
-              className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 shrink-0"
+              className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-extrabold text-xs uppercase tracking-widest hover:bg-indigo-700 shrink-0"
             >
               Approve Users ({pa.pendingUsers})
             </button>
@@ -574,21 +574,21 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Role distribution</p>
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200/70">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-6">Role distribution</p>
                     <AnimatedDonutChart segments={chartSegments} total={totalPeople} animKey={chartAnimKey} unit="people" />
                   </div>
-                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">People overview</p>
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200/70">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-6">People overview</p>
                     <AnimatedTaskBarChart data={barData} animKey={chartAnimKey} />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <h3 className="font-black text-gray-800">{filterLabel}</h3>
+                    <h3 className="font-extrabold text-gray-800">{filterLabel}</h3>
                     {userFilter !== 'all' && (
-                      <button type="button" onClick={() => setUserFilter('all')} className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:underline">Show all</button>
+                      <button type="button" onClick={() => setUserFilter('all')} className="text-xs font-extrabold text-indigo-600 uppercase tracking-widest hover:underline">Show all</button>
                     )}
                   </div>
                   {filteredUsers.length === 0 ? (
@@ -601,13 +601,13 @@ const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                          className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-white"
+                          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200/70 bg-white"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-gray-900 truncate">{user.fullName}</p>
                             <p className="text-xs text-gray-500 truncate">{user.email}</p>
                           </div>
-                          <span className="text-[10px] font-black px-2.5 py-1 rounded-full border uppercase bg-indigo-50 text-indigo-700 border-indigo-200">{user.role}</span>
+                          <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full border uppercase bg-indigo-50 text-indigo-700 border-indigo-200">{user.role}</span>
                           <span className="text-[10px] font-bold text-gray-400 uppercase">{user.status}</span>
                         </motion.div>
                       ))}
@@ -615,7 +615,7 @@ const AdminDashboard: React.FC = () => {
                   )}
                 </div>
 
-                <button type="button" onClick={() => navigate('/admin?tab=all-users')} className="text-sm font-black text-indigo-600 uppercase tracking-widest hover:underline">
+                <button type="button" onClick={() => navigate('/admin?tab=all-users')} className="text-sm font-extrabold text-indigo-600 uppercase tracking-widest hover:underline">
                   Open user directory in Admin Portal →
                 </button>
               </div>
@@ -657,21 +657,21 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Status distribution</p>
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200/70">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-6">Status distribution</p>
                     <AnimatedDonutChart segments={chartSegments} total={totalProjects} animKey={chartAnimKey} unit="projects" />
                   </div>
-                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Portfolio overview</p>
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200/70">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-6">Portfolio overview</p>
                     <AnimatedTaskBarChart data={barData} animKey={chartAnimKey} />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <h3 className="font-black text-gray-800">{filterLabel} ({filteredProjects.length})</h3>
+                    <h3 className="font-extrabold text-gray-800">{filterLabel} ({filteredProjects.length})</h3>
                     {projectFilter !== 'all' && (
-                      <button type="button" onClick={() => setProjectFilter('all')} className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:underline">Show all</button>
+                      <button type="button" onClick={() => setProjectFilter('all')} className="text-xs font-extrabold text-indigo-600 uppercase tracking-widest hover:underline">Show all</button>
                     )}
                   </div>
 
@@ -689,7 +689,7 @@ const AdminDashboard: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: Math.min(i * 0.03, 0.4) }}
                             onClick={() => openProject(String(row.projectId))}
-                            className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all text-left bg-white"
+                            className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200/70 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all text-left bg-white"
                           >
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-gray-900 truncate">{row.title}</p>
@@ -699,7 +699,7 @@ const AdminDashboard: React.FC = () => {
                                 {row.deadline ? ` · Due ${new Date(row.deadline).toLocaleDateString()}` : ''}
                               </p>
                             </div>
-                            <span className={`text-[10px] font-black px-2 py-1 rounded-full border uppercase ${st.cls}`}>{st.text}</span>
+                            <span className={`text-[10px] font-extrabold px-2 py-1 rounded-full border uppercase ${st.cls}`}>{st.text}</span>
                             <FiChevronRight className="text-gray-400 shrink-0" />
                           </motion.button>
                         );
@@ -708,7 +708,7 @@ const AdminDashboard: React.FC = () => {
                   )}
                 </div>
 
-                <button type="button" onClick={() => navigate('/admin?tab=projects')} className="text-sm font-black text-indigo-600 uppercase tracking-widest hover:underline">
+                <button type="button" onClick={() => navigate('/admin?tab=projects')} className="text-sm font-extrabold text-indigo-600 uppercase tracking-widest hover:underline">
                   Full project oversight →
                 </button>
               </div>
@@ -805,12 +805,12 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Status distribution</p>
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200/70">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-6">Status distribution</p>
                     <AnimatedDonutChart segments={chartSegments} total={totalTasks} animKey={chartAnimKey} unit="tasks" />
                   </div>
-                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6">Task overview</p>
+                  <div className="p-6 bg-gray-50 rounded-2xl border border-gray-200/70">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-6">Task overview</p>
                     <AnimatedTaskBarChart data={barData} animKey={chartAnimKey} />
                   </div>
                 </div>
@@ -821,12 +821,12 @@ const AdminDashboard: React.FC = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <h3 className="font-black text-gray-800">{filterLabel}</h3>
+                    <h3 className="font-extrabold text-gray-800">{filterLabel}</h3>
                     {taskFilter !== 'all' && (
                       <button
                         type="button"
                         onClick={() => setTaskFilter('all')}
-                        className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:underline"
+                        className="text-xs font-extrabold text-indigo-600 uppercase tracking-widest hover:underline"
                       >
                         Show all
                       </button>
@@ -845,7 +845,7 @@ const AdminDashboard: React.FC = () => {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(i * 0.03, 0.4) }}
-                          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/30 transition-all"
+                          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-gray-200/70 bg-white hover:border-indigo-200 hover:bg-indigo-50/30 transition-all"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-gray-900 truncate">{task.title}</p>
@@ -857,9 +857,9 @@ const AdminDashboard: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {task.priority && (
-                              <span className="text-[10px] font-black text-gray-400 uppercase">{task.priority}</span>
+                              <span className="text-[10px] font-extrabold text-gray-400 uppercase">{task.priority}</span>
                             )}
-                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border uppercase ${taskStatusTone(task.displayStatus)}`}>
+                            <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border uppercase ${taskStatusTone(task.displayStatus)}`}>
                               {task.displayStatus}
                             </span>
                             <button
@@ -897,7 +897,7 @@ const AdminDashboard: React.FC = () => {
                   className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-indigo-50 transition-all"
                 >
                   <span className="font-bold text-gray-800">{item.label}</span>
-                  <span className="font-black text-indigo-600 text-xl">{item.value}</span>
+                  <span className="font-extrabold text-indigo-600 text-xl">{item.value}</span>
                 </button>
               ))}
             </div>
@@ -909,7 +909,7 @@ const AdminDashboard: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-[10px] font-black uppercase text-gray-400 border-b">
+                  <tr className="text-[10px] font-extrabold uppercase text-gray-400 border-b">
                     <th className="text-left py-2">Employee</th>
                     <th className="text-center py-2">Active</th>
                     <th className="text-center py-2">Hours</th>
@@ -923,14 +923,14 @@ const AdminDashboard: React.FC = () => {
                       <td className="text-center">{row.currentTasks}</td>
                       <td className="text-center">{Number(row.hoursThisWeek).toFixed(1)}h</td>
                       <td className="text-right">
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-full border uppercase ${workloadTone(row.workloadStatus)}`}>{row.workloadStatus}</span>
+                        <span className={`text-[10px] font-extrabold px-2 py-1 rounded-full border uppercase ${workloadTone(row.workloadStatus)}`}>{row.workloadStatus}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <button type="button" onClick={() => navigate('/workload')} className="mt-6 text-sm font-black text-indigo-600 uppercase tracking-widest hover:underline">
+            <button type="button" onClick={() => navigate('/workload')} className="mt-6 text-sm font-extrabold text-indigo-600 uppercase tracking-widest hover:underline">
               Open workload panel →
             </button>
           </DetailShell>
@@ -944,7 +944,7 @@ const AdminDashboard: React.FC = () => {
               <div className="space-y-4">
                 {data.qaPerformance.map((q) => (
                   <div key={q.qaId} className="p-4 bg-gray-50 rounded-xl">
-                    <p className="font-black mb-2">{q.fullName}</p>
+                    <p className="font-extrabold mb-2">{q.fullName}</p>
                     <div className="flex gap-6 text-sm">
                       <span><strong className="text-amber-600">{q.pendingReviews}</strong> pending</span>
                       <span><strong className="text-emerald-600">{q.approved}</strong> approved</span>
@@ -961,15 +961,15 @@ const AdminDashboard: React.FC = () => {
           <DetailShell key="analytics" title="Analytics" subtitle="Trends and operational metrics" onBack={goHub}>
             <div className="space-y-10">
               <div>
-                <h3 className="font-black text-gray-800 mb-4">Tasks approved per week</h3>
+                <h3 className="font-extrabold text-gray-800 mb-4">Tasks approved per week</h3>
                 <BarChart data={data.tasksCompletedPerWeek.map((w) => ({ label: w.weekLabel, value: w.completed }))} color="#10B981" />
               </div>
               <div>
-                <h3 className="font-black text-gray-800 mb-4">Hours worked per week</h3>
+                <h3 className="font-extrabold text-gray-800 mb-4">Hours worked per week</h3>
                 <BarChart data={data.hoursWorkedPerWeek.map((w) => ({ label: w.weekLabel, value: Number(w.hours) }))} color="#06B6D4" />
               </div>
               <div>
-                <h3 className="font-black text-gray-800 mb-4">Manager delivery</h3>
+                <h3 className="font-extrabold text-gray-800 mb-4">Manager delivery</h3>
                 {data.managerPerformance.length === 0 ? (
                   <p className="text-gray-400 italic text-sm">No data</p>
                 ) : (
@@ -985,15 +985,15 @@ const AdminDashboard: React.FC = () => {
               </div>
               <div className="grid sm:grid-cols-3 gap-4 text-sm">
                 <div className="p-4 bg-gray-50 rounded-xl">
-                  <p className="font-black text-lg">{data.timesheetAnalytics.clockedInNow}</p>
+                  <p className="font-extrabold text-lg">{data.timesheetAnalytics.clockedInNow}</p>
                   <p className="text-gray-500 text-xs uppercase font-bold">Clocked in</p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-xl">
-                  <p className="font-black text-lg">{data.meetingAnalytics.todaysMeetings}</p>
+                  <p className="font-extrabold text-lg">{data.meetingAnalytics.todaysMeetings}</p>
                   <p className="text-gray-500 text-xs uppercase font-bold">Meetings today</p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-xl">
-                  <p className="font-black text-lg">{data.aiAnalytics.aiScoredTasks}</p>
+                  <p className="font-extrabold text-lg">{data.aiAnalytics.aiScoredTasks}</p>
                   <p className="text-gray-500 text-xs uppercase font-bold">AI-scored tasks</p>
                 </div>
               </div>
@@ -1009,7 +1009,7 @@ const AdminDashboard: React.FC = () => {
               <div className="divide-y divide-gray-50">
                 {data.recentActivity.map((item, i) => (
                   <div key={i} className="py-4 flex gap-4">
-                    <span className="text-[10px] font-black text-indigo-600 w-12 shrink-0">
+                    <span className="text-[10px] font-extrabold text-indigo-600 w-12 shrink-0">
                       {new Date(item.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <div>

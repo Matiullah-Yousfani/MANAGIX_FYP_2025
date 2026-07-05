@@ -9,6 +9,7 @@ import ProjectDetails from './pages/project/ProjectDetails';
 import QAReview from './pages/qa/QAReview';
 import CreateProject from './pages/manager/CreateProject';
 import Layout from './components/Layout';
+import { Toaster } from './components/ui';
 
 // STEP 3 IMPORT: Correctly pointed to your new folder
 import Profile from './pages/user/Profile';
@@ -32,6 +33,7 @@ import EmployeeTimesheetPage from './pages/timesheet/EmployeeTimesheetPage';
 function App() {
   return (
     <Router>
+      <Toaster />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Navigate to="/login" />} />

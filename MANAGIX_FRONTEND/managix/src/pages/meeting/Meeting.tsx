@@ -63,8 +63,8 @@ const Meeting = () => {
 
   if (!activeLoading && !hasActive && !scheduledMeetingId) {
     return (
-      <div className="max-w-lg mx-auto mt-16 p-10 bg-white rounded-2xl border border-gray-100 shadow-sm text-center space-y-4">
-        <h1 className="text-xl font-black text-gray-900">No active meeting</h1>
+      <div className="max-w-lg mx-auto mt-16 p-10 bg-white rounded-2xl border border-gray-200/70 shadow-sm text-center space-y-4">
+        <h1 className="text-xl font-extrabold text-gray-900">No active meeting</h1>
         <p className="text-gray-500 text-sm">
           The meeting room is only available during a scheduled meeting window.
           Check notifications for your join link when a meeting starts.
@@ -79,7 +79,7 @@ const Meeting = () => {
   if (active.length > 1 && !scheduledMeetingId) {
     return (
       <div className="max-w-xl mx-auto mt-12 space-y-4">
-        <h1 className="text-2xl font-black text-gray-900">Choose active meeting</h1>
+        <h1 className="text-2xl font-extrabold text-gray-900">Choose active meeting</h1>
         <ul className="space-y-3">
           {active.map((m) => {
             const id = m.meetingId ?? (m as any).MeetingId;
@@ -100,7 +100,7 @@ const Meeting = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f4f9] p-4 md:p-6">
+    <div className="min-h-screen  p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-4 px-2">
           <h1 className="text-xl font-semibold text-gray-800">Video meeting</h1>

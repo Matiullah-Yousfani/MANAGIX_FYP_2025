@@ -8,6 +8,7 @@ import { validateProjectStep2 } from '../../utils/formValidation';
 import { formatLocalDateYmd, parseYmdLocal, compareYmd } from '../../utils/dateOnlyLocal';
 import { minDateToday } from '../../utils/dateInput';
 import { preprocessTextForAi } from '../../utils/textPreprocess';
+import { DatePicker, toast, Select } from '../../components/ui';
 import {
   FiCalendar,
   FiDollarSign,
@@ -78,11 +79,11 @@ const CreateProject = () => {
   const runAiPlanner = useCallback(async () => {
     const step2Err = validateProjectStep2(formData.deadline, formData.budget);
     if (step2Err) {
-      alert(step2Err);
+      toast(step2Err);
       return;
     }
     if (!formData.title.trim() || !formData.description.trim()) {
-      alert('Add a title and description first.');
+      toast('Add a title and description first.');
       return;
     }
     setAiPlanning(true);
@@ -144,7 +145,7 @@ const CreateProject = () => {
         ax.response?.data?.message ??
         ax.response?.data?.detail ??
         'AI planner failed. Ensure ai_planner.py is running (port 8001) and GROQ_API_KEY is set.';
-      alert(msg);
+      toast(msg);
     } finally {
       setAiPlanning(false);
     }
@@ -202,7 +203,7 @@ const CreateProject = () => {
   const addMilestoneToList = () => {
     const { title, deadline, budgetAllocated, description } = currentMilestone;
     if (!title || !deadline) {
-      alert('Please fill in Milestone Title and Date');
+      toast('Please fill in Milestone Title and Date');
       return;
     }
     const projectDeadline = parseYmdLocal(formData.deadline);
@@ -211,26 +212,26 @@ const CreateProject = () => {
     today.setHours(0, 0, 0, 0);
 
     if (milestoneDate < today) {
-      alert('Milestone deadline cannot be in the past.');
+      toast('Milestone deadline cannot be in the past.');
       return;
     }
     if (milestoneDate > projectDeadline) {
-      alert(`Milestone deadline cannot exceed project deadline (${formData.deadline}).`);
+      toast(`Milestone deadline cannot exceed project deadline (${formData.deadline}).`);
       return;
     }
     if (budgetAllocated > remainingBudget) {
       const excess = budgetAllocated - remainingBudget;
-      alert(`Budget Exceeded! Milestone exceeds remaining budget by $${excess.toFixed(2)}.`);
+      toast(`Budget Exceeded! Milestone exceeds remaining budget by $${excess.toFixed(2)}.`);
       return;
     }
     if (budgetAllocated < 0) {
-      alert('Milestone budget cannot be negative.');
+      toast('Milestone budget cannot be negative.');
       return;
     }
     if (
       milestones.some((m) => m.title.trim().toLowerCase() === title.trim().toLowerCase())
     ) {
-      alert('A milestone with this name is already in the list.');
+      toast('A milestone with this name is already in the list.');
       return;
     }
 
@@ -276,11 +277,11 @@ const CreateProject = () => {
   const handleLaunchProject = async () => {
     const preErr = validateMilestonesForLaunch();
     if (preErr) {
-      alert(preErr);
+      toast(preErr);
       return;
     }
     if (!formData.managerId) {
-      alert('You must be logged in as a manager to create a project.');
+      toast('You must be logged in as a manager to create a project.');
       return;
     }
     setLoading(true);
@@ -296,7 +297,7 @@ const CreateProject = () => {
       } catch (createErr: any) {
         const msg = createErr?.response?.data?.message;
         if (createErr?.response?.status === 409) {
-          alert(msg || 'A project with this title already exists.');
+          toast(msg || 'A project with this title already exists.');
           setLoading(false);
           return;
         }
@@ -345,7 +346,7 @@ const CreateProject = () => {
         throw inner;
       }
 
-      alert('Project Launched Successfully!');
+      toast('Project Launched Successfully!');
       navigate('/dashboard');
     } catch (err: unknown) {
       console.error(err);
@@ -354,15 +355,15 @@ const CreateProject = () => {
         ax.response?.data?.message ??
         ax.response?.data?.detail ??
         'Failed to launch project. If a rollback ran, you can try again with the same title.';
-      alert(msg);
+      toast(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="min-h-screen py-12 px-4">
+      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
         <div className="bg-white px-8 pt-8 pb-4">
           <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Create Project</h2>
           <p className="text-gray-500 text-sm mt-1">
@@ -440,16 +441,11 @@ const CreateProject = () => {
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                     Target Deadline
                   </label>
-                  <div className="relative">
-                    <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="date"
-                      min={minDateToday()}
-                      className="w-full pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                      value={formData.deadline}
-                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                    />
-                  </div>
+                  <DatePicker
+                    min={minDateToday()}
+                    value={formData.deadline}
+                    onChange={(v) => setFormData({ ...formData, deadline: v })}
+                  />
                 </div>
                 <div className="relative">
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
@@ -484,7 +480,7 @@ const CreateProject = () => {
                   onClick={() => {
                     const err = validateProjectStep2(formData.deadline, formData.budget);
                     if (err) {
-                      alert(err);
+                      toast(err);
                       return;
                     }
                     if (milestones.length === 0) setShouldAutoPlan(true);
@@ -532,18 +528,13 @@ const CreateProject = () => {
                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                   <FiLayers className="text-gray-400" /> Project methodology
                 </label>
-                <select
-                  className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 font-medium"
+                <Select
+                  className="w-full"
                   value={formData.modelId}
-                  onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
-                >
-                  <option value="">Select methodology…</option>
-                  {projectModels.map((model) => (
-                    <option key={model.ModelId} value={model.ModelId}>
-                      {model.ModelName || model.modelName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setFormData({ ...formData, modelId: v })}
+                  placeholder="Select methodology…"
+                  options={[{ value: '', label: 'Select methodology…' }, ...projectModels.map((model) => ({ value: String(model.ModelId), label: model.ModelName || model.modelName }))]}
+                />
                 <p className="text-xs text-gray-400 mt-1">
                   Pre-filled when AI runs; you can override before launch.
                 </p>
@@ -569,13 +560,11 @@ const CreateProject = () => {
                     }
                   />
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="date"
+                    <DatePicker
                       min={minDateToday()}
-                      className="p-3 bg-white border-none rounded-xl shadow-sm outline-none text-sm"
                       value={currentMilestone.deadline}
-                      onChange={(e) =>
-                        setCurrentMilestone({ ...currentMilestone, deadline: e.target.value })
+                      onChange={(v) =>
+                        setCurrentMilestone({ ...currentMilestone, deadline: v })
                       }
                     />
                     <input
@@ -602,12 +591,14 @@ const CreateProject = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-900 rounded-3xl p-6 text-white shadow-xl">
+              <div className="card p-6 bg-gradient-to-br from-indigo-50 to-violet-50">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-gray-400 text-sm">Allocation Status</span>
+                  <span className="text-slate-500 text-sm font-semibold">Allocation Status</span>
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      remainingBudget < 0 ? 'bg-red-500' : 'bg-green-500'
+                    className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                      remainingBudget < 0
+                        ? 'bg-red-50 text-red-700 border-red-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}
                   >
                     {remainingBudget >= 0 ? 'Budget OK' : 'Over Budget'}
@@ -615,11 +606,11 @@ const CreateProject = () => {
                 </div>
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-widest">Remaining</p>
-                    <p className="text-3xl font-bold">${remainingBudget.toLocaleString()}</p>
+                    <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">Remaining</p>
+                    <p className={`text-3xl font-extrabold nums ${remainingBudget < 0 ? 'text-red-600' : 'text-slate-900'}`}>${remainingBudget.toLocaleString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-400 text-xs">Total: ${formData.budget}</p>
+                    <p className="text-slate-400 text-xs nums">Total: ${formData.budget}</p>
                   </div>
                 </div>
               </div>
@@ -628,7 +619,7 @@ const CreateProject = () => {
                 {milestones.map((m, i) => (
                   <div
                     key={i}
-                    className="p-4 bg-white border border-gray-100 rounded-2xl hover:border-indigo-200 transition-colors space-y-3"
+                    className="p-4 bg-white border border-gray-200/70 rounded-2xl hover:border-indigo-200 transition-colors space-y-3"
                   >
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-xs font-bold text-gray-400">Milestone {i + 1}</span>
@@ -655,12 +646,11 @@ const CreateProject = () => {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-[10px] uppercase text-gray-400 font-bold">Deadline</label>
-                        <input
-                          type="date"
+                        <DatePicker
+                          className="mt-1"
                           min={minDateToday()}
-                          className="w-full p-2 bg-gray-50 rounded-lg text-sm outline-none mt-1"
                           value={m.deadline}
-                          onChange={(e) => updateMilestone(i, { deadline: e.target.value })}
+                          onChange={(v) => updateMilestone(i, { deadline: v })}
                         />
                       </div>
                       <div>
@@ -677,7 +667,7 @@ const CreateProject = () => {
                         />
                       </div>
                     </div>
-                    <div className="border-t border-gray-100 pt-3 space-y-2">
+                    <div className="border-t border-gray-200/70 pt-3 space-y-2">
                       <p className="text-xs font-bold text-gray-500">Tasks</p>
                       {(m.tasks || []).map((t, ti) => (
                         <div key={ti} className="flex gap-2 items-start pl-2 border-l-2 border-indigo-100">
@@ -717,7 +707,7 @@ const CreateProject = () => {
                 ))}
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <div className="flex gap-3 pt-4 border-t border-gray-200/70">
                 <button
                   type="button"
                   onClick={() => setStep(2)}

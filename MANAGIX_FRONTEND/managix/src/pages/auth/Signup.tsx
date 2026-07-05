@@ -1,4 +1,5 @@
 // src/pages/Signup.tsx
+import { toast } from '../../components/ui';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axiosInstance';
@@ -94,7 +95,7 @@ const Signup = () => {
         return;
       }
 
-      alert("Registration request submitted. Wait for admin approval.");
+      toast("Registration request submitted. Wait for admin approval.");
       navigate('/login');
 
     } catch (err: unknown) {
@@ -120,7 +121,7 @@ const Signup = () => {
       <div className="w-full max-w-xl p-10 bg-white shadow-2xl rounded-3xl border border-[#E5E7EB]">
 
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-black tracking-tight mb-2 uppercase italic">
+          <h1 className="text-5xl font-extrabold tracking-tight mb-2 uppercase italic">
             MANAGIX
           </h1>
           <p className="text-[#9CA3AF] font-bold uppercase tracking-[0.3em] text-[10px]">
@@ -241,7 +242,7 @@ const Signup = () => {
           {/* SUBMIT BUTTON */}
           <button
             type="submit"
-            className="w-full bg-black text-white p-4 rounded-2xl font-black text-lg hover:bg-[#1A1A1A]"
+            className="w-full bg-black text-white p-4 rounded-2xl font-extrabold text-lg hover:bg-[#1A1A1A]"
           >
             Sign Up
           </button>
@@ -256,7 +257,7 @@ const Signup = () => {
 
             <Link
               to="/login"
-              className="ml-2 text-black font-black hover:underline"
+              className="ml-2 text-black font-extrabold hover:underline"
             >
               Login
             </Link>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toast, Select } from '../../components/ui';
 import AiAllocation from '../ai/AiAllocation';
 import { teamService } from '../../api/teamService';
 import { projectService } from '../../api/projectService';
@@ -323,12 +324,12 @@ const Teams = () => {
     const handleCreateTeam = async () => {
         const name = teamName.trim();
         if (!name) {
-            alert('Team name is required.');
+            toast('Team name is required.');
             return;
         }
         const managerId = localStorage.getItem('userId');
         if (!managerId) {
-            alert('You must be logged in to create a team.');
+            toast('You must be logged in to create a team.');
             return;
         }
         try {
@@ -344,7 +345,7 @@ const Teams = () => {
             setTeamName("");
             loadData();
         } catch (err) {
-            alert(apiErr(err));
+            toast(apiErr(err));
         }
     };
 
@@ -354,9 +355,9 @@ const Teams = () => {
             await teamService.addEmployeeToTeam(selectedTeamForMember, selectedEmployee);
             setSelectedEmployee(""); 
             loadData();
-            alert("Member added successfully");
+            toast("Member added successfully");
         } catch (err) {
-            alert(apiErr(err));
+            toast(apiErr(err));
         }
     };
 
@@ -392,7 +393,7 @@ const Teams = () => {
             await teamService.assignTeamToProject(teamId, projectId);
             await loadData();
         } catch (err: unknown) {
-            alert(apiErr(err));
+            toast(apiErr(err));
         }
     };
 
@@ -414,12 +415,12 @@ const Teams = () => {
     const portalRole = localStorage.getItem('roleName') || localStorage.getItem('userRole');
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-20">
+        <div className="min-h-screen  pb-20">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+            <div className="bg-white border-b border-gray-200/70 mb-8 sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
+                        <h1 className="text-4xl font-extrabold text-gray-900 flex items-center gap-3">
                             <FiUsers className="text-indigo-600" /> Team Hub
                         </h1>
                         <p className="text-gray-500 mt-1 font-medium">Manage your workforce and project distribution</p>
@@ -441,7 +442,7 @@ const Teams = () => {
             <div className="max-w-7xl mx-auto px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
                     {/* Create Team Card */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-200/70 p-8">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
                                 <FiPlus size={20} />
@@ -462,7 +463,7 @@ const Teams = () => {
                     </div>
 
                     {/* Member Assignment Card */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-200/70 p-8">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
                                 <FiUserPlus size={20} />
@@ -470,32 +471,24 @@ const Teams = () => {
                             <h2 className="text-xl font-bold text-gray-800">Assign Member</h2>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <select 
-                                className="bg-gray-50 border-none p-4 rounded-2xl outline-none cursor-pointer font-medium" 
-                                value={selectedTeamForMember} 
-                                onChange={(e) => setSelectedTeamForMember(e.target.value)}
-                            >
-                                <option value="">Select Team</option>
-                                {teams.map((t: any) => <option key={t.TeamId} value={t.TeamId}>{t.Name}</option>)}
-                            </select>
-                            <select 
-                                className="bg-gray-50 border-none p-4 rounded-2xl outline-none cursor-pointer font-medium" 
-                                value={selectedEmployee} 
-                                onChange={(e) => setSelectedEmployee(e.target.value)}
-                            >
-                                <option value="">Select Member (Emp/QA)</option>
-                                {availableEmployees.length > 0 ? (
-                                    availableEmployees.map((e: any) => (
-                                        <option key={e.Id || e.UserId || e.id} value={e.Id || e.UserId || e.id}>
-                                            {e.FullName}
-                                        </option>
-                                    ))
-                                ) : selectedTeamForMember ? (
-                                    <option disabled>Everyone is already on this team / project</option>
-                                ) : (
-                                    <option disabled>Select a team first</option>
-                                )}
-                            </select>
+                            <Select
+                                className="w-56"
+                                value={selectedTeamForMember}
+                                onChange={setSelectedTeamForMember}
+                                placeholder="Select Team"
+                                options={[{ value: '', label: 'Select Team' }, ...teams.map((t: any) => ({ value: String(t.TeamId), label: t.Name }))]}
+                            />
+                            <Select
+                                className="w-56"
+                                value={selectedEmployee}
+                                onChange={setSelectedEmployee}
+                                placeholder="Select Member (Emp/QA)"
+                                options={
+                                    availableEmployees.length > 0
+                                        ? [{ value: '', label: 'Select Member (Emp/QA)' }, ...availableEmployees.map((e: any) => ({ value: String(e.Id || e.UserId || e.id), label: e.FullName }))]
+                                        : [{ value: '', label: selectedTeamForMember ? 'Everyone is already on this team / project' : 'Select a team first', disabled: true }]
+                                }
+                            />
                         </div>
                         {selectedTeamForMember && (
                             <p className="text-[10px] text-gray-400 mt-2">
@@ -506,14 +499,14 @@ const Teams = () => {
                                 .
                             </p>
                         )}
-                        <button onClick={handleAddMember} className="w-full mt-4 bg-gray-900 text-white p-4 rounded-2xl font-bold hover:bg-black transition-all active:scale-[0.98]">
+                        <button onClick={handleAddMember} className="w-full mt-4 bg-indigo-600 text-white p-4 rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-[0.98]">
                             Add to Team
                         </button>
                     </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-black text-gray-800">Operational Teams</h2>
+                    <h2 className="text-2xl font-extrabold text-gray-800">Operational Teams</h2>
                     <span className="bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
                         {filteredTeams.length} Teams
                     </span>
@@ -524,7 +517,7 @@ const Teams = () => {
                         <div
                             key={team.TeamId}
                             onClick={() => handleTeamClick(team)}
-                            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                            className="group bg-white rounded-2xl p-8 shadow-sm border border-gray-200/70 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden"
                         >
                             <FiUsers className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-indigo-50 transition-colors pointer-events-none" />
                             
@@ -546,7 +539,7 @@ const Teams = () => {
                                     </button>
                                 </div>
 
-                                <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 space-y-1">
+                                <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-4 space-y-1">
                                     <p>Manager <span className="text-indigo-600">{team.CreatedByName ?? 'Manager'}</span></p>
                                     {team.qaNames?.length > 0 && (
                                         <p>
@@ -565,7 +558,7 @@ const Teams = () => {
                                     )}
                                 </div>
                                 <div className="bg-indigo-50/50 rounded-2xl p-4 mb-6">
-                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Assigned Project</span>
+                                    <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-widest mb-1 block">Assigned Project</span>
                                     <div className="flex items-center gap-2 text-indigo-900 font-bold">
                                         <FiBriefcase size={14} />
                                         <p className="truncate">{team.ProjectTitle || "Not Assigned"}</p>
@@ -574,14 +567,13 @@ const Teams = () => {
 
                                 <div onClick={(e) => e.stopPropagation()}>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase block mb-2 px-1">Quick Reassign</label>
-                                    <select 
-                                        onChange={(e) => handleAssignToProject(team.TeamId, e.target.value)}
-                                        className="w-full bg-gray-50 border-none p-3 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer"
-                                        defaultValue=""
-                                    >
-                                        <option value="" disabled>Change Project...</option>
-                                        {projects.map((p: any) => <option key={p.ProjectId} value={p.ProjectId}>{p.Title}</option>)}
-                                    </select>
+                                    <Select
+                                        value=""
+                                        onChange={(v) => handleAssignToProject(team.TeamId, v)}
+                                        className="w-full"
+                                        placeholder="Change Project..."
+                                        options={[{ value: '', label: 'Change Project...', disabled: true }, ...projects.map((p: any) => ({ value: String(p.ProjectId), label: p.Title }))]}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -600,11 +592,11 @@ const Teams = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setIsPanelOpen(false)} />
                     
-                    <div className="relative w-full max-w-3xl bg-white max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
-                        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <div className="relative w-full max-w-3xl bg-white max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                        <div className="p-8 border-b border-gray-200/70 flex justify-between items-center bg-white sticky top-0 z-10">
                             <div>
-                                <p className="text-indigo-600 font-black text-xs uppercase tracking-widest mb-1">Team Overview</p>
-                                <h2 className="text-3xl font-black text-gray-900">{activeTeam?.Name}</h2>
+                                <p className="text-indigo-600 font-extrabold text-xs uppercase tracking-widest mb-1">Team Overview</p>
+                                <h2 className="text-3xl font-extrabold text-gray-900">{activeTeam?.Name}</h2>
                                 {activeTeam?.ProjectTitle && (
                                     <p className="text-sm text-gray-500 font-bold">Project: {activeTeam.ProjectTitle}</p>
                                 )}
@@ -628,11 +620,11 @@ const Teams = () => {
                                     <section>
                                         <div className="flex items-center gap-2 mb-4">
                                             <FiUsers className="text-indigo-600" />
-                                            <h3 className="font-black text-gray-800 uppercase text-xs tracking-widest">Team roster</h3>
+                                            <h3 className="font-extrabold text-gray-800 uppercase text-xs tracking-widest">Team roster</h3>
                                         </div>
                                         {activeTeamCreator && (
                                             <div className="mb-4 p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
-                                                <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest mb-1">Manager</p>
+                                                <p className="text-[9px] font-extrabold uppercase text-indigo-400 tracking-widest mb-1">Manager</p>
                                                 <p className="font-bold text-indigo-900">{activeTeamCreator}</p>
                                             </div>
                                         )}
@@ -650,7 +642,7 @@ const Teams = () => {
                                                     <div
                                                         key={mid}
                                                         className={`flex items-center gap-3 pl-4 pr-2 py-2 rounded-2xl border ${
-                                                            isFree ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-100' : 'bg-gray-50 border-gray-100'
+                                                            isFree ? 'bg-emerald-50 border-emerald-200 ring-1 ring-emerald-100' : 'bg-gray-50 border-gray-200/70'
                                                         }`}
                                                     >
                                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] text-white font-bold ${isFree ? 'bg-emerald-600' : 'bg-indigo-600'}`}>
@@ -658,7 +650,7 @@ const Teams = () => {
                                                         </div>
                                                         <div>
                                                             <span className="text-sm font-bold text-gray-700 block">{member.fullName ?? member.FullName}</span>
-                                                            <span className={`text-[9px] font-black uppercase ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
+                                                            <span className={`text-[9px] font-extrabold uppercase ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
                                                                 {isFree ? 'FREE — no active tasks' : `${active} active task(s)`}
                                                             </span>
                                                         </div>
@@ -688,7 +680,7 @@ const Teams = () => {
                                                         </div>
                                                         <div>
                                                             <span className="text-sm font-bold text-gray-700 block">{member.fullName ?? member.FullName}</span>
-                                                            <span className={`text-[9px] font-black uppercase ${hasPending ? 'text-amber-700' : 'text-violet-600'}`}>
+                                                            <span className={`text-[9px] font-extrabold uppercase ${hasPending ? 'text-amber-700' : 'text-violet-600'}`}>
                                                                 {hasPending
                                                                     ? `${pending} pending for review`
                                                                     : 'No tasks awaiting review'}
@@ -710,13 +702,13 @@ const Teams = () => {
                                                 <div className="space-y-4">
                                                     {qaList.length > 0 && (
                                                         <div>
-                                                            <p className="text-[9px] font-black uppercase text-violet-500 tracking-widest mb-2">Quality assurance</p>
+                                                            <p className="text-[9px] font-extrabold uppercase text-violet-500 tracking-widest mb-2">Quality assurance</p>
                                                             <div className="flex flex-wrap gap-3">{qaList.map((m) => renderQaChip(m))}</div>
                                                         </div>
                                                     )}
                                                     {empList.length > 0 && (
                                                         <div>
-                                                            <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Employees</p>
+                                                            <p className="text-[9px] font-extrabold uppercase text-gray-400 tracking-widest mb-2">Employees</p>
                                                             <div className="flex flex-wrap gap-3">{empList.map((m) => renderEmployeeChip(m))}</div>
                                                         </div>
                                                     )}
@@ -730,7 +722,7 @@ const Teams = () => {
                                     <section>
                                         <div className="flex items-center gap-2 mb-6">
                                             <FiBriefcase className="text-indigo-600" />
-                                            <h3 className="font-black text-gray-800 uppercase text-xs tracking-widest">Project Roadmap</h3>
+                                            <h3 className="font-extrabold text-gray-800 uppercase text-xs tracking-widest">Project Roadmap</h3>
                                         </div>
 
                                         {hierarchy.length === 0 ? (
@@ -741,10 +733,10 @@ const Teams = () => {
                                         ) : (
                                             <div className="space-y-8">
                                                 {hierarchy.map((milestone) => (
-                                                    <div key={milestone.MilestoneId || milestone.milestoneId} className="border border-gray-100 rounded-2xl p-5 bg-gray-50/50">
+                                                    <div key={milestone.MilestoneId || milestone.milestoneId} className="border border-gray-200/70 rounded-2xl p-5 bg-gray-50/50">
                                                         <div className="flex items-start justify-between gap-4 mb-3">
-                                                            <h4 className="font-black text-gray-900 text-base leading-tight">{milestone.Title || milestone.title}</h4>
-                                                            <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase shrink-0 ${
+                                                            <h4 className="font-extrabold text-gray-900 text-base leading-tight">{milestone.Title || milestone.title}</h4>
+                                                            <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase shrink-0 ${
                                                                 milestone.Status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700'
                                                             }`}>
                                                                 {milestone.Status}
@@ -755,7 +747,7 @@ const Teams = () => {
                                                                 <p className="text-xs text-gray-400 italic">No tasks in this milestone.</p>
                                                             ) : (
                                                                 milestone.tasks?.map((task: any) => (
-                                                                    <div key={task.TaskId || task.taskId} className="bg-white border border-gray-100 p-4 rounded-xl flex justify-between items-center gap-2">
+                                                                    <div key={task.TaskId || task.taskId} className="bg-white border border-gray-200/70 p-4 rounded-xl flex justify-between items-center gap-2">
                                                                         <div className="min-w-0">
                                                                             <p className="font-bold text-gray-800 text-sm truncate">{task.Title || task.title}</p>
                                                                             <p className="text-[11px] text-gray-500 mt-1">

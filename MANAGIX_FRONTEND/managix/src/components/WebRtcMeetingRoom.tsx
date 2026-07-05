@@ -520,22 +520,22 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
           <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm space-y-6">
             {analysis?.combinedSummary && (
               <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
-                <h3 className="text-sm font-black uppercase text-indigo-500 tracking-widest mb-2">Meeting summary</h3>
+                <h3 className="text-sm font-extrabold uppercase text-indigo-500 tracking-widest mb-2">Meeting summary</h3>
                 <p className="text-gray-800 text-sm">{analysis.combinedSummary}</p>
               </div>
             )}
             {analysis?.meetingNotes && (
               <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
-                <h3 className="text-sm font-black uppercase text-amber-600 tracking-widest mb-2">Meeting notes</h3>
+                <h3 className="text-sm font-extrabold uppercase text-amber-600 tracking-widest mb-2">Meeting notes</h3>
                 <pre className="whitespace-pre-wrap text-sm text-gray-700">{analysis.meetingNotes}</pre>
               </div>
             )}
             {analysis?.backlogItems && analysis.backlogItems.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <h3 className="text-sm font-black uppercase text-gray-500 tracking-widest mb-3">Backlog items</h3>
+              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200/70">
+                <h3 className="text-sm font-extrabold uppercase text-gray-500 tracking-widest mb-3">Backlog items</h3>
                 <ul className="space-y-2 text-sm">
                   {analysis.backlogItems.map((b, i) => (
-                    <li key={i} className="bg-white rounded-lg px-3 py-2 border border-gray-100">
+                    <li key={i} className="bg-white rounded-lg px-3 py-2 border border-gray-200/70">
                       <span className="font-bold text-gray-900">{b.title}</span>
                       {b.priority && <span className="ml-2 text-xs text-indigo-600 font-bold">{b.priority}</span>}
                       {b.description && <p className="text-gray-600 mt-1">{b.description}</p>}
@@ -565,7 +565,7 @@ const WebRtcMeetingRoom: React.FC<Props> = ({
                 <Download size={16} /> Download
               </button>
             </div>
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-5 max-h-80 overflow-y-auto border border-gray-100">
+            <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 rounded-xl p-5 max-h-80 overflow-y-auto border border-gray-200/70">
               {transcript}
             </pre>
             {onOpenTaskExtractor && (

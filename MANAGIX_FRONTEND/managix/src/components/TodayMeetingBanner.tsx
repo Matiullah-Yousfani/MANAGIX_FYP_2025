@@ -51,7 +51,7 @@ const TodayMeetingBanner: React.FC = () => {
       <div className="flex items-center gap-3">
         <FiVideo size={22} />
         <div>
-          <p className="font-black text-sm uppercase tracking-wider">Meeting today</p>
+          <p className="font-extrabold text-sm uppercase tracking-wider">Meeting today</p>
           <p className="text-indigo-100 text-sm">
             {todayMeeting.title} at {timeLabel}
             {joinState === 'BeforeStart'
@@ -65,7 +65,7 @@ const TodayMeetingBanner: React.FC = () => {
           type="button"
           disabled={!canJoin}
           onClick={() => navigate(`/meeting?meetingId=${todayMeeting.meetingId}`)}
-          className={`px-4 py-2 rounded-xl font-black text-xs uppercase ${
+          className={`px-4 py-2 rounded-xl font-extrabold text-xs uppercase ${
             canJoin ? 'bg-white text-indigo-700 hover:bg-indigo-50' : 'bg-indigo-400 text-indigo-100 cursor-not-allowed'
           }`}
         >

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { toast, Select } from '../../components/ui';
 import { useParams } from "react-router-dom";
 import { taskService } from "../../api/taskService";
 import api from '../../api/axiosInstance';
@@ -86,7 +87,7 @@ const Task = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectId || !milestoneId) {
-      alert("Missing project or milestone context");
+      toast("Missing project or milestone context");
       return;
     }
 
@@ -152,14 +153,14 @@ const Task = () => {
   };
 
   return (
-    <div className="p-10 min-h-screen bg-[#F8FAFC]">
+    <div className="p-10 min-h-screen ">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <header className="mb-12">
-          <label className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] block mb-2">
+          <label className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-[0.2em] block mb-2">
             Milestone Management
           </label>
-          <h1 className="text-5xl font-sans font-black text-gray-900 tracking-tight italic uppercase">
+          <h1 className="text-5xl font-sans font-extrabold text-gray-900 tracking-tight italic uppercase">
             Tasks<span className="text-indigo-600">.</span>
           </h1>
         </header>
@@ -168,7 +169,7 @@ const Task = () => {
           {/* LEFT: FORM SECTION (Only visible to Manager) */}
           {role === 'Manager' && (
             <div className="lg:col-span-5">
-              <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 sticky top-10 overflow-hidden group">
+              <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-200/70 sticky top-10 overflow-hidden group">
                 {/* Ghost Icon Watermark */}
                 <div className="absolute -right-8 -bottom-8 size-48 text-indigo-600 opacity-[0.03] pointer-events-none transition-all duration-700 group-hover:scale-110 group-hover:opacity-[0.06] group-hover:-rotate-12">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -178,14 +179,14 @@ const Task = () => {
                 </div>
 
                 <div className="relative z-10">
-                  <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8 flex items-center gap-2">
+                  <h2 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-8 flex items-center gap-2">
                     <span className="size-2 bg-indigo-500 rounded-full animate-pulse"></span>
                     {editingId ? "Modify Task Parameters" : "Initialize New Task"}
                   </h2>
 
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase ml-4 tracking-widest">Core Title</label>
+                      <label className="text-[10px] font-extrabold text-gray-400 uppercase ml-4 tracking-widest">Core Title</label>
                       <input
                         type="text"
                         placeholder="Project Requirement..."
@@ -198,36 +199,33 @@ const Task = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase ml-4 tracking-widest">Workflow State</label>
-                        <select
+                        <label className="text-[10px] font-extrabold text-gray-400 uppercase ml-4 tracking-widest">Workflow State</label>
+                        <Select
                           value={status}
-                          onChange={(e) => setStatus(e.target.value)}
-                          className="w-full p-5 bg-gray-50 rounded-2xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 border-none appearance-none"
-                        >
-                          <option value="Todo">Todo</option>
-                          <option value="InProgress">In Progress</option>
-                          <option value="Done">Done</option>
-                        </select>
+                          onChange={setStatus}
+                          className="w-full"
+                          options={[
+                            { value: 'Todo', label: 'Todo' },
+                            { value: 'InProgress', label: 'In Progress' },
+                            { value: 'Done', label: 'Done' },
+                          ]}
+                        />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase ml-4 tracking-widest">Assignee</label>
-                        <select
+                        <label className="text-[10px] font-extrabold text-gray-400 uppercase ml-4 tracking-widest">Assignee</label>
+                        <Select
                           value={assignedEmployeeId}
-                          onChange={(e) => setAssignedEmployeeId(e.target.value)}
-                          className="w-full p-5 bg-gray-50 rounded-2xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500/20 border-none appearance-none"
-                          required
-                        >
-                          <option value="">Select User</option>
-                          {team.map((member) => (
-                            <option key={member.UserId} value={member.UserId}>{member.FullName}</option>
-                          ))}
-                        </select>
+                          onChange={setAssignedEmployeeId}
+                          className="w-full"
+                          placeholder="Select User"
+                          options={[{ value: '', label: 'Select User' }, ...team.map((member) => ({ value: String(member.UserId), label: member.FullName }))]}
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase ml-4 tracking-widest">Technical Description</label>
+                      <label className="text-[10px] font-extrabold text-gray-400 uppercase ml-4 tracking-widest">Technical Description</label>
                       <textarea
                         placeholder="Enter task scope and objectives..."
                         value={description}
@@ -239,7 +237,7 @@ const Task = () => {
                     <div className="flex gap-3 pt-4">
                       <button
                         type="submit"
-                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
+                        className="flex-[2] py-5 bg-indigo-600 text-white rounded-2xl font-extrabold uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
                       >
                         {editingId ? "Update Record" : "Deploy Task"}
                       </button>
@@ -247,7 +245,7 @@ const Task = () => {
                         <button
                           type="button"
                           onClick={resetForm}
-                          className="flex-1 py-5 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                          className="flex-1 py-5 bg-gray-100 text-gray-500 rounded-2xl font-extrabold uppercase tracking-widest hover:bg-gray-200 transition-all"
                         >
                           Cancel
                         </button>
@@ -261,10 +259,10 @@ const Task = () => {
 
           {/* RIGHT: TASK LIST SECTION */}
           <div className={role === 'Manager' ? "lg:col-span-7" : "lg:col-span-12"}>
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/70 overflow-hidden">
               <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-white">
-                <h3 className="text-[12px] font-black uppercase text-gray-400 tracking-[0.2em]">Active Task Registry</h3>
-                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase">
+                <h3 className="text-[12px] font-extrabold uppercase text-gray-400 tracking-[0.2em]">Active Task Registry</h3>
+                <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase">
                   {tasks.length} Records Found
                 </span>
               </div>
@@ -273,9 +271,9 @@ const Task = () => {
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-gray-50/50">
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Task Detail</th>
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
+                      <th className="px-8 py-5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Task Detail</th>
+                      <th className="px-8 py-5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest text-center">Status</th>
+                      <th className="px-8 py-5 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest text-right">Operations</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -284,7 +282,7 @@ const Task = () => {
                         <td colSpan={3} className="px-8 py-20 text-center">
                           <div className="flex flex-col items-center opacity-20">
                             <span className="text-5xl mb-4">📂</span>
-                            <p className="text-[10px] font-black uppercase tracking-widest">Registry Empty</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest">Registry Empty</p>
                           </div>
                         </td>
                       </tr>
@@ -293,7 +291,7 @@ const Task = () => {
                         <tr key={t.TaskId} className="group hover:bg-gray-50/50 transition-colors">
                           <td className="px-8 py-6">
                             <div className="flex flex-col">
-                              <span className="text-lg font-black text-gray-900 leading-tight group-hover:text-indigo-600 transition-colors">
+                              <span className="text-lg font-extrabold text-gray-900 leading-tight group-hover:text-indigo-600 transition-colors">
                                 {t.Title}
                               </span>
                               <span className="text-xs font-medium text-gray-400 mt-1 line-clamp-1">
@@ -302,7 +300,7 @@ const Task = () => {
                             </div>
                           </td>
                           <td className="px-8 py-6 text-center">
-                            <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-tighter ${
+                            <span className={`px-4 py-2 rounded-full text-[9px] font-extrabold uppercase tracking-tighter ${
                               t.Status === 'Done' ? 'bg-emerald-100 text-emerald-700' : 
                               t.Status === 'InProgress' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'
                             }`}>
@@ -313,20 +311,20 @@ const Task = () => {
                             {role === 'Manager' ? (
                               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                  className="p-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-90"
+                                  className="p-3 bg-slate-700 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-90"
                                   onClick={() => handleEdit(t)}
                                 >
                                   Edit
                                 </button>
                                 <button
-                                  className="p-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-90"
+                                  className="p-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-90"
                                   onClick={() => setDeleteTarget(t)}
                                 >
                                   Delete
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Read Only</span>
+                              <span className="text-[9px] font-extrabold text-gray-300 uppercase tracking-widest">Read Only</span>
                             )}
                           </td>
                         </tr>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from './ui';
 
 import { timesheetService } from '../api/timesheetService';
 
@@ -263,11 +264,11 @@ const DashboardTimesheetCard: React.FC = () => {
 
         await refresh();
 
-        alert('You were already clocked in. Use Clock out, or we closed an old session — try Clock in again.');
+        toast('You were already clocked in. Use Clock out, or we closed an old session — try Clock in again.');
 
       } else {
 
-        alert(e?.response?.data?.message || 'Clock in failed');
+        toast(e?.response?.data?.message || 'Clock in failed');
 
       }
 
@@ -297,7 +298,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
       const msg = res?.message ?? res?.Message;
 
-      if (msg) alert(msg);
+      if (msg) toast(msg);
 
       const hrsAfter = Number(todayAfter?.todayHours ?? todayAfter?.TodayHours ?? hours);
 
@@ -305,7 +306,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
     } catch (e: any) {
 
-      alert(e?.response?.data?.message || 'Clock out failed');
+      toast(e?.response?.data?.message || 'Clock out failed');
 
     } finally {
 
@@ -351,11 +352,11 @@ const DashboardTimesheetCard: React.FC = () => {
 
       dismissSubmitReminder();
 
-      alert('Daily timesheet submitted for manager approval.');
+      toast('Daily timesheet submitted for manager approval.');
 
     } catch (e: any) {
 
-      alert(e?.response?.data?.message || 'Submit failed');
+      toast(e?.response?.data?.message || 'Submit failed');
 
     } finally {
 
@@ -369,15 +370,15 @@ const DashboardTimesheetCard: React.FC = () => {
 
   return (
 
-    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
+    <div className="card p-8 mb-8">
 
       <div className="flex flex-wrap items-start justify-between gap-4">
 
         <div>
 
-          <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Daily timesheet</p>
+          <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest mb-1">Daily timesheet</p>
 
-          <h3 className="text-2xl font-black text-gray-900">
+          <h3 className="text-2xl font-extrabold text-gray-900">
 
             Today <span className="tabular-nums">{displayTime}</span>{' '}
 
@@ -387,7 +388,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           {isDayLocked ? (
 
-            <span className="inline-block mt-2 text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg">
+            <span className="inline-block mt-2 text-[10px] font-extrabold uppercase text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg">
 
               Timesheet {status.toLowerCase()} — timer reset for today
 
@@ -395,7 +396,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           ) : isClockedIn ? (
 
-            <span className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
+            <span className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
 
               <span className="size-2 bg-emerald-500 rounded-full animate-pulse" /> Clocked in — timer running
 
@@ -403,7 +404,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           ) : displaySeconds > 0 ? (
 
-            <span className="inline-block mt-2 text-[10px] font-black uppercase text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+            <span className="inline-block mt-2 text-[10px] font-extrabold uppercase text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
 
               Clocked out — {displayTime} logged today
 
@@ -411,7 +412,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           ) : (
 
-            <span className="inline-block mt-2 text-[10px] font-black uppercase text-gray-400">
+            <span className="inline-block mt-2 text-[10px] font-extrabold uppercase text-gray-400">
 
               Not clocked in — start your day with Clock in
 
@@ -441,7 +442,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
             <span
 
-              className={`inline-block mt-2 text-[10px] font-black uppercase px-2 py-1 rounded-lg ${
+              className={`inline-block mt-2 text-[10px] font-extrabold uppercase px-2 py-1 rounded-lg ${
 
                 status === 'Rejected' ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700'
 
@@ -467,7 +468,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
             onClick={clockIn}
 
-            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs font-black disabled:opacity-40"
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl text-xs font-extrabold disabled:opacity-40"
 
           >
 
@@ -483,7 +484,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
             onClick={clockOut}
 
-            className="flex items-center gap-2 px-5 py-3 bg-gray-900 text-white rounded-xl text-xs font-black disabled:opacity-40"
+            className="flex items-center gap-2 px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold disabled:opacity-40 transition-colors active:scale-95"
 
           >
 
@@ -493,7 +494,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           {mustSubmitToday && !canSubmit && !isClockedIn && minSubmit > 0 && hours < minSubmit && (
 
-            <span className="text-[10px] font-black uppercase text-gray-400 px-3 py-2">
+            <span className="text-[10px] font-extrabold uppercase text-gray-400 px-3 py-2">
 
               Submit locked
 
@@ -511,7 +512,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
               onClick={() => (needsOvertimeReason ? setShowOvertimeModal(true) : submit())}
 
-              className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black"
+              className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl text-xs font-extrabold"
 
             >
 
@@ -571,7 +572,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
 
-            <h3 className="text-lg font-black text-gray-900 mb-2">Submit your timesheet</h3>
+            <h3 className="text-lg font-extrabold text-gray-900 mb-2">Submit your timesheet</h3>
 
             <p className="text-sm text-gray-600 mb-4">
 
@@ -605,7 +606,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
                 }}
 
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-extrabold"
 
               >
 
@@ -629,7 +630,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
 
-            <h3 className="text-lg font-black text-gray-900 mb-2">Overtime / extended hours</h3>
+            <h3 className="text-lg font-extrabold text-gray-900 mb-2">Overtime / extended hours</h3>
 
             <p className="text-sm text-gray-600 mb-4">
 
@@ -681,7 +682,7 @@ const DashboardTimesheetCard: React.FC = () => {
 
                 onClick={submit}
 
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black disabled:opacity-40"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-extrabold disabled:opacity-40"
 
               >
 

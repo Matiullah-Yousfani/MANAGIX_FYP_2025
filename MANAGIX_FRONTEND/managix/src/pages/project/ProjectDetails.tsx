@@ -110,7 +110,7 @@ const fetchProjectData = async () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/70">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-4">{project.title}</h1>
@@ -120,7 +120,7 @@ const fetchProjectData = async () => {
             <button
               type="button"
               onClick={() => setReportOpen(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-extrabold uppercase tracking-widest"
             >
               Closure report
             </button>
@@ -143,8 +143,8 @@ const fetchProjectData = async () => {
         />
       )}
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
-        <h2 className="text-xl font-black text-gray-900">Team & task overview</h2>
+      <div className="bg-white rounded-2xl border border-gray-200/70 p-6 space-y-6">
+        <h2 className="text-xl font-extrabold text-gray-900">Team & task overview</h2>
         {!teamDetail && teamMembers.length === 0 ? (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-4">
             No team assigned to this project yet. Use <strong>Team Hub</strong> to assign a team, or data is not available.
@@ -153,7 +153,7 @@ const fetchProjectData = async () => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-indigo-50/50 rounded-xl p-4">
-                <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-2">Manager</p>
+                <p className="text-[10px] font-extrabold uppercase text-indigo-400 tracking-widest mb-2">Manager</p>
                 <p className="font-bold text-indigo-900">
                   {teamDetail?.createdByName ?? teamDetail?.CreatedByName ?? '—'}
                 </p>
@@ -162,7 +162,7 @@ const fetchProjectData = async () => {
                 ) : null}
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-2">Team members</p>
+                <p className="text-[10px] font-extrabold uppercase text-gray-400 tracking-widest mb-2">Team members</p>
                 <ul className="text-sm space-y-1">
                   {teamMembers.map((m: any) => (
                     <li key={m.userId ?? m.UserId} className="flex justify-between">
@@ -223,7 +223,7 @@ const TaskBucket: React.FC<{
   tone?: 'amber' | 'emerald';
 }> = ({ title, tasks, nameFor, empty, tone }) => (
   <div>
-    <h3 className="font-black text-sm uppercase tracking-widest text-gray-400 mb-2">{title}</h3>
+    <h3 className="font-extrabold text-sm uppercase tracking-widest text-gray-400 mb-2">{title}</h3>
     {tasks.length === 0 ? (
       <p className="text-sm text-gray-400 italic">{empty}</p>
     ) : (
@@ -238,7 +238,7 @@ const TaskBucket: React.FC<{
               <p className="text-xs text-gray-500">Assigned: {nameFor(String(t.assignedEmployeeId ?? ''))}</p>
             </div>
             <span
-              className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${
                 tone === 'amber'
                   ? 'bg-amber-100 text-amber-700'
                   : tone === 'emerald'

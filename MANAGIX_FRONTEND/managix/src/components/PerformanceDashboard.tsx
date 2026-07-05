@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from './ui';
 import { performanceService } from '../api/performanceService';
 import { projectService } from '../api/projectService';
 import { useParams } from 'react-router-dom';
@@ -76,14 +77,14 @@ const handleCalculatePerformance = async () => {
         // This matches: [POST] http://localhost:7005/api/performance/recalculate/{projectId}
         await performanceService.recalculateProject(projectId!);
 
-        alert("Project performance metrics recalculated successfully!");
+        toast("Project performance metrics recalculated successfully!");
         
         // 2. Refresh the UI data
         await loadPerformanceRecords();
     } catch (err: any) {
         console.error("Recalculation failed:", err);
         const errorMsg = err.response?.data?.message || "Ensure a team is assigned to the project.";
-        alert(`Failed to calculate performance: ${errorMsg}`);
+        toast(`Failed to calculate performance: ${errorMsg}`);
     } finally {
         setSyncing(false);
     }
@@ -95,7 +96,7 @@ const handleCalculatePerformance = async () => {
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
             {projectTitle}
           </h1>
           <p className="text-gray-500 text-sm mt-1">AI-calculated productivity metrics for your assigned team.</p>
@@ -127,7 +128,7 @@ const handleCalculatePerformance = async () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {performanceData.map((emp) => (
-            <div key={emp.employeeId} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+            <div key={emp.employeeId} className="bg-white p-6 rounded-2xl border border-gray-200/70 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-bold text-gray-800">{emp.employeeName}</h3>
                 <span className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-500 uppercase tracking-tighter">
@@ -152,11 +153,11 @@ const handleCalculatePerformance = async () => {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="bg-gray-50 p-3 rounded-xl text-center">
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Assigned</p>
-                    <p className="text-xl font-black">{emp.tasksAssigned}</p>
+                    <p className="text-xl font-extrabold">{emp.tasksAssigned}</p>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-xl text-center">
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Completed</p>
-                    <p className="text-xl font-black">{emp.tasksCompleted}</p>
+                    <p className="text-xl font-extrabold">{emp.tasksCompleted}</p>
                   </div>
                 </div>
               </div>

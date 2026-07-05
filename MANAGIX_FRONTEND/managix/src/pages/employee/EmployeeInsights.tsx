@@ -3,6 +3,7 @@ import { insightsService } from '../../api/insightsService';
 import { timesheetService } from '../../api/timesheetService';
 import { normalizeInsights } from '../../api/normalize';
 import { FiActivity, FiAward, FiClock, FiTrendingUp } from 'react-icons/fi';
+import { Select } from '../../components/ui';
 
 const EmployeeInsights: React.FC = () => {
   const role = localStorage.getItem('roleName') || localStorage.getItem('userRole');
@@ -81,7 +82,7 @@ const EmployeeInsights: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-black text-gray-900">
+        <h1 className="text-3xl font-extrabold text-gray-900">
           {isManager ? 'Team insights' : 'My insights'}
         </h1>
         <p className="text-gray-500 mt-1">
@@ -92,17 +93,12 @@ const EmployeeInsights: React.FC = () => {
       </div>
 
       {isManager && teamMembers.length > 0 && (
-        <select
+        <Select
           value={selectedUserId}
-          onChange={(e) => setSelectedUserId(e.target.value)}
-          className="border border-gray-200 rounded-xl px-4 py-3 font-bold w-full max-w-md"
-        >
-          {teamMembers.map((m) => (
-            <option key={m.userId} value={m.userId}>
-              {m.fullName}
-            </option>
-          ))}
-        </select>
+          onChange={setSelectedUserId}
+          className="w-full max-w-md"
+          options={teamMembers.map((m) => ({ value: String(m.userId), label: m.fullName }))}
+        />
       )}
 
       {data && (
@@ -120,22 +116,22 @@ const EmployeeInsights: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
-              <p className="text-[10px] font-black text-gray-400 uppercase">Pending</p>
-              <p className="text-2xl font-black text-amber-600 mt-1">{data.tasksPending ?? 0}</p>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-5 text-center">
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase">Pending</p>
+              <p className="text-2xl font-extrabold text-amber-600 mt-1">{data.tasksPending ?? 0}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
-              <p className="text-[10px] font-black text-gray-400 uppercase">In progress</p>
-              <p className="text-2xl font-black text-indigo-600 mt-1">{data.tasksInProgress ?? 0}</p>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-5 text-center">
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase">In progress</p>
+              <p className="text-2xl font-extrabold text-indigo-600 mt-1">{data.tasksInProgress ?? 0}</p>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
-              <p className="text-[10px] font-black text-gray-400 uppercase">Completed</p>
-              <p className="text-2xl font-black text-emerald-600 mt-1">{data.tasksCompleted ?? 0}</p>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-5 text-center">
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase">Completed</p>
+              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{data.tasksCompleted ?? 0}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="font-black text-gray-900 mb-4">Workload</h2>
+          <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
+            <h2 className="font-extrabold text-gray-900 mb-4">Workload</h2>
             <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full ${data.utilizationPct > 1 ? 'bg-red-500' : 'bg-indigo-600'}`}
@@ -148,8 +144,8 @@ const EmployeeInsights: React.FC = () => {
           </div>
 
           {timesheet && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h2 className="font-black text-gray-900 mb-2">Timesheet</h2>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
+              <h2 className="font-extrabold text-gray-900 mb-2">Timesheet</h2>
               <p className="text-sm text-gray-600">
                 This week: <strong>{timesheet.totalHoursThisWeek}h</strong> · All time:{' '}
                 <strong>{timesheet.totalHoursAllTime}h</strong>
@@ -157,24 +153,18 @@ const EmployeeInsights: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
             <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-              <h2 className="font-black text-gray-900">
+              <h2 className="font-extrabold text-gray-900">
                 {isManager ? 'Your projects (for this employee)' : 'Active projects'}
               </h2>
               {(data.activeProjects || []).length > 1 && (
-                <select
+                <Select
                   value={projectFilter}
-                  onChange={(e) => setProjectFilter(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold"
-                >
-                  <option value="all">All projects</option>
-                  {(data.activeProjects || []).map((p: any) => (
-                    <option key={p.projectId} value={p.projectId}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setProjectFilter}
+                  className="w-48"
+                  options={[{ value: 'all', label: 'All projects' }, ...(data.activeProjects || []).map((p: any) => ({ value: String(p.projectId), label: p.title }))]}
+                />
               )}
             </div>
             <ul className="space-y-2">
@@ -203,14 +193,14 @@ const EmployeeInsights: React.FC = () => {
             </ul>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="font-black text-gray-900 mb-4">Teams & members</h2>
+          <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
+            <h2 className="font-extrabold text-gray-900 mb-4">Teams & members</h2>
             {(data.teams || []).length === 0 ? (
               <p className="text-sm text-gray-400">No team data available.</p>
             ) : (
               <ul className="space-y-4">
                 {data.teams.map((t: any) => (
-                  <li key={t.teamId} className="border border-gray-100 rounded-xl p-4">
+                  <li key={t.teamId} className="border border-gray-200/70 rounded-xl p-4">
                     <div className="flex justify-between gap-2 mb-2">
                       <span className="font-bold">{t.teamName}</span>
                       <span className="text-gray-500 text-xs text-right">
@@ -245,8 +235,8 @@ const EmployeeInsights: React.FC = () => {
           </div>
 
           {(data.milestones || []).length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h2 className="font-black text-gray-900 mb-4">Milestones</h2>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
+              <h2 className="font-extrabold text-gray-900 mb-4">Milestones</h2>
               <ul className="space-y-2">
                 {data.milestones.map((m: any) => (
                   <li key={m.milestoneId} className="text-sm border-b border-gray-50 py-2">
@@ -264,8 +254,8 @@ const EmployeeInsights: React.FC = () => {
           )}
 
           {(data.taskDetails || []).length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h2 className="font-black text-gray-900 mb-4">All tasks</h2>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
+              <h2 className="font-extrabold text-gray-900 mb-4">All tasks</h2>
               <div className="max-h-64 overflow-y-auto space-y-2">
                 {data.taskDetails.map((t: any) => (
                   <div key={t.taskId} className="text-sm flex justify-between bg-gray-50 rounded-lg px-3 py-2">
@@ -291,11 +281,11 @@ const Kpi: React.FC<{
   value: string;
   online?: boolean;
 }> = ({ icon, label, value, online }) => (
-  <div className="bg-white rounded-2xl border border-gray-100 p-5">
+  <div className="bg-white rounded-2xl border border-gray-200/70 p-5">
     <div className="text-indigo-600 mb-2">{icon}</div>
-    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
+    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">{label}</p>
     <p
-      className={`text-xl font-black mt-1 ${
+      className={`text-xl font-extrabold mt-1 ${
         online === true ? 'text-emerald-600' : online === false ? 'text-gray-600' : 'text-gray-900'
       }`}
     >

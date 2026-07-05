@@ -41,7 +41,7 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             key={p.projectId}
             layout
             onClick={() => onOpen(p.projectId)}
-            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-300 cursor-pointer relative overflow-hidden"
+            className="group card card-hover p-8 cursor-pointer relative overflow-hidden"
           >
             <FiLayers className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-orange-50 transition-colors pointer-events-none" />
 
@@ -64,7 +64,7 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
 
             {/* Phase strip — sequential milestones rendered as a horizontal track */}
             <div className="relative mb-6">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Phases</div>
+              <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-3">Phases</div>
               {p.milestones.length === 0 ? (
                 <div className="text-sm text-gray-400 italic">No milestones defined yet.</div>
               ) : (
@@ -74,7 +74,7 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
                     return (
                       <div key={m.milestoneId} className="min-w-[180px] flex-1">
                         <div className="flex items-center mb-1">
-                          <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 ${
+                          <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-extrabold border-2 ${
                             done ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-gray-200 text-gray-500'
                           }`}>
                             {done ? <FiCheckCircle className="size-3" /> : idx + 1}
@@ -84,13 +84,13 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
                           )}
                         </div>
                         <div className={`rounded-2xl p-3 border ${
-                          done ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'
+                          done ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-200/70'
                         }`}>
                           <div className="text-xs font-bold text-gray-800 line-clamp-1">{m.title}</div>
                           <div className="text-[10px] font-bold text-gray-500 mt-1">
                             {new Date(m.deadline).toLocaleDateString()}
                           </div>
-                          <div className="text-[10px] font-black uppercase tracking-widest mt-1">
+                          <div className="text-[10px] font-extrabold uppercase tracking-widest mt-1">
                             {m.status}
                           </div>
                         </div>
@@ -108,8 +108,8 @@ const WaterfallDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             <div className="relative pt-4 border-t border-gray-50 flex items-center justify-between mt-4">
               <div className="flex-1 mr-6">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Overall progress</span>
-                  <span className="text-xs font-black text-orange-600">{completionPct}%</span>
+                  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Overall progress</span>
+                  <span className="text-xs font-extrabold text-orange-600">{completionPct}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-orange-500" style={{ width: `${completionPct}%` }} />

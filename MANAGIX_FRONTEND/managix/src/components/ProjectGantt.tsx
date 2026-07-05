@@ -135,10 +135,10 @@ const ProjectGantt: React.FC<Props> = ({
   const totalFlex = milestones.reduce((s: number, m: any) => s + Math.max(m.widthPct || 8, 8), 0) || 1;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
       <div className="flex justify-between items-start mb-4 gap-4">
         <div>
-          <h3 className="font-black text-gray-900 uppercase tracking-widest text-sm">Project timeline</h3>
+          <h3 className="font-extrabold text-gray-900 uppercase tracking-widest text-sm">Project timeline</h3>
           {data.title && (
             <p className="text-indigo-700 font-bold text-sm mt-1">{data.title}</p>
           )}
@@ -163,7 +163,7 @@ const ProjectGantt: React.FC<Props> = ({
         />
       </div>
       {milestones.length > 0 ? (
-        <div className="flex h-20 gap-1 mb-4 rounded-xl overflow-hidden border border-gray-100">
+        <div className="flex h-20 gap-1 mb-4 rounded-xl overflow-hidden border border-gray-200/70">
           {milestones.map((m: any) => {
             const done = isMilestoneCompleted(m.status);
             const pendingReview = Boolean(m.hasPendingReview);
@@ -205,10 +205,10 @@ const ProjectGantt: React.FC<Props> = ({
             <span>
               {m.completedTasks}/{m.totalTasks} tasks · {m.progressPct}%
               {isMilestoneCompleted(m.status) && (
-                <span className="ml-2 text-emerald-600 font-black">Completed</span>
+                <span className="ml-2 text-emerald-600 font-extrabold">Completed</span>
               )}
               {m.hasPendingReview && !isMilestoneCompleted(m.status) && (
-                <span className="ml-2 text-amber-600 font-black">Awaiting QA</span>
+                <span className="ml-2 text-amber-600 font-extrabold">Awaiting QA</span>
               )}
             </span>
           </li>

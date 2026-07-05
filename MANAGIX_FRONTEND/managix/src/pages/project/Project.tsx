@@ -154,10 +154,10 @@ const Projects = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen ">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-        <h1 className="text-2xl font-black tracking-tight text-gray-900">
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-200/70 px-8 py-4 flex items-center justify-between">
+        <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
           {isEmployee ? 'My Assignments' : 'Welcome'}
         </h1>
         <div className="relative w-96">
@@ -174,10 +174,10 @@ const Projects = () => {
         {/* Page Action Bar */}
         <div className="flex justify-between items-end mb-10">
           <div>
-            <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 block">
+            <label className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest mb-2 block">
               {isEmployee ? 'Employee Portal' : 'Enterprise Portal'}
             </label>
-            <h2 className="text-4xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
               {isEmployee ? 'My Assignments' : 'Manage Projects'}
             </h2>
             {isEmployee && (
@@ -186,7 +186,7 @@ const Projects = () => {
           </div>
           {/* <button 
             onClick={openCreateModal}
-            className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 hover:-translate-y-1 active:scale-95"
+            className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-extrabold text-sm uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 hover:-translate-y-1 active:scale-95"
           >
             <FiPlus strokeWidth={3} /> Create Project
           </button> */}
@@ -195,9 +195,9 @@ const Projects = () => {
         {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.length === 0 ? (
-            <div className="col-span-full py-24 bg-white rounded-[2.5rem] border border-dashed border-gray-200 text-center">
+            <div className="col-span-full py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center">
                <FiBriefcase size={48} className="mx-auto mb-4 opacity-10" />
-               <p className="font-black text-gray-700 mb-1">
+               <p className="font-extrabold text-gray-700 mb-1">
                  {isEmployee ? "You don't have any assigned projects yet." : 'No active projects found'}
                </p>
                <p className="text-sm text-gray-400">
@@ -214,21 +214,21 @@ const Projects = () => {
               return (
                 <div 
                   key={pId}
-                  className="group relative overflow-hidden bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm transition-all hover:-translate-y-2 hover:shadow-2xl"
+                  className="group relative overflow-hidden bg-white p-8 rounded-2xl border border-gray-200/70 shadow-sm transition-all hover:-translate-y-2 hover:shadow-2xl"
                 >
                   <div className="relative z-10">
                     <div className="flex justify-between items-start mb-4">
                       <div className={`p-3 rounded-2xl ${isClosed ? 'bg-emerald-50' : 'bg-indigo-50'}`}>
                         <FiBriefcase className={isClosed ? 'text-emerald-600' : 'text-indigo-600'} size={20} />
                       </div>
-                      <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border ${
+                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest border ${
                         isClosed ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'
                       }`}>
                         {p.status || p.Status || 'Active'}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-black text-gray-900 tracking-tight mb-2">
+                    <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mb-2">
                       {p.title || p.Title || "Untitled Project"}
                     </h3>
                     <p className="text-sm font-medium italic text-gray-500 line-clamp-2 mb-6 leading-relaxed">
@@ -261,14 +261,14 @@ const Projects = () => {
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">View only</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">View only</span>
                       )}
 
                       <div className="flex flex-col items-end gap-1">
                         <button
                           type="button"
                           onClick={() => openProject(pId)}
-                          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:gap-3 transition-all"
+                          className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 hover:gap-3 transition-all"
                         >
                           Open project <FiArrowRight strokeWidth={3} />
                         </button>
@@ -303,16 +303,16 @@ const Projects = () => {
             />
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative bg-white p-10 rounded-[2.5rem] w-full max-w-lg shadow-2xl"
+              className="relative bg-white p-10 rounded-2xl w-full max-w-lg shadow-2xl"
             >
-              <h2 className="text-3xl font-black tracking-tight mb-2 text-gray-900">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-2 text-gray-900">
                 {isEditing ? 'Edit Project' : 'New Project'}
               </h2>
               <p className="font-medium italic text-gray-500 mb-8">Set the direction for your team's next objective.</p>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Project Name</label>
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1">Project Name</label>
                   <input
                     className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 font-bold transition-all"
                     placeholder="e.g. Apollo Launch" required
@@ -321,7 +321,7 @@ const Projects = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Objective & Scope</label>
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1">Objective & Scope</label>
                   <textarea
                     className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-indigo-600 font-medium leading-relaxed resize-none"
                     placeholder="Describe the goals..." rows={4}
@@ -330,10 +330,10 @@ const Projects = () => {
                   />
                 </div>
                 <div className="flex gap-4 pt-4">
-                  <button type="submit" className="flex-[2] bg-indigo-600 text-white p-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 hover:-translate-y-1 transition-all">
+                  <button type="submit" className="flex-[2] bg-indigo-600 text-white p-5 rounded-2xl font-extrabold text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 hover:-translate-y-1 transition-all">
                     {isEditing ? 'Save Changes' : 'Launch Project'}
                   </button>
-                  <button type="button" onClick={closeModal} className="flex-1 bg-gray-100 text-gray-500 p-5 rounded-2xl font-black text-sm uppercase tracking-widest">
+                  <button type="button" onClick={closeModal} className="flex-1 bg-gray-100 text-gray-500 p-5 rounded-2xl font-extrabold text-sm uppercase tracking-widest">
                     Cancel
                   </button>
                 </div>
@@ -382,7 +382,7 @@ const Projects = () => {
                 <FiCheckCircle className="text-emerald-600 text-xl shrink-0" />
               )}
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 leading-none mb-1">
                   {toast.type === 'error' ? 'Error Alert' : 'Success'}
                 </span>
                 <span className="text-sm font-bold text-gray-700">{toast.message}</span>

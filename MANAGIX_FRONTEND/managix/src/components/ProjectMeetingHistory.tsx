@@ -25,13 +25,13 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
   const fmt = (iso: string) => new Date(iso).toLocaleString();
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-200/70 p-6 space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+        <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
           <FiVideo className="text-indigo-600" />
           Project meetings
         </h2>
-        <span className="text-sm font-black text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full">
+        <span className="text-sm font-extrabold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full">
           {meetings.length} total
         </span>
       </div>
@@ -56,7 +56,7 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
             return (
               <li
                 key={id}
-                className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100"
+                className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200/70"
               >
                 <div className="flex flex-wrap justify-between items-start gap-2">
                   <div>
@@ -69,7 +69,7 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
                     <p className="text-xs text-indigo-600 font-bold mt-1">Sprint {sprint}</p>
                   </div>
                   <div className="text-right text-xs">
-                    <span className="font-black uppercase tracking-widest text-gray-400">{status}</span>
+                    <span className="font-extrabold uppercase tracking-widest text-gray-400">{status}</span>
                     {transcripts > 0 && (
                       <p className="text-gray-500 mt-1 flex items-center justify-end gap-1">
                         <FiUsers size={12} />
@@ -91,7 +91,7 @@ const ProjectMeetingHistory: React.FC<Props> = ({ projectId }) => {
                 {expanded && (
                   <div className="mt-3 space-y-2 text-sm">
                     {summary && (
-                      <p className="bg-white rounded-lg p-3 border border-gray-100 text-gray-700">{summary}</p>
+                      <p className="bg-white rounded-lg p-3 border border-gray-200/70 text-gray-700">{summary}</p>
                     )}
                     {m.meetingNotesText && (
                       <pre className="bg-amber-50 rounded-lg p-3 text-xs whitespace-pre-wrap border border-amber-100">

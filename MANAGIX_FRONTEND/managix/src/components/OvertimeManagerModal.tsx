@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Select } from './ui';
 import { overtimeService } from '../api/overtimeService';
 import { teamService } from '../api/teamService';
 import { projectService } from '../api/projectService';
@@ -73,7 +74,7 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
   return (
     <div className="fixed inset-0 bg-gray-900/50 z-[200] flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl">
-        <h2 className="text-lg font-black text-gray-900 mb-2">Overtime — manager action</h2>
+        <h2 className="text-lg font-extrabold text-gray-900 mb-2">Overtime — manager action</h2>
         <p className="text-sm text-gray-600 mb-1">
           <strong>{employeeName}</strong> — {detail?.totalHoursThatDay ?? detail?.TotalHoursThatDay}h today
         </p>
@@ -108,22 +109,19 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
             Reassign task
           </label>
           {action === 'Reassign' && (
-            <select
+            <Select
               value={newAssigneeId}
-              onChange={(e) => setNewAssigneeId(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2 text-sm"
-            >
-              <option value="">Select assignee…</option>
-              {members.map((m: any) => {
-                const id = m.employeeId ?? m.EmployeeId ?? m.userId ?? m.UserId;
-                const name = m.fullName ?? m.FullName ?? m.email ?? m.Email;
-                return (
-                  <option key={id} value={id}>
-                    {name}
-                  </option>
-                );
-              })}
-            </select>
+              onChange={setNewAssigneeId}
+              className="w-full"
+              placeholder="Select assignee…"
+              options={[
+                { value: '', label: 'Select assignee…' },
+                ...members.map((m: any) => ({
+                  value: String(m.employeeId ?? m.EmployeeId ?? m.userId ?? m.UserId),
+                  label: m.fullName ?? m.FullName ?? m.email ?? m.Email,
+                })),
+              ]}
+            />
           )}
         </div>
 
@@ -136,7 +134,7 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
             type="button"
             disabled={busy}
             onClick={resolve}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-black disabled:opacity-50"
+            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-extrabold disabled:opacity-50"
           >
             Apply
           </button>

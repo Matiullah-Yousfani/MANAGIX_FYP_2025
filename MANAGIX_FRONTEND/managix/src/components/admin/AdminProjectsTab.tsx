@@ -67,7 +67,7 @@ const AdminProjectsTab: React.FC = () => {
               key={id}
               type="button"
               onClick={() => openProject(id)}
-              className={`w-full text-left p-4 rounded-xl border transition-all ${selectedId === id ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}
+              className={`w-full text-left p-4 rounded-xl border transition-all ${selectedId === id ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-gray-200/70 bg-white hover:border-gray-200'}`}
             >
               <p className="font-bold text-gray-900">{title}</p>
               <p className="text-xs text-gray-500 mt-0.5">{status} · {closed ? 'Closed' : 'Active'}</p>
@@ -90,8 +90,8 @@ const AdminProjectsTab: React.FC = () => {
           <p className="text-gray-400 italic">Select a project to view full details.</p>
         ) : (
           <>
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-3">
-              <h2 className="text-2xl font-black">{detail.title ?? detail.Title}</h2>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-6 space-y-3">
+              <h2 className="text-2xl font-extrabold">{detail.title ?? detail.Title}</h2>
               <p className="text-gray-500 text-sm">{detail.description ?? detail.Description}</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                 <div><span className="text-gray-400 block">Created by</span><strong>{detail.createdByName ?? detail.CreatedByName ?? '—'}</strong></div>
@@ -103,7 +103,7 @@ const AdminProjectsTab: React.FC = () => {
                 {milestones.length} milestones · {tasks.length} tasks · {members.length} members · {teams.length} team(s)
               </p>
               {(detail.status === 'Completed' || detail.isClosed || detail.IsClosed) && (
-                <button type="button" onClick={() => setReportOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black">
+                <button type="button" onClick={() => setReportOpen(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-extrabold">
                   Closure report
                 </button>
               )}
@@ -112,8 +112,8 @@ const AdminProjectsTab: React.FC = () => {
             {selectedId && <ProjectGantt projectId={selectedId} refreshKey={ganttKey} />}
 
             {teams.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                <h3 className="font-black text-sm uppercase tracking-widest text-gray-400 mb-3">Teams</h3>
+              <div className="bg-white rounded-2xl border border-gray-200/70 p-6">
+                <h3 className="font-extrabold text-sm uppercase tracking-widest text-gray-400 mb-3">Teams</h3>
                 {teams.map((t: any) => (
                   <div key={t.teamId ?? t.TeamId} className="border-b border-gray-50 py-2 text-sm">
                     <strong>{t.name ?? t.Name}</strong>
@@ -125,8 +125,8 @@ const AdminProjectsTab: React.FC = () => {
               </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 max-h-72 overflow-y-auto">
-              <h3 className="font-black text-sm uppercase tracking-widest text-gray-400 mb-3">Milestones & timeline</h3>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-6 max-h-72 overflow-y-auto">
+              <h3 className="font-extrabold text-sm uppercase tracking-widest text-gray-400 mb-3">Milestones & timeline</h3>
               {milestones.length === 0 ? (
                 <p className="text-gray-400 text-sm italic">No milestones.</p>
               ) : (
@@ -156,8 +156,8 @@ const AdminProjectsTab: React.FC = () => {
               )}
             </div>
 
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 max-h-64 overflow-y-auto">
-              <h3 className="font-black text-sm uppercase tracking-widest text-gray-400 mb-3">All tasks</h3>
+            <div className="bg-white rounded-2xl border border-gray-200/70 p-6 max-h-64 overflow-y-auto">
+              <h3 className="font-extrabold text-sm uppercase tracking-widest text-gray-400 mb-3">All tasks</h3>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[10px] uppercase text-gray-400">

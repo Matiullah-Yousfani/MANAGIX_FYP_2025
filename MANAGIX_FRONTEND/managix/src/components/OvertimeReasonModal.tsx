@@ -38,7 +38,7 @@ const OvertimeReasonModal: React.FC<Props> = ({ requestId, onClose, onSubmitted 
   return (
     <div className="fixed inset-0 bg-gray-900/50 z-[200] flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
-        <h2 className="text-lg font-black text-gray-900 mb-2">Daily hours exceeded</h2>
+        <h2 className="text-lg font-extrabold text-gray-900 mb-2">Daily hours exceeded</h2>
         <p className="text-sm text-gray-500 mb-4">
           You logged {detail?.totalHoursThatDay ?? detail?.TotalHoursThatDay ?? '—'}h today.
           Please briefly explain why you worked past your daily limit.
@@ -59,7 +59,7 @@ const OvertimeReasonModal: React.FC<Props> = ({ requestId, onClose, onSubmitted 
             type="button"
             disabled={busy}
             onClick={submit}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-black disabled:opacity-50"
+            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-extrabold disabled:opacity-50"
           >
             Submit
           </button>

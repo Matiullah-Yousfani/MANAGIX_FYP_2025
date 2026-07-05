@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Select } from '../../components/ui';
 import { FiClock, FiSearch, FiFilter } from 'react-icons/fi';
 import { timesheetService } from '../../api/timesheetService';
 import { formatHoursHms } from '../../utils/timeFormat';
@@ -61,8 +62,8 @@ const EmployeeTimesheetPage: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 md:p-8">
       <div className="mb-8">
-        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Employee Portal</p>
-        <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+        <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest mb-1">Employee Portal</p>
+        <h1 className="text-3xl font-extrabold text-gray-900 flex items-center gap-3">
           <FiClock /> My Timesheet
         </h1>
         <p className="text-gray-500 text-sm mt-2">Your submitted daily timesheets and manager review status.</p>
@@ -76,29 +77,30 @@ const EmployeeTimesheetPage: React.FC = () => {
             placeholder="Search by date or notes..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-100 rounded-xl text-sm"
+            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200/70 rounded-xl text-sm"
           />
         </div>
-        <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-4 py-2">
+        <div className="flex items-center gap-2 bg-white border border-gray-200/70 rounded-xl px-4 py-2">
           <FiFilter className="text-gray-400" size={14} />
-          <select
+          <Select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="text-sm font-bold text-gray-700 outline-none bg-transparent"
-          >
-            <option value="all">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="submitted">Submitted</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+            onChange={(v) => { setStatusFilter(v); setPage(1); }}
+            className="w-44"
+            options={[
+              { value: 'all', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'submitted', label: 'Submitted' },
+              { value: 'approved', label: 'Approved' },
+              { value: 'rejected', label: 'Rejected' },
+            ]}
+          />
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200/70 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500">
+            <thead className="bg-gray-50 text-[10px] font-extrabold uppercase tracking-widest text-gray-500">
               <tr>
                 <th className="text-left px-4 py-3">Date</th>
                 <th className="text-left px-4 py-3">Clock In</th>
@@ -130,7 +132,7 @@ const EmployeeTimesheetPage: React.FC = () => {
                       <td className="px-4 py-3">{clockOutFor(entries)}</td>
                       <td className="px-4 py-3 font-mono">{formatHoursHms(Number(r.totalHours ?? r.TotalHours ?? 0))}</td>
                       <td className="px-4 py-3">
-                        <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg ${
+                        <span className={`text-[10px] font-extrabold uppercase px-2 py-1 rounded-lg ${
                           status === 'Approved' ? 'bg-emerald-50 text-emerald-700'
                           : status === 'Rejected' ? 'bg-red-50 text-red-700'
                           : status === 'Submitted' ? 'bg-indigo-50 text-indigo-700'
@@ -155,7 +157,7 @@ const EmployeeTimesheetPage: React.FC = () => {
           </table>
         </div>
         {filtered.length > pageSize && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-xs font-bold text-gray-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200/70 text-xs font-bold text-gray-500">
             <span>Page {page} of {totalPages} ({filtered.length} records)</span>
             <div className="flex gap-2">
               <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1 rounded-lg bg-gray-100 disabled:opacity-40">Prev</button>

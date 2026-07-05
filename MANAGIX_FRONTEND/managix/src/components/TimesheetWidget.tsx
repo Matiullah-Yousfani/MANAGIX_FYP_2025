@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from './ui';
 import { timesheetService } from '../api/timesheetService';
 import { FiPlay, FiSquare } from 'react-icons/fi';
 
@@ -53,7 +54,7 @@ const TimesheetWidget: React.FC<Props> = ({ projectId, taskId, onOvertimeTrigger
       if (triggered && reqId && onOvertimeTriggered) onOvertimeTriggered(String(reqId));
       await refresh();
       if (triggered && !onOvertimeTriggered) {
-        alert(result?.message || 'Daily limit exceeded. Check notifications.');
+        toast(result?.message || 'Daily limit exceeded. Check notifications.');
       }
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Clock out failed');
@@ -69,8 +70,8 @@ const TimesheetWidget: React.FC<Props> = ({ projectId, taskId, onOvertimeTrigger
   const standard = summary?.standardHoursPerDay ?? 8;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
-      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Timesheet</h3>
+    <div className="bg-white rounded-2xl border border-gray-200/70 p-5 mb-6">
+      <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-3">Timesheet</h3>
       <p className="text-sm text-gray-600 mb-1">
         Today: <strong>{today.toFixed(1)}h</strong> / {standard}h standard
         <span className="text-gray-400"> (limit {limit}h)</span>
@@ -86,11 +87,11 @@ const TimesheetWidget: React.FC<Props> = ({ projectId, taskId, onOvertimeTrigger
       {error && <p className="text-xs text-red-600 mb-2 font-bold">{error}</p>}
       <div className="flex gap-2">
         <button type="button" disabled={busy || isClockedIn} onClick={clockIn}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black disabled:opacity-40">
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-extrabold disabled:opacity-40">
           <FiPlay size={14} /> Clock in
         </button>
         <button type="button" disabled={busy || !isClockedIn} onClick={clockOut}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-xl text-xs font-black disabled:opacity-40">
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-xl text-xs font-extrabold disabled:opacity-40">
           <FiSquare size={14} /> Clock out
         </button>
       </div>
