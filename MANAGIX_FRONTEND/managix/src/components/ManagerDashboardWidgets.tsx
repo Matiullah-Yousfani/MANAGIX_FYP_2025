@@ -131,13 +131,13 @@ const ManagerDashboardWidgets: React.FC<{ userId: string }> = ({ userId }) => {
           key={c.label}
           type="button"
           onClick={c.action}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-left hover:shadow-md hover:-translate-y-0.5 transition-all"
+          className="card card-hover p-5 text-left"
         >
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${c.color}`}>
             <c.icon size={18} />
           </div>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{c.label}</p>
-          <p className="text-2xl font-black text-gray-900 mt-1">{c.value}</p>
+          <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">{c.label}</p>
+          <p className="text-2xl font-extrabold text-gray-900 mt-1">{c.value}</p>
         </button>
       ))}
     </div>

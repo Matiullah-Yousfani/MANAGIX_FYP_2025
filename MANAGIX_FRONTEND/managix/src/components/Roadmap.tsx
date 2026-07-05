@@ -37,10 +37,10 @@ const Roadmap: React.FC<Props> = ({ projectId }) => {
   if (!project) return null;
 
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-200/70">
       {/* PROJECT HEADER */}
       <div className="mb-10">
-        <h2 className="text-3xl font-black text-gray-900 mb-2">
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
           {project.Title}
         </h2>
         <p className="text-gray-500 mb-4">{project.Description}</p>
@@ -64,7 +64,7 @@ const Roadmap: React.FC<Props> = ({ projectId }) => {
             {/* MILESTONE CARD */}
             <div className="bg-indigo-50 rounded-2xl p-6">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="text-xl font-black text-indigo-900">
+                <h3 className="text-xl font-extrabold text-indigo-900">
                   {milestone.Title}
                 </h3>
                 <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-white">

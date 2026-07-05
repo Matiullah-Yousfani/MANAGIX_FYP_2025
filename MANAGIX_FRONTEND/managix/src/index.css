@@ -103,7 +103,7 @@ html {
   height: 34rem;
   bottom: -14rem;
   left: -6rem;
-  background: radial-gradient(circle, #10b981, transparent 70%);
+  background: radial-gradient(circle, #8b5cf6, transparent 70%);
 }
 
 /* Status badge base — pair with a color modifier class */

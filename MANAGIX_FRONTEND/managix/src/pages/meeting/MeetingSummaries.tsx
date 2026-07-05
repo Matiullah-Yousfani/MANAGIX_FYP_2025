@@ -60,7 +60,7 @@ const MeetingSummaries: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
           <FiFileText className="text-indigo-600" /> Meeting Summaries & Backlog
         </h1>
         <p className="text-gray-500 mt-2">
@@ -86,14 +86,14 @@ const MeetingSummaries: React.FC = () => {
             const transcript = m.transcriptText ?? (m as any).TranscriptText;
 
             return (
-              <li key={id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <li key={id} className="bg-white rounded-2xl border border-gray-200/70 shadow-sm overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggle(id)}
                   className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-gray-50"
                 >
                   <div>
-                    <p className="font-black text-gray-900 flex items-center gap-2">
+                    <p className="font-extrabold text-gray-900 flex items-center gap-2">
                       <FiVideo className="text-indigo-600" />
                       {m.title ?? (m as any).Title}
                     </p>
@@ -112,22 +112,22 @@ const MeetingSummaries: React.FC = () => {
                 </button>
 
                 {expanded && (
-                  <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+                  <div className="px-5 pb-5 space-y-4 border-t border-gray-200/70 pt-4">
                     {summary && (
                       <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
-                        <p className="text-xs font-black uppercase text-indigo-500 mb-2">AI Summary</p>
+                        <p className="text-xs font-extrabold uppercase text-indigo-500 mb-2">AI Summary</p>
                         <p className="text-sm text-gray-800">{summary}</p>
                       </div>
                     )}
                     {notes && (
                       <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                        <p className="text-xs font-black uppercase text-amber-600 mb-2">Meeting Notes</p>
+                        <p className="text-xs font-extrabold uppercase text-amber-600 mb-2">Meeting Notes</p>
                         <pre className="text-sm whitespace-pre-wrap font-sans text-gray-700">{notes}</pre>
                       </div>
                     )}
                     {backlog.length > 0 && (
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-500 mb-3 flex items-center gap-1">
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200/70">
+                        <p className="text-xs font-extrabold uppercase text-gray-500 mb-3 flex items-center gap-1">
                           <FiList /> Backlog
                         </p>
                         <ul className="space-y-2">
@@ -142,8 +142,8 @@ const MeetingSummaries: React.FC = () => {
                       </div>
                     )}
                     {(transcript || participantTexts[id]) && (
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="text-xs font-black uppercase text-gray-500 mb-2">Combined Transcript</p>
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200/70">
+                        <p className="text-xs font-extrabold uppercase text-gray-500 mb-2">Combined Transcript</p>
                         <pre className="text-xs whitespace-pre-wrap max-h-48 overflow-y-auto text-gray-700">
                           {transcript || participantTexts[id]}
                         </pre>

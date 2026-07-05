@@ -37,7 +37,7 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             key={p.projectId}
             layout
             onClick={() => onOpen(p.projectId)}
-            className="group bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer relative overflow-hidden"
+            className="group card card-hover p-8 cursor-pointer relative overflow-hidden"
           >
             <FiTrello className="absolute -bottom-4 -right-4 text-gray-50 size-32 group-hover:text-blue-50 transition-colors pointer-events-none" />
 
@@ -69,13 +69,13 @@ const KanbanDashboardView: React.FC<Props> = ({ projects, onOpen }) => {
             <div className="flex items-center justify-between relative pt-4 border-t border-gray-50">
               <div className="flex-1 mr-4">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progress</span>
-                  <span className="text-xs font-black text-blue-600">{completionPct}%</span>
+                  <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Progress</span>
+                  <span className="text-xs font-extrabold text-blue-600">{completionPct}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
                   <div className="h-full bg-blue-600" style={{ width: `${completionPct}%` }} />
                 </div>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
                   {p.deadline ? `Due ${new Date(p.deadline).toLocaleDateString()}` : p.status || 'Active'}
                 </span>
               </div>
@@ -95,11 +95,11 @@ const KanbanColumn: React.FC<{ label: string; count: number; colorClass: string;
   label, count, colorClass, hint, warning
 }) => (
   <div className={`rounded-2xl border p-3 text-center ${colorClass}`}>
-    <div className="text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1">
+    <div className="text-[10px] font-extrabold uppercase tracking-widest flex items-center justify-center gap-1">
       {warning && <FiAlertTriangle className="size-3" />}
       {label}
     </div>
-    <div className="text-2xl font-black my-1">{count}</div>
+    <div className="text-2xl font-extrabold my-1">{count}</div>
     {hint && <div className="text-[10px] font-bold opacity-80">{hint}</div>}
   </div>
 );

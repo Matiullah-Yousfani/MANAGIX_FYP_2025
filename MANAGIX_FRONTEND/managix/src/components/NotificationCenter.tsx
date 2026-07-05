@@ -179,7 +179,7 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
 
   return (
     <>
-    <div className="fixed top-6 right-24 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+    <div className="fixed top-20 right-8 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
       <AnimatePresence>
         {toasts.map((t) => (
           <motion.div
@@ -189,21 +189,21 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
             exit={{ opacity: 0, x: 40 }}
             className="pointer-events-auto bg-white border border-indigo-100 shadow-lg rounded-2xl px-4 py-3"
           >
-            <p className="text-sm font-black text-gray-900">{t.title}</p>
+            <p className="text-sm font-extrabold text-gray-900">{t.title}</p>
             {t.body && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t.body}</p>}
           </motion.div>
         ))}
       </AnimatePresence>
     </div>
-    <div className="fixed top-6 right-6 z-40" ref={ref}>
+    <div className="fixed top-5 right-8 z-50" ref={ref}>
       <button
         onClick={() => (open ? setOpen(false) : openPanel())}
-        className="relative bg-white border border-gray-100 shadow-sm rounded-2xl p-3 hover:shadow-md transition-all"
+        className="relative grid place-items-center size-11 rounded-full glass text-slate-700 hover:text-indigo-600 hover:scale-105 active:scale-95 transition-all"
         title="Notifications"
       >
-        <FiBell className="text-gray-700" />
+        <FiBell className="size-5" />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 size-5 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 bg-red-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center ring-2 ring-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -215,15 +215,15 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="absolute right-0 mt-3 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+            className="absolute right-0 mt-3 w-96 glass rounded-2xl overflow-hidden"
           >
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-gray-200/70 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Notifications</h3>
+                <h3 className="text-sm font-extrabold text-gray-900 uppercase tracking-widest">Notifications</h3>
                 <p className="text-[10px] font-bold text-gray-400">{unread} unread</p>
               </div>
               {items.some((i) => !i.isRead) && (
-                <button onClick={onMarkAll} className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                <button onClick={onMarkAll} className="text-xs font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                   <FiCheck /> Mark all read
                 </button>
               )}
@@ -235,7 +235,7 @@ const NotificationCenter: React.FC<Props> = ({ onOvertimeClick }) => {
                   key={t}
                   type="button"
                   onClick={() => setTab(t)}
-                  className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                  className={`flex-1 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-widest ${
                     tab === t ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -320,7 +320,7 @@ const MeetingNotificationRow: React.FC<{
       <div className="flex-1 min-w-0">
         <div className="text-sm font-bold text-gray-900 truncate">{n.title}</div>
         {n.body && <div className="text-xs text-gray-500 line-clamp-2">{n.body}</div>}
-        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+        <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mt-1">
           <span className="text-indigo-500">{n.type}</span>
           {' · '}
           {new Date(n.createdAt).toLocaleString()}
@@ -330,7 +330,7 @@ const MeetingNotificationRow: React.FC<{
             type="button"
             disabled={joinDisabled}
             onClick={onJoin}
-            className={`mt-2 text-xs font-black px-3 py-1.5 rounded-lg ${
+            className={`mt-2 text-xs font-extrabold px-3 py-1.5 rounded-lg ${
               joinDisabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'
             }`}
           >

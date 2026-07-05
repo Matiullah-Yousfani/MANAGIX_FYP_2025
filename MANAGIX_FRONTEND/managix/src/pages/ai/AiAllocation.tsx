@@ -45,7 +45,7 @@ const splitTeamMembers = (team: TeamSuggestion[]) => ({
 
 function TeamMemberLine({ roleLabel, name }: { roleLabel: string; name: string }) {
   return (
-    <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-gray-50/80 border border-gray-100">
+    <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-gray-50/80 border border-gray-200/70">
       <span className="text-[10px] font-bold text-gray-400 uppercase shrink-0 w-20">
         {roleLabel}
       </span>
@@ -457,7 +457,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
   // ---------- Render Helpers ----------
   const renderProjectSelector = () => (
     <div
-      className={`bg-white rounded-2xl shadow-sm p-6 ${embedded ? 'mb-0 border border-gray-100' : 'mb-6'}`}
+      className={`bg-white rounded-2xl shadow-sm p-6 ${embedded ? 'mb-0 border border-gray-200/70' : 'mb-6'}`}
     >
       <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
         Select Project
@@ -491,7 +491,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="absolute z-20 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-64 overflow-y-auto"
+                className="absolute z-20 mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-200/70 max-h-64 overflow-y-auto"
               >
                 {projectListForSelector.length === 0 ? (
                   <div className="p-4 text-sm text-gray-500 text-center">
@@ -579,7 +579,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         <button
           onClick={handleSuggestTeam}
           disabled={!selectedProject || loading}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
         >
           <Sparkles size={16} />
           Generate Team Options
@@ -606,16 +606,16 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 className={`rounded-2xl p-5 shadow-sm flex flex-col relative overflow-visible ${
                   card.isRecommended
                     ? 'bg-gradient-to-b from-amber-50 to-white border-2 border-amber-300 ring-2 ring-amber-200/60'
-                    : 'bg-white border border-gray-100'
+                    : 'bg-white border border-gray-200/70'
                 }`}
               >
                 {card.isRecommended && (
-                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-bl-xl flex items-center gap-1">
+                  <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-extrabold uppercase tracking-wider px-3 py-1.5 rounded-bl-xl flex items-center gap-1">
                     <Sparkles size={10} />
                     Best for this project
                   </div>
                 )}
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${
+                <p className={`text-[10px] font-extrabold uppercase tracking-widest mb-2 ${
                   card.isRecommended ? 'text-amber-800' : 'text-indigo-600'
                 }`}>
                   {card.label}
@@ -656,14 +656,14 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                       return (
                       <li
                         key={member.userId + i}
-                        className="p-3 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500"
+                        className="p-3 rounded-lg bg-gray-50 border border-gray-200/70 text-xs text-gray-500"
                       >
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="font-bold text-gray-800">{member.name}</span>
                           <span className="text-[10px] uppercase text-gray-400">{member.role}</span>
                           {conf > 0 && <ConfidenceBadge confidence={conf} />}
                           {notRec && (
-                            <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-extrabold uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
                               Busy
                             </span>
                           )}
@@ -718,7 +718,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         <button
           onClick={handleSuggestTasks}
           disabled={!selectedProject || loading}
-          className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
+          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
         >
           <ListTodo size={16} />
           Suggest Task Assignments
@@ -735,7 +735,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 <motion.div
                   key={task.taskId + i}
                   variants={fadeUp}
-                  className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-shadow"
+                  className="bg-white border border-gray-200/70 rounded-2xl p-5 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -801,9 +801,9 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         : TABS;
 
   const tabsCard = (
-        <div className={`bg-white rounded-2xl shadow-sm ${embedded ? 'border border-gray-100' : ''}`}>
+        <div className={`bg-white rounded-2xl shadow-sm ${embedded ? 'border border-gray-200/70' : ''}`}>
           {/* Tab Bar */}
-          <div className="flex border-b border-gray-100 overflow-hidden rounded-t-2xl">
+          <div className="flex border-b border-gray-200/70 overflow-hidden rounded-t-2xl">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.key}
@@ -819,7 +819,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                 {activeTab === tab.key && (
                   <motion.div
                     layoutId="tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -868,14 +868,14 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
     return (
       <div className="relative">
         {toastWrap}
-        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-          <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-indigo-50/80">
+        <div className="bg-white rounded-2xl border border-gray-200/70 shadow-sm">
+          <div className="p-8 border-b border-gray-200/70 bg-gradient-to-r from-violet-50/80 to-indigo-50/80">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
                 <Brain size={22} className="text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2 flex-wrap">
+                <h2 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 flex-wrap">
                   AI assistant
                   <Sparkles size={18} className="text-yellow-500" />
                 </h2>
@@ -886,7 +886,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
               </div>
             </div>
           </div>
-          <div className="p-6 md:p-8 space-y-6 bg-[#F8FAFC]/50">
+          <div className="p-6 md:p-8 space-y-6 ">
             {renderProjectSelector()}
             {tabsCard}
           </div>
@@ -896,16 +896,16 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen pb-20">
       {toastWrap}
 
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+      <div className="bg-white border-b border-gray-200/70 mb-8 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center gap-3 mb-1">
             <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Brain size={22} className="text-white" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900">AI Resource Allocation</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900">AI Resource Allocation</h1>
             <Sparkles size={20} className="text-yellow-500" />
           </div>
           <p className="text-gray-500 font-medium ml-[52px]">

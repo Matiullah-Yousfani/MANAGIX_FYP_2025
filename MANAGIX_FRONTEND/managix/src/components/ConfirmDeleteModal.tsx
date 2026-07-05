@@ -60,7 +60,7 @@ const ConfirmDeleteModal: React.FC<Props> = ({
         <p className="text-gray-500 text-[15px] leading-relaxed mb-4">{message}</p>
 
         {details.length > 0 && (
-          <ul className="mb-4 text-left space-y-2 bg-gray-50 rounded-xl p-4 text-sm border border-gray-100">
+          <ul className="mb-4 text-left space-y-2 bg-gray-50 rounded-xl p-4 text-sm border border-gray-200/70">
             {details.map((d) => (
               <li key={d.label} className="flex justify-between gap-3">
                 <span className="text-gray-400 font-semibold text-xs uppercase tracking-wide shrink-0">
@@ -81,19 +81,19 @@ const ConfirmDeleteModal: React.FC<Props> = ({
         <div className="flex gap-3 mt-6">
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={onCancel}
             disabled={busy}
-            className="flex-1 bg-[#3085d6] hover:bg-[#2779c4] text-white py-2.5 px-4 rounded-md font-semibold text-[15px] shadow-sm disabled:opacity-60 transition-colors"
+            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-xl font-semibold text-sm disabled:opacity-60 transition-colors active:scale-[0.97]"
           >
-            {busy ? 'Please wait…' : confirmLabel}
+            {cancelLabel}
           </button>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={onConfirm}
             disabled={busy}
-            className="flex-1 bg-[#dd3333] hover:bg-[#c62828] text-white py-2.5 px-4 rounded-md font-semibold text-[15px] shadow-sm disabled:opacity-60 transition-colors"
+            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl font-semibold text-sm shadow-lg shadow-red-600/20 disabled:opacity-60 transition-all active:scale-[0.97]"
           >
-            {cancelLabel}
+            {busy ? 'Please wait…' : confirmLabel}
           </button>
         </div>
       </div>

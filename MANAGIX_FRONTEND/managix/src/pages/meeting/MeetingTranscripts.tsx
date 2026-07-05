@@ -41,7 +41,7 @@ const MeetingTranscripts: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
           <FiFileText className="text-indigo-600" /> My Meeting Transcripts
         </h1>
         <p className="text-gray-500 mt-2">
@@ -61,7 +61,7 @@ const MeetingTranscripts: React.FC = () => {
             const id = m.meetingId ?? (m as any).MeetingId;
             const open = expandedId === id;
             return (
-              <li key={id} className="bg-white rounded-2xl border border-gray-100 p-5">
+              <li key={id} className="bg-white rounded-2xl border border-gray-200/70 p-5">
                 <button
                   type="button"
                   className="w-full text-left"
@@ -80,7 +80,7 @@ const MeetingTranscripts: React.FC = () => {
                   </p>
                 </button>
                 {open && (
-                  <pre className="mt-4 text-xs bg-gray-50 rounded-xl p-4 whitespace-pre-wrap max-h-64 overflow-y-auto border border-gray-100 text-gray-700">
+                  <pre className="mt-4 text-xs bg-gray-50 rounded-xl p-4 whitespace-pre-wrap max-h-64 overflow-y-auto border border-gray-200/70 text-gray-700">
                     {myTranscript[id] ?? 'Loading…'}
                   </pre>
                 )}

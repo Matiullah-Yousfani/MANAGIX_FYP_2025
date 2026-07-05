@@ -65,7 +65,7 @@ const WorkloadPanel: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     );
@@ -84,11 +84,11 @@ const WorkloadPanel: React.FC = () => {
   const filteredProjectMembers = projectLoad ? filterMembers(projectLoad.members) : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans">
-      <div className="bg-white border-b border-gray-100 mb-8 sticky top-0 z-30">
+    <div className="min-h-screen  pb-20 font-sans">
+      <div className="bg-white border-b border-gray-200/70 mb-8 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-black text-gray-900 flex items-center gap-3">
+            <h1 className="text-4xl font-extrabold text-gray-900 flex items-center gap-3">
               <FiTrendingUp className="text-indigo-600" /> Workload
             </h1>
             <p className="text-gray-500 mt-1 font-medium italic">
@@ -113,9 +113,9 @@ const WorkloadPanel: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100"
+            className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200/70"
           >
-            <h2 className="text-2xl font-black text-gray-900 mb-1">Project team hours</h2>
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-1">Project team hours</h2>
             <p className="text-sm text-gray-500 mb-4">
               Active task hours on the selected project only (Todo / In Progress).
             </p>
@@ -175,9 +175,9 @@ const WorkloadPanel: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-orange-100"
+            className="bg-white rounded-2xl p-8 shadow-sm border border-orange-100"
           >
-            <h2 className="text-2xl font-black text-orange-600 mb-6 flex items-center gap-3">
+            <h2 className="text-2xl font-extrabold text-orange-600 mb-6 flex items-center gap-3">
               <FiAlertTriangle /> Capacity alerts
             </h2>
             <div className="space-y-3">
@@ -191,9 +191,9 @@ const WorkloadPanel: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100"
+          className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200/70"
         >
-          <h2 className="text-2xl font-black text-gray-900 mb-2">{teamLabel}</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900 mb-2">{teamLabel}</h2>
           <p className="text-sm text-gray-500 mb-6">
             Total active workload across all assigned tasks (company-wide for each person).
           </p>
@@ -227,13 +227,13 @@ const Kpi: React.FC<{
     red: 'bg-red-50 text-red-600',
   } as const;
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex items-center gap-6">
+    <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-200/70 flex items-center gap-6">
       <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${map[accent]} text-2xl`}>
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
-        <h3 className="text-3xl font-black text-gray-900">{value}</h3>
+        <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">{label}</p>
+        <h3 className="text-3xl font-extrabold text-gray-900">{value}</h3>
       </div>
     </div>
   );
@@ -260,16 +260,16 @@ const UtilizationRow: React.FC<{ entry: WorkloadEntry }> = ({ entry }) => {
 
   return (
     <div className={`flex items-center gap-6 p-4 rounded-2xl border ${
-      isFree ? 'border-emerald-200 bg-emerald-50/80 ring-1 ring-emerald-100' : 'border-gray-100 bg-gray-50'
+      isFree ? 'border-emerald-200 bg-emerald-50/80 ring-1 ring-emerald-100' : 'border-gray-200/70 bg-gray-50'
     }`}>
       <div className="w-44 shrink-0">
         <div className="font-bold text-gray-900 flex items-center gap-2">
           {entry.fullName}
           {isFree && (
-            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">Free</span>
+            <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-600 text-white">Free</span>
           )}
         </div>
-        <div className={`text-[10px] font-black uppercase tracking-widest ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
+        <div className={`text-[10px] font-extrabold uppercase tracking-widest ${isFree ? 'text-emerald-700' : 'text-gray-400'}`}>
           {isFree
             ? 'No active tasks — available for assignment'
             : `${entry.assignedTaskCount ?? 0} assigned - ${entry.inProgressTaskCount ?? entry.activeTaskCount ?? 0} active`}
@@ -282,13 +282,13 @@ const UtilizationRow: React.FC<{ entry: WorkloadEntry }> = ({ entry }) => {
       </div>
       <div className="flex-1">
         <div className="flex justify-between mb-1">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+          <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
             {entry.usesClockedHours
               ? `${entry.clockedHoursThisWeek?.toFixed(1) ?? 0}h clocked`
               : `${entry.totalEstimatedHours.toFixed(1)}h est.`}{' '}
             / {entry.capacityHours.toFixed(0)}h
           </span>
-          <span className={`text-xs font-black ${text}`}>{pct}%</span>
+          <span className={`text-xs font-extrabold ${text}`}>{pct}%</span>
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
           <div className={`h-full ${fill}`} style={{ width: `${(clamped / 150) * 100}%` }} />

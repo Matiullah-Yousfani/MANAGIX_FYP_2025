@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from './ui';
 import { milestoneService } from '../api/milestoneService';
 import { isMilestoneCompleted } from '../api/normalize';
 
@@ -14,14 +15,14 @@ const MilestoneSection = ({ milestones, projectId, refresh }: any) => {
       await milestoneService.close(id, { comment: 'Completed' });
       await refresh?.();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Could not mark milestone as completed.');
+      toast(err?.response?.data?.message || 'Could not mark milestone as completed.');
     } finally {
       setBusyId(null);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/70">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Milestones</h2>
       </div>
@@ -52,7 +53,7 @@ const MilestoneSection = ({ milestones, projectId, refresh }: any) => {
                     type="button"
                     disabled={busyId === id}
                     onClick={() => handleComplete(m)}
-                    className="mt-2 text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+                    className="mt-2 text-[10px] font-extrabold uppercase text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
                   >
                     {busyId === id ? 'Saving…' : 'Mark completed'}
                   </button>

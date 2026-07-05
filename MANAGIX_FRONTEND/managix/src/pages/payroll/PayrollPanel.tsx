@@ -48,7 +48,7 @@ const PayrollPanel: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-3xl font-black text-gray-900 mb-2">Payroll & labor cost</h1>
+      <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Payroll & labor cost</h1>
       <p className="text-gray-500 mb-8">Costs use clocked timesheet hours when available; otherwise task estimates.</p>
 
       {role === 'Manager' && (
@@ -72,21 +72,21 @@ const PayrollPanel: React.FC = () => {
       {summary && (
         <div className="space-y-6">
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl p-5 border border-gray-100">
-              <p className="text-xs font-black text-gray-400 uppercase">Budget</p>
-              <p className="text-2xl font-black">${summary.totalBudget ?? '—'}</p>
+            <div className="card p-5">
+              <p className="text-xs font-extrabold text-gray-400 uppercase">Budget</p>
+              <p className="text-2xl font-extrabold nums">${summary.totalBudget ?? '—'}</p>
             </div>
-            <div className="bg-white rounded-2xl p-5 border border-gray-100">
-              <p className="text-xs font-black text-gray-400 uppercase">Labor cost</p>
-              <p className="text-2xl font-black text-indigo-600">
+            <div className="card p-5">
+              <p className="text-xs font-extrabold text-gray-400 uppercase">Labor cost</p>
+              <p className="text-2xl font-extrabold text-indigo-600 nums">
                 ${typeof summary.totalEstimatedLaborCost === 'number'
                   ? summary.totalEstimatedLaborCost.toFixed(0)
                   : summary.totalEstimatedLaborCost ?? '0'}
               </p>
             </div>
-            <div className="bg-white rounded-2xl p-5 border border-gray-100">
-              <p className="text-xs font-black text-gray-400 uppercase">Remaining</p>
-              <p className="text-2xl font-black">
+            <div className="card p-5">
+              <p className="text-xs font-extrabold text-gray-400 uppercase">Remaining</p>
+              <p className="text-2xl font-extrabold nums">
                 ${typeof summary.budgetRemaining === 'number'
                   ? summary.budgetRemaining.toFixed(0)
                   : summary.budgetRemaining ?? '—'}
@@ -94,15 +94,15 @@ const PayrollPanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="card overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-left">
                 <tr>
-                  <th className="p-4 font-black">Employee</th>
-                  <th className="p-4 font-black">Level</th>
-                  <th className="p-4 font-black">Hours</th>
-                  <th className="p-4 font-black">Rate</th>
-                  <th className="p-4 font-black">Est. cost</th>
+                  <th className="p-4 font-extrabold">Employee</th>
+                  <th className="p-4 font-extrabold">Level</th>
+                  <th className="p-4 font-extrabold text-right">Hours</th>
+                  <th className="p-4 font-extrabold text-right">Rate</th>
+                  <th className="p-4 font-extrabold text-right">Est. cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -114,17 +114,17 @@ const PayrollPanel: React.FC = () => {
                   </tr>
                 ) : (
                   (summary.employees || []).map((e: any) => (
-                    <tr key={e.userId} className="border-t border-gray-50">
+                    <tr key={e.userId} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="p-4 font-bold">{e.fullName}</td>
                       <td className="p-4">{e.employeeLevel}</td>
-                      <td className="p-4">
+                      <td className="p-4 text-right nums">
                         {e.loggedHours}h
                         <span className="text-[10px] text-gray-400 block uppercase">
                           {e.hoursSource === 'Clocked' ? 'clocked' : 'estimated'}
                         </span>
                       </td>
-                      <td className="p-4">${e.hourlyRate}/h</td>
-                      <td className="p-4 font-black">
+                      <td className="p-4 text-right nums">${e.hourlyRate}/h</td>
+                      <td className="p-4 font-extrabold text-right nums">
                         ${typeof e.estimatedCost === 'number' ? e.estimatedCost.toFixed(0) : e.estimatedCost}
                       </td>
                     </tr>

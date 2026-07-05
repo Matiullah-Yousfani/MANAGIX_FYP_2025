@@ -35,7 +35,7 @@ const ClosureReportModal: React.FC<Props> = ({ projectId, open, onClose }) => {
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-black text-gray-900">Project closure report</h2>
+            <h2 className="text-2xl font-extrabold text-gray-900">Project closure report</h2>
             <p className="text-gray-500 text-sm">{report?.title}</p>
           </div>
           <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg"><FiX /></button>
@@ -54,7 +54,7 @@ const ClosureReportModal: React.FC<Props> = ({ projectId, open, onClose }) => {
               <div><span className="text-gray-400 font-bold">Est. labor cost</span><p>${report.estimatedPayrollCost}</p></div>
             </section>
             <section>
-              <h3 className="font-black text-gray-800 mb-2">Team</h3>
+              <h3 className="font-extrabold text-gray-800 mb-2">Team</h3>
               <ul className="space-y-1">
                 {(report.members || []).map((m: any) => (
                   <li key={m.userId}>{m.fullName} — {m.employeeLevel}, {m.tasksCompleted} tasks, {m.loggedHours}h</li>
@@ -62,7 +62,7 @@ const ClosureReportModal: React.FC<Props> = ({ projectId, open, onClose }) => {
               </ul>
             </section>
             <section className="bg-indigo-50 p-4 rounded-xl">
-              <h3 className="font-black text-indigo-900 mb-1">AI insights</h3>
+              <h3 className="font-extrabold text-indigo-900 mb-1">AI insights</h3>
               <p className="text-indigo-800">{report.aiInsightsSummary}</p>
             </section>
             <button type="button" onClick={downloadTxt} className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold">

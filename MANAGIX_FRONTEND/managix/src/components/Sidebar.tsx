@@ -53,16 +53,16 @@ const Sidebar = () => {
 
             {/* --- LOGO SECTION --- */}
             <div className="relative p-8 shrink-0">
-                <h2 className="text-2xl font-black tracking-tighter italic flex items-center gap-2">
+                <h2 className="text-2xl font-extrabold tracking-tighter italic flex items-center gap-2">
                     <div className="size-9 bg-white text-black flex items-center justify-center rounded-xl not-italic shadow-lg shadow-white/10">M</div>
                     MANAGIX
                 </h2>
-                <div className="mt-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Workspace v2.0</div>
+                <div className="mt-2 text-[10px] font-extrabold text-gray-500 uppercase tracking-[0.3em]">Workspace v2.0</div>
             </div>
 
             <nav className="relative flex-1 px-4 space-y-1 overflow-y-auto no-scrollbar">
                 {/* --- UNIVERSAL LINKS --- */}
-                <div className="pb-2 px-3 text-[10px] font-black text-gray-600 uppercase tracking-widest">General</div>
+                <div className="pb-2 px-3 text-[10px] font-extrabold text-gray-600 uppercase tracking-widest">General</div>
 
                 <Link to="/dashboard" className={`${linkBase} ${isActive('/dashboard')}`}>
                     <svg className="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
@@ -117,7 +117,7 @@ const Sidebar = () => {
 
                 {appRole === 'Admin' && (
                     <>
-                        <div className="pb-2 px-3 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Admin Control</div>
+                        <div className="pb-2 px-3 text-[10px] font-extrabold text-indigo-400 uppercase tracking-widest">Admin Control</div>
                         <Link to="/admin?tab=overview" className={`${linkBase} ${location.pathname.startsWith('/admin') ? activeCls : idleCls}`}>
                             <svg className="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                             <span className="text-sm tracking-tight">Admin Portal</span>
@@ -127,8 +127,8 @@ const Sidebar = () => {
 
                 {appRole === 'Manager' && (
                     <>
-                        <div className="pb-2 px-3 text-[10px] font-black text-emerald-400 uppercase tracking-widest">Project Management</div>
-                        <Link to="/create-project" className="mx-1 flex items-center justify-center gap-2 p-3 bg-white text-black text-xs font-black rounded-xl mb-4 hover:bg-emerald-400 transition-all transform active:scale-95 shadow-xl shadow-white/5">
+                        <div className="pb-2 px-3 text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest">Project Management</div>
+                        <Link to="/create-project" className="mx-1 flex items-center justify-center gap-2 p-3 bg-white text-black text-xs font-extrabold rounded-xl mb-4 hover:bg-emerald-400 transition-all transform active:scale-95 shadow-xl shadow-white/5">
                             <span className="text-lg">+</span> NEW PROJECT
                         </Link>
                         <Link to="/projects" className={`${linkBase} ${isActive('/projects')}`}>
@@ -173,7 +173,7 @@ const Sidebar = () => {
 
                 {appRole === 'Employee' && (
                     <>
-                        <div className="pb-2 px-3 text-[10px] font-black text-blue-400 uppercase tracking-widest">Employee Portal</div>
+                        <div className="pb-2 px-3 text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Employee Portal</div>
                         <Link to="/projects" className={`${linkBase} ${isActive('/projects')}`}>
                             <svg className="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             <span className="text-sm tracking-tight">My Assignments</span>
@@ -191,7 +191,7 @@ const Sidebar = () => {
 
                 {isQaRole(role) && (
                     <>
-                        <div className="pb-2 px-3 text-[10px] font-black text-orange-400 uppercase tracking-widest">Quality Assurance</div>
+                        <div className="pb-2 px-3 text-[10px] font-extrabold text-orange-400 uppercase tracking-widest">Quality Assurance</div>
                         <Link to="/qa/review" className={`${linkBase} ${isActive('/qa/review')}`}>
                             <svg className="size-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                             <span className="text-sm tracking-tight">Review Tasks</span>
@@ -203,7 +203,7 @@ const Sidebar = () => {
             {/* --- USER PROFILE + LOGOUT --- */}
             <div className="relative p-4 border-t border-white/[0.06] space-y-3">
                 <div className="flex items-center gap-3 px-2 py-1">
-                    <div className="grid place-items-center size-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-sm font-black shadow-lg shadow-indigo-600/30">
+                    <div className="grid place-items-center size-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white text-sm font-extrabold shadow-lg shadow-indigo-600/30">
                         {initials}
                     </div>
                     <div className="min-w-0">
@@ -215,7 +215,7 @@ const Sidebar = () => {
                 </div>
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 p-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95"
+                    className="w-full flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 p-3 rounded-xl text-xs font-extrabold uppercase tracking-widest hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95"
                 >
                     <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     Logout

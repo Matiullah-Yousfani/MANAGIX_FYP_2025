@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from '../../components/ui';
 import { timesheetService } from '../../api/timesheetService';
 import { formatHoursHms } from '../../utils/timeFormat';
 import { parseUtcTimestamp } from '../../utils/timeFormat';
@@ -83,7 +84,7 @@ const TimesheetsPage: React.FC = () => {
       setComments((c) => ({ ...c, [id]: '' }));
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Review failed');
+      toast(e?.response?.data?.message || 'Review failed');
     }
   };
 
@@ -97,7 +98,7 @@ const TimesheetsPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-3xl font-black text-gray-900 mb-2">Team timesheets</h1>
+      <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Team timesheets</h1>
       <p className="text-gray-500 mb-6">
         {isAdmin
           ? 'Review daily timesheets with clock-in/out sessions, notes, and approval history.'
@@ -141,19 +142,19 @@ const TimesheetsPage: React.FC = () => {
             const expanded = expandedId === id;
 
             return (
-              <div key={id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div key={id} className="bg-white rounded-2xl border border-gray-200/70 overflow-hidden">
                 <div className="p-6 flex flex-wrap justify-between items-start gap-4">
                   <div className="flex-1 min-w-[200px]">
-                    <p className="font-black text-gray-900 text-lg">{r.fullName ?? r.FullName}</p>
+                    <p className="font-extrabold text-gray-900 text-lg">{r.fullName ?? r.FullName}</p>
                     <p className="text-xs text-gray-400">{r.email ?? r.Email}</p>
                     <div className="flex flex-wrap gap-2 mt-2 items-center">
                       <span className="text-sm font-bold text-gray-700">
                         {String(r.workDate ?? r.WorkDate).slice(0, 10)}
                       </span>
-                      <span className="text-sm font-black text-indigo-600">
+                      <span className="text-sm font-extrabold text-indigo-600">
                         {formatHoursHms(Number(r.totalHours ?? r.TotalHours ?? 0))}
                       </span>
-                      <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg ${statusBadge(st)}`}>
+                      <span className={`text-[10px] font-extrabold uppercase px-2 py-1 rounded-lg ${statusBadge(st)}`}>
                         {st}
                       </span>
                       {submitterRole && (
@@ -172,7 +173,7 @@ const TimesheetsPage: React.FC = () => {
                         : '—'}
                     </p>
                     {needsAdmin && st === 'Submitted' && (
-                      <p className="text-[10px] font-black uppercase text-amber-700 mt-1">
+                      <p className="text-[10px] font-extrabold uppercase text-amber-700 mt-1">
                         Manager timesheet — admin approval required
                       </p>
                     )}
@@ -197,7 +198,7 @@ const TimesheetsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setExpandedId(expanded ? null : id)}
-                      className="text-xs font-black uppercase text-indigo-600 hover:text-indigo-800"
+                      className="text-xs font-extrabold uppercase text-indigo-600 hover:text-indigo-800"
                     >
                       {expanded ? 'Hide sessions' : 'View clock in/out'}
                     </button>
@@ -214,14 +215,14 @@ const TimesheetsPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => review(id, true)}
-                            className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-black"
+                            className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-extrabold"
                           >
                             Approve
                           </button>
                           <button
                             type="button"
                             onClick={() => review(id, false)}
-                            className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-black"
+                            className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-extrabold"
                           >
                             Reject
                           </button>
@@ -229,14 +230,14 @@ const TimesheetsPage: React.FC = () => {
                       </>
                     )}
                     {st === 'Submitted' && needsAdmin && isManager && !showActions && (
-                      <span className="text-[10px] font-black uppercase text-gray-400">Awaiting admin</span>
+                      <span className="text-[10px] font-extrabold uppercase text-gray-400">Awaiting admin</span>
                     )}
                   </div>
                 </div>
 
                 {expanded && (
-                  <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                  <div className="border-t border-gray-200/70 bg-gray-50 px-6 py-4">
+                    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-3">
                       Clock sessions
                     </p>
                     {entries.length === 0 ? (
@@ -245,7 +246,7 @@ const TimesheetsPage: React.FC = () => {
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="text-left text-[10px] font-black text-gray-400 uppercase">
+                            <tr className="text-left text-[10px] font-extrabold text-gray-400 uppercase">
                               <th className="pb-2 pr-4">Clock in</th>
                               <th className="pb-2 pr-4">Clock out</th>
                               <th className="pb-2">Worked</th>

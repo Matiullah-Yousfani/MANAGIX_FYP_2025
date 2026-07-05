@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from '../ui';
 import { timesheetService } from '../../api/timesheetService';
 
 const AdminAllTimesheetsTab: React.FC = () => {
@@ -64,23 +65,23 @@ const AdminAllTimesheetsTab: React.FC = () => {
   const savePolicy = async () => {
     try {
       await timesheetService.updatePolicy(policy);
-      alert('Policy saved.');
+      toast('Policy saved.');
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Save policy failed');
+      toast(e?.response?.data?.message || 'Save policy failed');
     }
   };
 
   if (loading) {
-    return <div className="p-20 text-center text-gray-400 font-black text-[10px] uppercase">Loading…</div>;
+    return <div className="p-20 text-center text-gray-400 font-extrabold text-[10px] uppercase">Loading…</div>;
   }
 
   if (loadError) {
     return (
-      <div className="bg-white rounded-[2.5rem] border border-red-200 p-10">
-        <h2 className="text-lg font-black text-red-700 mb-2">Could not load</h2>
+      <div className="bg-white rounded-2xl border border-red-200 p-10">
+        <h2 className="text-lg font-extrabold text-red-700 mb-2">Could not load</h2>
         <p className="text-sm mb-4">{loadError}</p>
-        <button type="button" onClick={load} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+        <button type="button" onClick={load} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-extrabold uppercase">
           Retry
         </button>
       </div>
@@ -91,8 +92,8 @@ const AdminAllTimesheetsTab: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase mb-2">Org timesheet rules</h2>
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 shadow-sm">
+        <h2 className="text-xl font-extrabold uppercase mb-2">Org timesheet rules</h2>
         <p className="text-sm text-gray-500 mb-4">
           {policy.standardHoursPerDay}h shift + {policy.overtimeGraceHours}h grace (reason after {threshold}h), max{' '}
           {policy.dailyMaxHours}h/day. Submit enabled after{' '}
@@ -137,14 +138,14 @@ const AdminAllTimesheetsTab: React.FC = () => {
               onChange={(e) => setPolicy((p) => ({ ...p, minimumSubmitHours: Number(e.target.value) }))}
             />
           </label>
-          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-extrabold uppercase">
             Save policy
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase mb-4">All users — daily timesheets</h2>
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 shadow-sm">
+        <h2 className="text-xl font-extrabold uppercase mb-4">All users — daily timesheets</h2>
         <div className="flex flex-wrap gap-3 mb-4">
           <input
             type="search"

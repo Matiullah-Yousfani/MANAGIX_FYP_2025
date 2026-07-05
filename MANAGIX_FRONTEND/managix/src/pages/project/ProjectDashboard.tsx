@@ -43,11 +43,11 @@ const ProjectDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="min-h-screen flex items-center justify-center ">
         <motion.div 
           animate={{ rotate: 360 }} 
           transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="p-4 rounded-3xl bg-white shadow-xl border border-gray-100"
+          className="p-4 rounded-3xl bg-white shadow-xl border border-gray-200/70"
         >
           <FiActivity className="text-indigo-600 size-8" />
         </motion.div>
@@ -58,9 +58,9 @@ const ProjectDashboard = () => {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen ">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-200/70 px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate(-1)}
@@ -68,7 +68,7 @@ const ProjectDashboard = () => {
           >
             <FiArrowLeft size={20} strokeWidth={3} />
           </button>
-          <h1 className="text-2xl font-black tracking-tight text-gray-900">Performance Analytics</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Performance Analytics</h1>
         </div>
         <div className="relative w-96">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -84,13 +84,13 @@ const ProjectDashboard = () => {
         {/* Hero Section */}
         <div className="flex flex-col lg:flex-row gap-8 mb-8">
           {/* Main Progress Card */}
-          <div className="flex-[2] bg-indigo-600 rounded-[2.5rem] p-10 text-white relative overflow-hidden shadow-2xl shadow-indigo-200">
+          <div className="flex-[2] bg-indigo-600 rounded-2xl p-10 text-white relative overflow-hidden shadow-2xl shadow-indigo-200">
             <div className="relative z-10">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-2 block">Current Velocity</label>
-              <h2 className="text-5xl font-black mb-8">Overall Progress</h2>
+              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] opacity-80 mb-2 block">Current Velocity</label>
+              <h2 className="text-5xl font-extrabold mb-8">Overall Progress</h2>
               
               <div className="flex items-end gap-6">
-                <div className="text-7xl font-black tracking-tighter">
+                <div className="text-7xl font-extrabold tracking-tighter">
                   {Math.round(data.progressPercentage)}%
                 </div>
                 <div className="mb-2 font-bold opacity-80 italic underline underline-offset-8 decoration-2">
@@ -174,7 +174,7 @@ const ProjectDashboard = () => {
                 <FiCheckCircle className="text-emerald-600 text-xl shrink-0" />
               )}
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">System Message</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 mb-1">System Message</span>
                 <span className="text-sm font-bold text-gray-700">{toast.message}</span>
               </div>
             </motion.div>
@@ -186,13 +186,13 @@ const ProjectDashboard = () => {
 };
 
 const DashboardCard = ({ title, value, subtitle, icon }: { title: string; value: number; subtitle: string; icon: React.ReactNode }) => (
-  <div className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm transition-all hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden">
+  <div className="group bg-white p-8 rounded-2xl border border-gray-200/70 shadow-sm transition-all hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden">
     <div className="relative z-10">
       <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl w-fit mb-6 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
         {icon}
       </div>
-      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">{title}</label>
-      <h2 className="text-4xl font-black text-gray-900 tracking-tighter mb-2">{value}</h2>
+      <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">{title}</label>
+      <h2 className="text-4xl font-extrabold text-gray-900 tracking-tighter mb-2">{value}</h2>
       <p className="text-sm font-medium italic text-gray-500">{subtitle}</p>
     </div>
     <div className="absolute -bottom-4 -right-4 size-24 opacity-[0.03] text-gray-900 group-hover:scale-110 transition-transform">
@@ -202,14 +202,14 @@ const DashboardCard = ({ title, value, subtitle, icon }: { title: string; value:
 );
 
 const StatSmallCard = ({ label, value, total, icon, color, bg }: any) => (
-  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center justify-between">
+  <div className="bg-white p-6 rounded-[2rem] border border-gray-200/70 shadow-sm flex items-center justify-between">
     <div className="flex items-center gap-4">
       <div className={`p-3 rounded-xl ${bg} ${color}`}>
         {icon}
       </div>
       <div>
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">{label}</label>
-        <div className="text-xl font-black text-gray-900">{value} <span className="text-sm font-medium text-gray-300">/ {total}</span></div>
+        <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block">{label}</label>
+        <div className="text-xl font-extrabold text-gray-900">{value} <span className="text-sm font-medium text-gray-300">/ {total}</span></div>
       </div>
     </div>
   </div>

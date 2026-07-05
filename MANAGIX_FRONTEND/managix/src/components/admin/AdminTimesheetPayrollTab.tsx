@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from '../ui';
 import { adminPayrollService } from '../../api/adminPayrollService';
 import { timesheetService } from '../../api/timesheetService';
 
@@ -49,9 +50,9 @@ const AdminTimesheetPayrollTab: React.FC = () => {
   const savePolicy = async () => {
     try {
       await timesheetService.updatePolicy(policy);
-      alert('Org timesheet policy saved (8h shift + 2h overtime grace = 10h threshold, 12h max).');
+      toast('Org timesheet policy saved (8h shift + 2h overtime grace = 10h threshold, 12h max).');
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Save policy failed');
+      toast(e?.response?.data?.message || 'Save policy failed');
     }
   };
 
@@ -70,22 +71,22 @@ const AdminTimesheetPayrollTab: React.FC = () => {
       });
       await load();
     } catch (e: any) {
-      alert(e?.response?.data?.message || 'Save failed');
+      toast(e?.response?.data?.message || 'Save failed');
     } finally {
       setSavingId(null);
     }
   };
 
   if (loading) {
-    return <div className="p-20 text-center text-gray-400 font-black text-[10px] uppercase">Loading…</div>;
+    return <div className="p-20 text-center text-gray-400 font-extrabold text-[10px] uppercase">Loading…</div>;
   }
 
   if (loadError) {
     return (
-      <div className="bg-white rounded-[2.5rem] border border-red-200 p-10">
-        <h2 className="text-lg font-black text-red-700 mb-2">Could not load</h2>
+      <div className="bg-white rounded-2xl border border-red-200 p-10">
+        <h2 className="text-lg font-extrabold text-red-700 mb-2">Could not load</h2>
         <p className="text-sm mb-4">{loadError}</p>
-        <button type="button" onClick={load} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+        <button type="button" onClick={load} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-extrabold uppercase">
           Retry
         </button>
       </div>
@@ -96,8 +97,8 @@ const AdminTimesheetPayrollTab: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase tracking-tight mb-2">Org timesheet policy</h2>
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 shadow-sm">
+        <h2 className="text-xl font-extrabold uppercase tracking-tight mb-2">Org timesheet policy</h2>
         <p className="text-sm text-gray-500 mb-6">
           Default for everyone: {policy.standardHoursPerDay}h shift, {policy.overtimeGraceHours}h overtime grace
           (popup/submit reason after {threshold}h), {policy.dailyMaxHours}h max per day.
@@ -130,23 +131,23 @@ const AdminTimesheetPayrollTab: React.FC = () => {
               onChange={(e) => setPolicy((p) => ({ ...p, dailyMaxHours: Number(e.target.value) }))}
             />
           </label>
-          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase">
+          <button type="button" onClick={savePolicy} className="px-6 py-3 bg-black text-white rounded-xl text-[10px] font-extrabold uppercase">
             Save policy
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-2xl overflow-hidden">
         <div className="px-10 py-8 border-b">
-          <h2 className="text-xl font-black uppercase">Hourly rates</h2>
+          <h2 className="text-xl font-extrabold uppercase">Hourly rates</h2>
           <p className="text-sm text-gray-500 mt-1">Per employee / manager (used in payroll).</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400">Employee</th>
-                <th className="px-4 py-4 text-left text-[10px] font-black uppercase text-gray-400">$/hr</th>
+                <th className="px-6 py-4 text-left text-[10px] font-extrabold uppercase text-gray-400">Employee</th>
+                <th className="px-4 py-4 text-left text-[10px] font-extrabold uppercase text-gray-400">$/hr</th>
                 <th className="px-4 py-4" />
               </tr>
             </thead>
@@ -169,7 +170,7 @@ const AdminTimesheetPayrollTab: React.FC = () => {
                         type="button"
                         disabled={savingId === uid}
                         onClick={() => saveRate(r)}
-                        className="px-4 py-2 bg-black text-white rounded-xl text-[10px] font-black uppercase disabled:opacity-50"
+                        className="px-4 py-2 bg-black text-white rounded-xl text-[10px] font-extrabold uppercase disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -182,8 +183,8 @@ const AdminTimesheetPayrollTab: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] p-8 shadow-sm">
-        <h2 className="text-xl font-black uppercase mb-4">All daily timesheets</h2>
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 shadow-sm">
+        <h2 className="text-xl font-extrabold uppercase mb-4">All daily timesheets</h2>
         {sheets.length === 0 ? (
           <p className="text-gray-400 italic text-sm">No submissions yet.</p>
         ) : (

@@ -264,7 +264,7 @@ const Dashboard = () => {
               <FiBriefcase size={28} />
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Projects</p>
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Active Projects</p>
               <h3 className="text-3xl font-extrabold text-slate-900 nums">{projects.length}</h3>
             </div>
           </Card>
@@ -272,7 +272,7 @@ const Dashboard = () => {
 
         {/* PROJECTS GRID */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-          <h2 className="text-2xl font-black text-gray-800">
+          <h2 className="text-2xl font-extrabold text-gray-800">
             {showClosed ? 'Portfolio (incl. archived)' : 'Operational Portfolio'}
           </h2>
           <div className="flex items-center gap-3">
@@ -284,7 +284,7 @@ const Dashboard = () => {
             {closedCount > 0 && (
               <button
                 onClick={() => setShowClosed(s => !s)}
-                className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all border ${
+                className={`px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all border ${
                   showClosed
                     ? 'bg-gray-900 text-white border-gray-900'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
@@ -356,20 +356,20 @@ const Dashboard = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setShowModal(false)} />
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]">
+              className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-10 overflow-y-auto max-h-[90vh]">
               
               {isEditing ? (
                 // Edit Form
                 <>
-                  <h2 className="text-3xl font-black text-gray-900 mb-8">Edit Project</h2>
+                  <h2 className="text-3xl font-extrabold text-gray-900 mb-8">Edit Project</h2>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Title</label>
+                      <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest block mb-2">Title</label>
                       <input className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                         required value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
                     </div>
                     <div>
-                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Description</label>
+                      <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest block mb-2">Description</label>
                       <textarea className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 font-medium h-32 resize-none"
                         value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} />
                     </div>
@@ -382,7 +382,7 @@ const Dashboard = () => {
               ) : selectedProject ? (
                 // Details View
                 <>
-                  <h2 className="text-3xl font-black text-gray-900 mb-4">{selectedProject.Title}</h2>
+                  <h2 className="text-3xl font-extrabold text-gray-900 mb-4">{selectedProject.Title}</h2>
                   <p className="text-gray-500 mb-4 whitespace-pre-line">{selectedProject.Description}</p>
 
                   <div className="mb-4"><span className="font-bold">Deadline:</span> {new Date(selectedProject.Deadline).toLocaleDateString()}</div>

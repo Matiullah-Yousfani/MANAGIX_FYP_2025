@@ -99,7 +99,7 @@ const Login = () => {
       <div className="w-full max-w-md p-10 bg-white shadow-2xl rounded-3xl border border-gray-200">
 
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black text-black tracking-tight mb-2">
+          <h1 className="text-5xl font-extrabold text-black tracking-tight mb-2">
             MANAGIX
           </h1>
           <p className="text-gray-500 font-medium">
@@ -201,7 +201,7 @@ const Login = () => {
 
         </form>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+        <div className="mt-8 pt-6 border-t border-gray-200/70 text-center">
 
           <p className="text-sm font-medium text-gray-500">
 

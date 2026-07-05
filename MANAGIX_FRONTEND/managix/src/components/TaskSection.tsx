@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from './ui';
 import api from '../api/axiosInstance';
 import { FiBriefcase, FiPlus, FiUploadCloud, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { taskService } from '../api/taskService';
@@ -129,12 +130,12 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTask.deadline && newTask.deadline < todayYmd()) {
-      alert('Due date must be today or a future date.');
+      toast('Due date must be today or a future date.');
       return;
     }
     const maxDl = milestoneDeadlineYmd(newTask.milestoneId);
     if (newTask.deadline && maxDl && newTask.deadline > maxDl) {
-      alert(`Due date cannot exceed milestone deadline (${maxDl}).`);
+      toast(`Due date cannot exceed milestone deadline (${maxDl}).`);
       return;
     }
     setIsSaving(true);
@@ -150,13 +151,13 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       refresh();
       setNewTask({ title: '', description: '', milestoneId: '', assignedEmployeeId: '', deadline: '' });
       setSelectedTeamId('');
-    } catch (err: any) { alert(err?.response?.data?.message || "Error creating task"); }
+    } catch (err: any) { toast(err?.response?.data?.message || "Error creating task"); }
     finally { setIsSaving(false); }
   };
 
   const handleSubmitWork = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!submission.file) return alert("Select a file first");
+    if (!submission.file) return toast("Select a file first");
     const reader = new FileReader();
     reader.readAsDataURL(submission.file);
     reader.onload = async () => {
@@ -167,10 +168,10 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
           fileName: submission.file?.name,
           comment: submission.comment
         }, { headers: { userId: userId } });
-        alert("Work Submitted!");
+        toast("Work Submitted!");
         setShowSubmitModal(false);
         refresh();
-      } catch (err) { alert("Upload failed."); }
+      } catch (err) { toast("Upload failed."); }
     };
   };
 
@@ -204,7 +205,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       setEditTask(null);
       refresh();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Update failed');
+      toast(err?.response?.data?.message || 'Update failed');
     }
   };
 
@@ -218,18 +219,18 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err) { alert("File not found on server."); }
+    } catch (err) { toast("File not found on server."); }
   };
 
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 relative overflow-hidden">
+    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/70 relative overflow-hidden">
       <style>{scrollbarStyles}</style>
       <FiBriefcase className="absolute -bottom-4 -right-4 size-32 text-gray-50 pointer-events-none" />
       
       <div className="flex justify-between items-center mb-8 relative z-10">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Workflow</span>
-          <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Project Tasks</h2>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600">Workflow</span>
+          <h2 className="text-2xl font-extrabold text-gray-900 uppercase tracking-tighter">Project Tasks</h2>
         </div>
         {role === 'Manager' && (
           <button 
@@ -268,7 +269,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <span className={`text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-tighter ${
+                  <span className={`text-[10px] font-extrabold uppercase px-4 py-1.5 rounded-full tracking-tighter ${
                     status === 'Submitted' 
                     ? 'bg-emerald-100 text-emerald-700' 
                     : 'bg-indigo-100 text-indigo-700'
@@ -279,7 +280,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                   {role === 'Employee' && isAssignedToMe && (status === "Pending" || status === "InProgress") && (
                     <button 
                       onClick={() => { setSelectedTaskId(taskId); setShowSubmitModal(true); }} 
-                      className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                      className="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-extrabold hover:bg-emerald-700 transition-colors flex items-center gap-2"
                     >
                       <FiUploadCloud /> SUBMIT
                     </button>
@@ -288,7 +289,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                   {role === 'Manager' && status === "Submitted" && (
                     <button 
                       onClick={() => handleDownloadWork(taskId, t.title)} 
-                      className="bg-gray-900 text-white px-5 py-2 rounded-xl text-xs font-black hover:bg-black transition-colors"
+                      className="bg-gray-900 text-white px-5 py-2 rounded-xl text-xs font-extrabold hover:bg-black transition-colors"
                     >
                       VIEW WORK
                     </button>
@@ -331,24 +332,24 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       {/* Task Creation Modal */}
       {showTaskModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-8 pb-4 font-black text-gray-900 text-3xl">Assign Task</div>
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 pb-4 font-extrabold text-gray-900 text-3xl">Assign Task</div>
             <div className="flex-1 overflow-y-auto px-8 pb-8 custom-scroll">
               <form onSubmit={handleCreateTask} className="space-y-4">
                 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Task Title</label>
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Task Title</label>
                   <input className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white transition-all rounded-2xl outline-none" placeholder="What needs to be done?" required onChange={e => setNewTask({...newTask, title: e.target.value})} />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Instructions</label>
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Instructions</label>
                   <textarea className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white transition-all rounded-2xl h-32 outline-none" placeholder="Provide detailed steps..." onChange={e => setNewTask({...newTask, description: e.target.value})} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Milestone</label>
+                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Milestone</label>
                     <select className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none appearance-none" onChange={e => setNewTask({...newTask, milestoneId: e.target.value})}>
                       <option value="">None</option>
                       {milestones.map((m: any) => (<option key={m.milestoneId || m.MilestoneId} value={m.milestoneId || m.MilestoneId}>{m.title || m.Title}</option>))}
@@ -356,7 +357,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Team</label>
+                    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Team</label>
 
                     {projectTeam?.TeamId ? (
                       <input
@@ -384,7 +385,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Assignee</label>
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Assignee</label>
                   <select 
                     className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white rounded-2xl outline-none font-bold" 
                     required 
@@ -402,7 +403,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Due Date</label>
+                  <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest px-1">Due Date</label>
                   <input
                     type="date"
                     className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-indigo-600 focus:bg-white transition-all rounded-2xl outline-none"
@@ -415,10 +416,10 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 </div>
 
                 <div className="flex gap-4 pt-6">
-                  <button type="submit" disabled={isSaving || !newTask.assignedEmployeeId} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black disabled:bg-gray-200 transition-all hover:bg-indigo-700 shadow-lg shadow-indigo-100 uppercase tracking-widest">
+                  <button type="submit" disabled={isSaving || !newTask.assignedEmployeeId} className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-extrabold disabled:bg-gray-200 transition-all hover:bg-indigo-700 shadow-lg shadow-indigo-100 uppercase tracking-widest">
                     {isSaving ? "Creating..." : "Assign Task"}
                   </button>
-                  <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-4 rounded-2xl font-black hover:bg-gray-200">CANCEL</button>
+                  <button type="button" onClick={() => setShowTaskModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-4 rounded-2xl font-extrabold hover:bg-gray-200">CANCEL</button>
                 </div>
               </form>
             </div>
@@ -429,7 +430,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       {editTask && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
           <div className="bg-white p-8 rounded-2xl w-full max-w-lg shadow-2xl">
-            <h2 className="text-2xl font-black mb-4">Edit task</h2>
+            <h2 className="text-2xl font-extrabold mb-4">Edit task</h2>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <input
                 className="w-full p-3 border rounded-xl font-bold"
@@ -451,7 +452,7 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 <option value="InProgress">In Progress</option>
               </select>
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Due date</label>
+                <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Due date</label>
                 <input
                   type="date"
                   className="w-full p-3 border rounded-xl mt-1"
@@ -465,8 +466,8 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
                 Managers cannot mark Done without an employee file submission. Use QA review after submit.
               </p>
               <div className="flex gap-3">
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black">Save</button>
-                <button type="button" onClick={() => setEditTask(null)} className="flex-1 bg-gray-100 py-3 rounded-xl font-black">Cancel</button>
+                <button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-extrabold">Save</button>
+                <button type="button" onClick={() => setEditTask(null)} className="flex-1 bg-gray-100 py-3 rounded-xl font-extrabold">Cancel</button>
               </div>
             </form>
           </div>
@@ -476,8 +477,8 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
       {/* Submission Modal */}
       {showSubmitModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center p-6 z-50">
-          <div className="bg-white p-10 rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-90 duration-300">
-            <h2 className="text-3xl font-black text-gray-900 mb-6">Upload Work</h2>
+          <div className="bg-white p-10 rounded-2xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in-90 duration-300">
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Upload Work</h2>
             <form onSubmit={handleSubmitWork} className="space-y-4">
               <div className="group relative border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-emerald-500 transition-colors">
                 <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required onChange={e => setSubmission({...submission, file: e.target.files?.[0] || null})} />
@@ -486,8 +487,8 @@ const TaskSection = ({ tasks, projectId, milestones, refresh }: any) => {
               </div>
               <textarea className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-emerald-500 focus:bg-white rounded-2xl h-24 outline-none" placeholder="Any comments for the reviewer?" onChange={e => setSubmission({...submission, comment: e.target.value})} />
               <div className="flex gap-4 pt-4">
-                <button type="submit" className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black hover:bg-emerald-700 shadow-lg shadow-emerald-100 uppercase tracking-widest">SUBMIT WORK</button>
-                <button type="button" onClick={() => setShowSubmitModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-4 rounded-2xl font-black hover:bg-gray-200">CLOSE</button>
+                <button type="submit" className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-extrabold hover:bg-emerald-700 shadow-lg shadow-emerald-100 uppercase tracking-widest">SUBMIT WORK</button>
+                <button type="button" onClick={() => setShowSubmitModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-4 rounded-2xl font-extrabold hover:bg-gray-200">CLOSE</button>
               </div>
             </form>
           </div>

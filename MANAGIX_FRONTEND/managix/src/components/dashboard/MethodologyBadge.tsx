@@ -3,28 +3,27 @@
 // Kept pure / stateless — every dashboard view embeds it for consistency.
 import React from 'react';
 import type { Methodology } from '../../types';
+import Badge from '../ui/Badge';
 
 interface Props {
   methodology: Methodology;
   className?: string;
 }
 
-const STYLE: Record<string, string> = {
-  Scrum:     'bg-indigo-100 text-indigo-700',
-  Agile:     'bg-emerald-100 text-emerald-700',
-  Kanban:    'bg-blue-100 text-blue-700',
-  Waterfall: 'bg-orange-100 text-orange-700',
-  Hybrid:    'bg-gray-100 text-gray-700',
+const TONE: Record<string, 'indigo' | 'emerald' | 'blue' | 'orange' | 'gray'> = {
+  Scrum:     'indigo',
+  Agile:     'emerald',
+  Kanban:    'blue',
+  Waterfall: 'orange',
+  Hybrid:    'gray',
 };
 
 const MethodologyBadge: React.FC<Props> = ({ methodology, className }) => {
-  const style = STYLE[methodology as string] || STYLE.Hybrid;
+  const tone = TONE[methodology as string] || 'gray';
   return (
-    <span
-      className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${style} ${className ?? ''}`}
-    >
+    <Badge tone={tone} className={`uppercase ${className ?? ''}`}>
       {methodology}
-    </span>
+    </Badge>
   );
 };
 

@@ -84,14 +84,14 @@ const EmployeeDashboardWidgets: React.FC<Props> = ({ userId }) => {
     <div className="space-y-8 mb-10">
       {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
-        <Link to="/task-hub" className="px-5 py-3 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 flex items-center gap-2">
+        <Link to="/task-hub" className="px-5 py-3 bg-white border border-gray-200/70 rounded-2xl text-xs font-extrabold uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 flex items-center gap-2">
           <FiList /> Open Kanban
         </Link>
-        <Link to="/my-timesheet" className="px-5 py-3 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 flex items-center gap-2">
+        <Link to="/my-timesheet" className="px-5 py-3 bg-white border border-gray-200/70 rounded-2xl text-xs font-extrabold uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 flex items-center gap-2">
           <FiClock /> My Timesheet
         </Link>
         {hasActive && (
-          <Link to="/meeting" className="px-5 py-3 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center gap-2">
+          <Link to="/meeting" className="px-5 py-3 bg-emerald-600 text-white rounded-2xl text-xs font-extrabold uppercase tracking-widest hover:bg-emerald-700 flex items-center gap-2">
             <FiVideo /> Join Meeting
           </Link>
         )}
@@ -105,12 +105,12 @@ const EmployeeDashboardWidgets: React.FC<Props> = ({ userId }) => {
           { label: 'Hours Today', value: `${todayHours.toFixed(1)}h`, icon: FiClock },
           { label: 'Pending Reviews', value: pendingReview, icon: FiCalendar },
         ].map((w) => (
-          <div key={w.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div key={w.label} className="card p-5">
             <w.icon className="text-indigo-500 mb-2" size={18} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{w.label}</p>
-            <p className="text-2xl font-black text-gray-900 mt-1">{w.value}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">{w.label}</p>
+            <p className="text-2xl font-extrabold text-gray-900 mt-1">{w.value}</p>
             {w.label === 'Hours Today' && isClockedIn && (
-              <span className="text-[10px] font-black text-emerald-600 uppercase">Clocked in</span>
+              <span className="text-[10px] font-extrabold text-emerald-600 uppercase">Clocked in</span>
             )}
           </div>
         ))}
@@ -118,8 +118,8 @@ const EmployeeDashboardWidgets: React.FC<Props> = ({ userId }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming deadlines */}
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+        <div className="card p-6">
+          <h3 className="text-sm font-extrabold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
             <FiCalendar /> Upcoming Deadlines
           </h3>
           {upcoming.length === 0 ? (
@@ -129,7 +129,7 @@ const EmployeeDashboardWidgets: React.FC<Props> = ({ userId }) => {
               {upcoming.map((t, i) => (
                 <li key={i} className="flex items-center justify-between text-sm bg-gray-50 rounded-xl px-4 py-3">
                   <span className="font-bold text-gray-800 truncate pr-2">{t.title}</span>
-                  <span className={`text-[10px] font-black uppercase shrink-0 ${
+                  <span className={`text-[10px] font-extrabold uppercase shrink-0 ${
                     daysUntil(t.deadline) === 'Overdue' ? 'text-red-600' : 'text-indigo-600'
                   }`}>
                     {daysUntil(t.deadline)}
@@ -141,8 +141,8 @@ const EmployeeDashboardWidgets: React.FC<Props> = ({ userId }) => {
         </div>
 
         {/* Recent activity */}
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+        <div className="card p-6">
+          <h3 className="text-sm font-extrabold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
             <FiArrowRight /> Recent Activity
           </h3>
           {recent.length === 0 ? (

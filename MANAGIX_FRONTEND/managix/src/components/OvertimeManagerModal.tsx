@@ -73,7 +73,7 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
   return (
     <div className="fixed inset-0 bg-gray-900/50 z-[200] flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl">
-        <h2 className="text-lg font-black text-gray-900 mb-2">Overtime — manager action</h2>
+        <h2 className="text-lg font-extrabold text-gray-900 mb-2">Overtime — manager action</h2>
         <p className="text-sm text-gray-600 mb-1">
           <strong>{employeeName}</strong> — {detail?.totalHoursThatDay ?? detail?.TotalHoursThatDay}h today
         </p>
@@ -136,7 +136,7 @@ const OvertimeManagerModal: React.FC<Props> = ({ requestId, onClose, onResolved 
             type="button"
             disabled={busy}
             onClick={resolve}
-            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-black disabled:opacity-50"
+            className="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-extrabold disabled:opacity-50"
           >
             Apply
           </button>

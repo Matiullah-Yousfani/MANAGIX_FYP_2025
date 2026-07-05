@@ -174,13 +174,13 @@ const MeetingTaskExtractor: React.FC<Props> = ({
           initial={{ scale: 0.92, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.92, opacity: 0 }}
-          className="relative w-full max-w-3xl bg-white rounded-[2.5rem] shadow-2xl p-10 overflow-y-auto max-h-[90vh]"
+          className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-10 overflow-y-auto max-h-[90vh]"
         >
           <button onClick={onClose} className="absolute top-6 right-6 text-gray-300 hover:text-gray-700">
             <FiX size={22} />
           </button>
 
-          <h2 className="text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2 flex items-center gap-3">
             <FiZap className="text-indigo-600" /> AI Meeting Analysis
           </h2>
           <p className="text-gray-500 italic mb-8">
@@ -191,7 +191,7 @@ const MeetingTaskExtractor: React.FC<Props> = ({
             <div className="space-y-6">
               {!projectIdProp && (
                 <div>
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Target project</label>
+                  <label className="text-xs font-extrabold text-gray-400 uppercase tracking-widest block mb-2">Target project</label>
                   <select
                     value={projectId}
                     onChange={(e) => setProjectId(e.target.value)}
@@ -235,20 +235,20 @@ const MeetingTaskExtractor: React.FC<Props> = ({
           {phase === 'review' && (
             <>
               {combinedSummary && (
-                <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-gray-100">
-                  <p className="text-xs font-black uppercase text-gray-400 mb-1">Meeting summary</p>
+                <div className="bg-gray-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-gray-200/70">
+                  <p className="text-xs font-extrabold uppercase text-gray-400 mb-1">Meeting summary</p>
                   {combinedSummary}
                 </div>
               )}
               {meetingNotes && (
                 <div className="bg-amber-50 rounded-2xl p-4 mb-4 text-sm text-gray-700 border border-amber-100">
-                  <p className="text-xs font-black uppercase text-amber-600 mb-1">Meeting notes</p>
+                  <p className="text-xs font-extrabold uppercase text-amber-600 mb-1">Meeting notes</p>
                   <pre className="whitespace-pre-wrap font-sans">{meetingNotes}</pre>
                 </div>
               )}
               {backlogItems.length > 0 && (
                 <div className="bg-indigo-50 rounded-2xl p-4 mb-4 border border-indigo-100">
-                  <p className="text-xs font-black uppercase text-indigo-500 mb-2">Backlog</p>
+                  <p className="text-xs font-extrabold uppercase text-indigo-500 mb-2">Backlog</p>
                   <ul className="space-y-2 text-sm">
                     {backlogItems.map((b, i) => (
                       <li key={i} className="bg-white rounded-lg px-3 py-2 border border-indigo-50">
@@ -262,7 +262,7 @@ const MeetingTaskExtractor: React.FC<Props> = ({
               )}
               {speedAlerts.length > 0 && (
                 <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 space-y-2">
-                  <p className="text-xs font-black uppercase text-amber-700 flex items-center gap-1">
+                  <p className="text-xs font-extrabold uppercase text-amber-700 flex items-center gap-1">
                     <FiAlertTriangle /> Speed-up notifications sent
                   </p>
                   {speedAlerts.map((a, i) => (
@@ -279,7 +279,7 @@ const MeetingTaskExtractor: React.FC<Props> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                  <div className="text-xs font-extrabold text-gray-400 uppercase tracking-widest">
                     {suggestions.length} suggestion{suggestions.length === 1 ? '' : 's'} — toggle off any you don't want.
                   </div>
                   {suggestions.map((s, idx) => (
@@ -342,7 +342,7 @@ const SuggestionCard: React.FC<{
   onEdit: (patch: Partial<EditableSuggestion>) => void;
 }> = ({ suggestion, onToggle, onEdit }) => {
   return (
-    <div className={`rounded-2xl border p-5 transition-colors ${suggestion.keep ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-100 bg-gray-50 opacity-60'}`}>
+    <div className={`rounded-2xl border p-5 transition-colors ${suggestion.keep ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-200/70 bg-gray-50 opacity-60'}`}>
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
@@ -354,7 +354,7 @@ const SuggestionCard: React.FC<{
           <input
             value={suggestion.title}
             onChange={(e) => onEdit({ title: e.target.value })}
-            className="w-full bg-transparent font-black text-gray-900 outline-none focus:bg-white focus:px-2 focus:py-1 focus:rounded-lg transition-all"
+            className="w-full bg-transparent font-extrabold text-gray-900 outline-none focus:bg-white focus:px-2 focus:py-1 focus:rounded-lg transition-all"
           />
           <textarea
             value={suggestion.description ?? ''}
@@ -363,7 +363,7 @@ const SuggestionCard: React.FC<{
             className="w-full bg-transparent text-sm text-gray-600 outline-none resize-none focus:bg-white focus:px-2 focus:py-1 focus:rounded-lg transition-all"
             rows={2}
           />
-          <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
+          <div className="flex flex-wrap gap-2 text-[10px] font-extrabold uppercase tracking-widest">
             {suggestion.suggestedAssigneeName && (
               <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
                 Suggested: {suggestion.suggestedAssigneeName}
