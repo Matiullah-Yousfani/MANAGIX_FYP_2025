@@ -7,7 +7,7 @@ import {
   FiArrowRight, FiBriefcase, FiXCircle, FiSearch 
 } from 'react-icons/fi';
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
-import { normalizeAppRole } from '../../utils/roles';
+import { normalizeAppRole, isQaRole } from '../../utils/roles';
 
 const Projects = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -29,6 +29,7 @@ const Projects = () => {
   const appRole = normalizeAppRole(role);
   const canManageProjects = appRole === 'Manager' || appRole === 'Admin';
   const isEmployee = appRole === 'Employee';
+  const isQa = isQaRole(role);
 
   const addToast = (message: string, type: 'error' | 'success' = 'error') => {
     const id = Date.now();
@@ -51,6 +52,9 @@ const Projects = () => {
         setProjects(Array.isArray(data) ? data : []);
       } else if (role === 'Admin') {
         const data = await projectService.getAll();
+        setProjects(Array.isArray(data) ? data : []);
+      } else if (isQa) {
+        const data = await projectService.getByEmployee(userId!);
         setProjects(Array.isArray(data) ? data : []);
       }
     } catch (err) {

@@ -35,6 +35,11 @@ api.interceptors.request.use((config) => {
     config.headers['userId'] = userId;
   }
 
+  const roleName = localStorage.getItem('roleName') || localStorage.getItem('userRole');
+  if (roleName) {
+    config.headers['roleName'] = roleName;
+  }
+
   // Ngrok free tier: skip interstitial HTML on XHR/fetch (required for /api proxy)
   if (isNgrokHost()) {
     config.headers['ngrok-skip-browser-warning'] = 'true';
