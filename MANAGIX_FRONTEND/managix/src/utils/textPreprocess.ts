@@ -11,8 +11,8 @@ export function preprocessTextForAi(text: string, maxChars = 12000): string {
     .join('\n')
     .trim();
 
-  if (cleaned.length > maxChars) {
-    const head = cleaned.slice(0, Math.floor(maxChars * 0.7));
+  // Preserve full text for shorter descriptions so AI sees complete intent (no aggressive trimming under 12k).
+  if (cleaned.length > maxChars) {    const head = cleaned.slice(0, Math.floor(maxChars * 0.7));
     const tail = cleaned.slice(-Math.floor(maxChars * 0.25));
     cleaned = `${head}\n\n[… middle section trimmed for AI …]\n\n${tail}`;
   }

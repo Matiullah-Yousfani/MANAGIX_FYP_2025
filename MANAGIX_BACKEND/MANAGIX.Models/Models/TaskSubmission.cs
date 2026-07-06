@@ -34,5 +34,7 @@ namespace MANAGIX.Models.Models
 
         public string? QAComment { get; set; }
         public DateTime? ReviewedAt { get; set; }
+        /// <summary>QA user who approved or rejected this submission.</summary>
+        public Guid? ReviewedBy { get; set; }
     }
 }

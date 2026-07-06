@@ -1,0 +1,67 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TB
+    classDef node fill:#fff,stroke:#000,stroke-width:2px,color:#000
+    classDef artifact fill:#fff,stroke:#000,stroke-width:1px,stroke-dasharray:6 3,color:#000
+    classDef external fill:#fff,stroke:#000,stroke-width:1px,color:#000
+
+    subgraph device["«device» Developer Workstation (Windows)"]
+        subgraph browser_node["«executionEnvironment» Web Browser"]
+            BR["«artifact» React UI bundle<br/>served by Vite"]
+        end
+
+        subgraph fe_node["«executionEnvironment» Node.js Process"]
+            VITE["«component» Vite Dev Server<br/>«port» :5173<br/>proxy /api → :7005"]
+        end
+
+        subgraph be_node["«executionEnvironment» .NET 8 Process"]
+            FUNC["«component» Azure Functions Host<br/>«port» :7005<br/>MANAGIX_FYP_2025.dll"]
+            CTX["«artifact» local.settings.json<br/>ConnectionStrings, Jwt, AiPlannerUrl"]
+        end
+
+        subgraph ai_node["«executionEnvironment» Python 3 venv"]
+            PY0["«component» fastapi_app<br/>«port» :8000"]
+            PY1["«component» ai_planner.py<br/>«port» :8001"]
+            PY2["«component» ai_allocation_app<br/>«port» :8002"]
+            ENV["«artifact» resume_parser/.env<br/>GROQ_API_KEY"]
+        end
+
+        subgraph db_node["«executionEnvironment» SQL Server Express"]
+            SQL[("«database» FYP_MANAGIX_2026<br/>tables: Users, Projects,<br/>Tasks, Teams, Meetings, …")]
+        end
+
+        subgraph scripts_node["«artifact» scripts/"]
+            SC1["start-local.ps1"]
+            SC2["start-ai-services.ps1"]
+            SC3["start-ngrok.ps1"]
+        end
+    end
+
+    subgraph cloud["«node» External Network"]
+        GROQ["«external» api.groq.com<br/>LLM inference"]
+        NGROK["«external» ngrok tunnel<br/>optional public URL"]
+    end
+
+    BR --> VITE
+    VITE -->|"HTTP /api"| FUNC
+    FUNC --> CTX
+    FUNC -->|"ADO.NET / EF Core"| SQL
+    FUNC -->|"HTTP REST"| PY0
+    FUNC -->|"HTTP REST"| PY1
+    FUNC -->|"HTTP REST"| PY2
+    PY1 --> ENV
+    PY2 --> ENV
+    PY1 --> GROQ
+    PY2 --> GROQ
+    SC1 --> VITE
+    SC1 --> FUNC
+    SC2 --> PY0
+    SC2 --> PY1
+    SC2 --> PY2
+    SC3 --> NGROK
+    NGROK -.->|"tunnel"| VITE
+    BR -.->|"demo access"| NGROK
+
+    class BR,VITE,FUNC,PY0,PY1,PY2 node
+    class CTX,ENV,SC1,SC2,SC3 artifact
+    class GROQ,NGROK external
+    class SQL node

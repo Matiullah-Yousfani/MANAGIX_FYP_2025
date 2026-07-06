@@ -70,6 +70,7 @@ export interface TaskAllocationProject {
   projectId: string;
   title: string;
   unassignedTaskCount: number;
+  hasTeam?: boolean;
 }
 
 export interface AiPlannerTask {
@@ -145,8 +146,9 @@ export const aiService = {
     const data = Array.isArray(response.data) ? response.data : [];
     return data.map((p: any) => ({
       projectId: String(p.projectId ?? p.ProjectId ?? ''),
-      title: p.title ?? p.Title ?? '',
+      title: p.title ?? p.Title ?? 'Untitled project',
       unassignedTaskCount: p.unassignedTaskCount ?? p.UnassignedTaskCount ?? 0,
+      hasTeam: p.hasTeam ?? p.HasTeam ?? true,
     }));
   },
 

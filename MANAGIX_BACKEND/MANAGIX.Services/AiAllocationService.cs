@@ -1266,17 +1266,18 @@ namespace MANAGIX.Services
             foreach (var p in projects)
             {
                 if (p.IsClosed) continue;
-                if (!projectIdsWithTeam.Contains(p.ProjectId)) continue;
 
                 var tasks = await _unitOfWork.Tasks.GetByProjectIdAsync(p.ProjectId);
                 var unassignedCount = tasks.Count(TaskNeedsAssignee);
                 if (unassignedCount == 0) continue;
 
+                var hasTeam = projectIdsWithTeam.Contains(p.ProjectId);
                 result.Add(new TaskAllocationProjectDto
                 {
                     ProjectId = p.ProjectId,
-                    Title = p.Title,
+                    Title = string.IsNullOrWhiteSpace(p.Title) ? "Untitled project" : p.Title,
                     UnassignedTaskCount = unassignedCount,
+                    HasTeam = hasTeam,
                 });
             }
 

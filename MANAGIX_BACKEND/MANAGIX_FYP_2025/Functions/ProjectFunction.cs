@@ -62,10 +62,19 @@ namespace MANAGIX_FYP_2025.Functions
                 return badResp;
             }
 
-            if (dto.Budget < 0)
+            var descErr = ProjectRules.ValidateDescription(dto.Description);
+            if (descErr != null)
             {
                 var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResp.WriteAsJsonAsync(new { message = "Budget cannot be negative." });
+                await badResp.WriteAsJsonAsync(new { message = descErr });
+                return badResp;
+            }
+
+            var budgetErr = ProjectRules.ValidateBudget(dto.Budget);
+            if (budgetErr != null)
+            {
+                var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResp.WriteAsJsonAsync(new { message = budgetErr });
                 return badResp;
             }
 

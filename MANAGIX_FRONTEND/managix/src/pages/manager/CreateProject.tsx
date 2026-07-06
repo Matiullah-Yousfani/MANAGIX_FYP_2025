@@ -4,7 +4,8 @@ import { projectService } from '../../api/projectService';
 import { milestoneService } from '../../api/milestoneService';
 import { taskService } from '../../api/taskService';
 import { aiService } from '../../api/aiService';
-import { validateProjectStep2 } from '../../utils/formValidation';
+import { validateProjectStep1, validateProjectStep2, MIN_PROJECT_DESCRIPTION_CHARS, MIN_PROJECT_BUDGET_USD } from '../../utils/formValidation';
+import { validateDescriptionQuality } from '../../utils/descriptionQuality';
 import { formatLocalDateYmd, parseYmdLocal, compareYmd } from '../../utils/dateOnlyLocal';
 import { minDateToday } from '../../utils/dateInput';
 import { preprocessTextForAi } from '../../utils/textPreprocess';
@@ -68,22 +69,17 @@ const CreateProject = () => {
     fetchModels();
   }, []);
 
-  /** Default methodology on step 3 when AI has not set one yet */
-  useEffect(() => {
-    if (step !== 3 || !projectModels.length || formData.modelId) return;
-    const first = projectModels[0];
-    const id = first.ModelId || first.modelId;
-    if (id) setFormData((f) => ({ ...f, modelId: String(id) }));
-  }, [step, projectModels, formData.modelId]);
+  /** Do not auto-pick first methodology — manager or AI must choose explicitly */
 
   const runAiPlanner = useCallback(async () => {
+    const step1Err = validateProjectStep1(formData.title, formData.description);
+    if (step1Err) {
+      toast(step1Err);
+      return;
+    }
     const step2Err = validateProjectStep2(formData.deadline, formData.budget);
     if (step2Err) {
       toast(step2Err);
-      return;
-    }
-    if (!formData.title.trim() || !formData.description.trim()) {
-      toast('Add a title and description first.');
       return;
     }
     setAiPlanning(true);
@@ -140,11 +136,17 @@ const CreateProject = () => {
       }
     } catch (err: unknown) {
       console.error(err);
-      const ax = err as { response?: { data?: { message?: string; detail?: string } } };
+      const ax = err as {
+        response?: { data?: { message?: string; detail?: string }; status?: number };
+        message?: string;
+      };
+      const serverMsg = ax?.response?.data?.message ?? ax?.response?.data?.detail;
       const msg =
-        ax.response?.data?.message ??
-        ax.response?.data?.detail ??
-        'AI planner failed. Ensure ai_planner.py is running (port 8001) and GROQ_API_KEY is set.';
+        serverMsg && String(serverMsg).trim()
+          ? String(serverMsg)
+          : ax?.message?.includes('Network Error') || ax?.message?.includes('502')
+            ? 'AI planner unreachable. Restart AI services: .\\scripts\\start-ai-services.ps1'
+            : 'AI planner failed. Ensure ai_planner.py is running (port 8001) and GROQ_API_KEY is set in resume_parser/.env';
       toast(msg);
     } finally {
       setAiPlanning(false);
@@ -247,6 +249,8 @@ const CreateProject = () => {
   };
 
   const validateMilestonesForLaunch = (): string | null => {
+    const step1Err = validateProjectStep1(formData.title, formData.description);
+    if (step1Err) return step1Err;
     const step2Err = validateProjectStep2(formData.deadline, formData.budget);
     if (step2Err) return step2Err;
     if (!formData.modelId) {
@@ -270,6 +274,22 @@ const CreateProject = () => {
     }
     if (sum > formData.budget + 0.01) {
       return 'Total milestone budgets cannot exceed the project budget.';
+    }
+    let totalTasks = 0;
+    for (const m of milestones) {
+      const validTasks = (m.tasks ?? []).filter((t) => t.title?.trim());
+      if (validTasks.length === 0) {
+        return `Milestone "${m.title}" must have at least one task with a title.`;
+      }
+      for (const t of validTasks) {
+        if (!t.description?.trim()) {
+          return `Task "${t.title}" in "${m.title}" needs a short description.`;
+        }
+      }
+      totalTasks += validTasks.length;
+    }
+    if (totalTasks === 0) {
+      return 'Add at least one task across your milestones before launching.';
     }
     return null;
   };
@@ -361,6 +381,10 @@ const CreateProject = () => {
     }
   };
 
+  const descriptionLen = formData.description.trim().length;
+  const step1Valid = validateProjectStep1(formData.title, formData.description) === null;
+  const step2Valid = validateProjectStep2(formData.deadline, formData.budget) === null;
+
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-200/70 overflow-hidden">
@@ -418,15 +442,28 @@ const CreateProject = () => {
                 <textarea
                   rows={5}
                   className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-gray-800"
-                  placeholder="What is this project about? AI uses this to suggest methodology, milestones, and tasks."
+                  placeholder="What is this project about? Include goals, features, and domain context (min. 200 characters). AI uses this to suggest methodology, milestones, and tasks."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
+                <p className={`text-xs mt-2 font-medium ${descriptionLen >= MIN_PROJECT_DESCRIPTION_CHARS ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {descriptionLen}/{MIN_PROJECT_DESCRIPTION_CHARS} characters minimum
+                  {descriptionLen < MIN_PROJECT_DESCRIPTION_CHARS
+                    ? ` — ${MIN_PROJECT_DESCRIPTION_CHARS - descriptionLen} more needed`
+                    : ' — ready to continue'}
+                </p>
               </div>
 
               <button
-                onClick={() => setStep(2)}
-                disabled={!formData.title.trim() || !formData.description.trim()}
+                onClick={() => {
+                  const err = validateProjectStep1(formData.title, formData.description);
+                  if (err) {
+                    toast(err);
+                    return;
+                  }
+                  setStep(2);
+                }}
+                disabled={!step1Valid}
                 className="w-full bg-indigo-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all disabled:opacity-50"
               >
                 Continue <FiChevronRight />
@@ -465,6 +502,7 @@ const CreateProject = () => {
                       }}
                     />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Minimum budget: ${MIN_PROJECT_BUDGET_USD}</p>
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
@@ -486,7 +524,8 @@ const CreateProject = () => {
                     if (milestones.length === 0) setShouldAutoPlan(true);
                     setStep(3);
                   }}
-                  className="flex-1 bg-indigo-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2"
+                  disabled={!step2Valid}
+                  className="flex-1 bg-indigo-600 text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next Step <FiChevronRight />
                 </button>

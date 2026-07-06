@@ -1,0 +1,210 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    direction TB
+
+    class User {
+        <<entity>>
+        -Guid userId
+        -String email
+        -String fullName
+        -String passwordHash
+        -DateTime createdAt
+        +authenticate(password) Boolean
+    }
+
+    class UserProfile {
+        <<entity>>
+        -Guid profileId
+        -Guid userId
+        -Decimal weeklyCapacityHours
+        -Decimal hourlyRate
+        -Decimal monthlySalary
+        -DateTime lastActiveAt
+    }
+
+    class Role {
+        <<entity>>
+        -Guid roleId
+        -String roleName
+    }
+
+    class UserRole {
+        <<entity>>
+        -Guid userRoleId
+        -Guid userId
+        -Guid roleId
+    }
+
+    class Project {
+        <<entity>>
+        -Guid projectId
+        -String title
+        -Guid createdBy
+        -Decimal budget
+        -DateTime deadline
+        -Boolean isClosed
+        +close() void
+    }
+
+    class ProjectModel {
+        <<entity>>
+        -Guid modelId
+        -String modelName
+        -String methodology
+    }
+
+    class Milestone {
+        <<entity>>
+        -Guid milestoneId
+        -Guid projectId
+        -String title
+        -DateTime deadline
+        -Decimal budgetAllocated
+    }
+
+    class TaskItem {
+        <<entity>>
+        -Guid taskId
+        -Guid projectId
+        -Guid milestoneId
+        -Guid assignedEmployeeId
+        -String status
+        -Decimal estimatedHours
+        +assign(employeeId) void
+        +updateStatus(status) void
+    }
+
+    class TaskSubmission {
+        <<entity>>
+        -Guid submissionId
+        -Guid taskId
+        -Guid submittedBy
+        -Guid reviewedBy
+        -String status
+        -DateTime submittedAt
+        +approve(qaId) void
+        +reject(qaId, comment) void
+    }
+
+    class Team {
+        <<entity>>
+        -Guid teamId
+        -String teamName
+        -Guid managerId
+    }
+
+    class TeamEmployee {
+        <<entity>>
+        -Guid id
+        -Guid teamId
+        -Guid employeeId
+        -Boolean isActive
+    }
+
+    class ProjectTeam {
+        <<entity>>
+        -Guid id
+        -Guid projectId
+        -Guid teamId
+    }
+
+    class Meeting {
+        <<entity>>
+        -Guid meetingId
+        -Guid projectId
+        -DateTime scheduledAt
+        -String status
+        -String joinCode
+    }
+
+    class DailyTimesheet {
+        <<entity>>
+        -Guid dailyTimesheetId
+        -Guid userId
+        -Date workDate
+        -Decimal totalHours
+        -String status
+    }
+
+    class TimeEntry {
+        <<entity>>
+        -Guid timeEntryId
+        -Guid userId
+        -Guid projectId
+        -DateTime startedAt
+        -DateTime endedAt
+        -Decimal hours
+    }
+
+    class MonitoringService {
+        <<service>>
+        -IUnitOfWork unitOfWork
+        -IWorkloadService workload
+        +getAdminDashboardAsync() AdminDashboardDto
+        +computeDelayRisk(project, tasks) Tuple
+    }
+
+    class AiProjectPlannerService {
+        <<service>>
+        -HttpClient httpClient
+        -String baseUrl
+        +generatePlanAsync(request, methodologies) AiProjectPlanResponseDto
+    }
+
+    class AiAllocationService {
+        <<service>>
+        -IUnitOfWork unitOfWork
+        +suggestTeamOptionsAsync(projectId) SuggestTeamOptionsResponseDto
+        +suggestTaskAllocationAsync(projectId) SuggestTaskAllocationResponseDto
+        +applyTaskAssignmentsAsync(projectId, assignments) void
+    }
+
+    class WorkloadService {
+        <<service>>
+        +getEmployeeLoadAsync(userId) WorkloadEntryDto
+        +getOverloadedEmployeesAsync(threshold) List~WorkloadEntryDto~
+    }
+
+    class TimesheetService {
+        <<service>>
+        +clockInAsync(userId, projectId) TimeEntry
+        +clockOutAsync(userId) TimeEntry
+        +submitDailyAsync(userId, date) DailyTimesheet
+    }
+
+    class AUTH_SERVICE {
+        <<service>>
+        +registerAsync(dto) void
+        +loginAsync(email, password) AuthResponseDto
+        +approveUserAsync(requestId, roleId) void
+    }
+
+    User "1" --> "1" UserProfile : owns
+    User "1" --> "*" UserRole : has
+    Role "1" --> "*" UserRole : assigned
+    User "1" --> "*" Project : creates
+    ProjectModel "1" --> "*" Project : classifies
+    Project "1" --> "*" Milestone : contains
+    Project "1" --> "*" TaskItem : contains
+    Milestone "1" --> "*" TaskItem : groups
+    User "0..1" --> "*" TaskItem : assigned
+    TaskItem "1" --> "*" TaskSubmission : receives
+    User "1" --> "*" TaskSubmission : submits
+    User "0..1" --> "*" TaskSubmission : reviews
+    Team "1" --> "*" TeamEmployee : has
+    User "1" --> "*" TeamEmployee : member
+    Project "1" --> "1" ProjectTeam : links
+    ProjectTeam "1" --> "1" Team : uses
+    Project "1" --> "*" Meeting : schedules
+    User "1" --> "*" TimeEntry : logs
+    User "1" --> "*" DailyTimesheet : submits
+
+    MonitoringService ..> Project : aggregates
+    MonitoringService ..> TaskItem : aggregates
+    MonitoringService ..> WorkloadService : uses
+    AiProjectPlannerService ..> Project : plans
+    AiAllocationService ..> TaskItem : assigns
+    AiAllocationService ..> Team : composes
+    TimesheetService ..> TimeEntry : manages
+    TimesheetService ..> DailyTimesheet : manages
+    AUTH_SERVICE ..> User : manages

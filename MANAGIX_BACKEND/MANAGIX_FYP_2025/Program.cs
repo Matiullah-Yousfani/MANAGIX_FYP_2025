@@ -9,8 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MANAGIX.Services;
 using MANAGIX.Utility;
+using System.Text.Json;
 
 var builder = FunctionsApplication.CreateBuilder(args);
+
+// func host merges local.settings.json automatically; dotnet run does not.
+LoadLocalSettings(builder);
 
 // change started here
 builder.ConfigureFunctionsWebApplication();
@@ -48,6 +52,12 @@ builder.Services.AddScoped<IEmployeePerformanceService, EmployeePerformanceServi
 
 // DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' is missing. " +
+        "Set ConnectionStrings:DefaultConnection in MANAGIX_FYP_2025/local.settings.json.");
+}
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -71,3 +81,41 @@ using (var scope = host.Services.CreateScope())
 
 host.Run();
 // change ended here
+
+static void LoadLocalSettings(FunctionsApplicationBuilder builder)
+{
+    var candidates = new[]
+    {
+        Path.Combine(AppContext.BaseDirectory, "local.settings.json"),
+        Path.Combine(Directory.GetCurrentDirectory(), "local.settings.json"),
+    };
+
+    var path = candidates.FirstOrDefault(File.Exists);
+    if (path == null)
+        return;
+
+    builder.Configuration.AddJsonFile(path, optional: true, reloadOnChange: false);
+
+    try
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        if (!doc.RootElement.TryGetProperty("Values", out var values) ||
+            values.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        var memory = new List<KeyValuePair<string, string?>>();
+        foreach (var prop in values.EnumerateObject())
+        {
+            memory.Add(new KeyValuePair<string, string?>(prop.Name, prop.Value.GetString()));
+        }
+
+        if (memory.Count > 0)
+            builder.Configuration.AddInMemoryCollection(memory);
+    }
+    catch
+    {
+        // Non-fatal: ConnectionStrings may still load from the JSON file root.
+    }
+}

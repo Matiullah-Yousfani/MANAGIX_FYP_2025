@@ -1,5 +1,8 @@
 /** Mirrors backend auth validation where applicable (trim, lengths). */
 
+export const MIN_PROJECT_DESCRIPTION_CHARS = 200;
+export const MIN_PROJECT_BUDGET_USD = 50;
+
 export function normalizeEmail(email: string): string {
   return (email ?? '').trim();
 }
@@ -14,6 +17,21 @@ export function validateLoginInput(email: string, password: string): string | nu
   return null;
 }
 
+import { validateDescriptionQuality } from './descriptionQuality';
+
+/** Step 1: title + description (min 200 characters + semantic quality). */
+export function validateProjectStep1(title: string, description: string): string | null {
+  if (!title?.trim()) return 'Project title is required.';
+  const desc = (description ?? '').trim();
+  if (!desc) return 'Project description is required.';
+  if (desc.length < MIN_PROJECT_DESCRIPTION_CHARS) {
+    return `Description must be at least ${MIN_PROJECT_DESCRIPTION_CHARS} characters (${desc.length}/${MIN_PROJECT_DESCRIPTION_CHARS}).`;
+  }
+  const quality = validateDescriptionQuality(desc);
+  if (quality) return quality;
+  return null;
+}
+
 /** @param deadlineIso `YYYY-MM-DD` from date input */
 export function validateProjectStep2(deadlineIso: string, budget: number): string | null {
   if (!deadlineIso?.trim()) return 'Project deadline is required.';
@@ -22,7 +40,9 @@ export function validateProjectStep2(deadlineIso: string, budget: number): strin
   today.setHours(0, 0, 0, 0);
   d.setHours(0, 0, 0, 0);
   if (d < today) return 'Project deadline must be today or a future date.';
-  if (budget < 0) return 'Budget cannot be negative.';
+  if (budget < MIN_PROJECT_BUDGET_USD) {
+    return `Budget must be at least $${MIN_PROJECT_BUDGET_USD}.`;
+  }
   return null;
 }
 

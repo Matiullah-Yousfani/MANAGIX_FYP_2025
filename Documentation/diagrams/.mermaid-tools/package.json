@@ -1,0 +1,8 @@
+﻿{
+  "name": "managix-diagram-export",
+  "private": true,
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "11.4.0",
+    "puppeteer": "23.11.1"
+  }
+}

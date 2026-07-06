@@ -82,6 +82,11 @@ namespace MANAGIX.DataAccess.Repositories
         public async Task<int> CountOpenEntriesAsync() =>
             await _context.Set<TimeEntry>().CountAsync(t => t.EndedAt == null);
 
+        public async Task<List<TimeEntry>> GetClosedEntriesSinceAsync(DateTime sinceUtc) =>
+            await _context.Set<TimeEntry>()
+                .Where(t => t.EndedAt != null && t.StartedAt >= sinceUtc)
+                .ToListAsync();
+
         public void RemoveRange(IEnumerable<TimeEntry> entries) => _context.Set<TimeEntry>().RemoveRange(entries);
     }
 }

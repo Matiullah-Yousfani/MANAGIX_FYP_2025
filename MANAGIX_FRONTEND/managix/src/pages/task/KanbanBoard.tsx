@@ -803,18 +803,18 @@ const KanbanBoard = () => {
       <main className="p-10">
         {/* Metric Selectors */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          <div className="card p-5 flex items-center gap-4">
-              <div className="size-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+          <div className="card p-5 flex items-center gap-4 min-w-0 overflow-hidden">
+              <div className="size-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
                 <svg className="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                   <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">Active Project</label>
                   <Select
                       value={selectedProjectId}
                       onChange={setSelectedProjectId}
                       disabled={loadingProjects}
                       variant="plain"
-                      className="text-xl font-extrabold text-gray-900"
+                      className="w-full text-xl font-extrabold text-gray-900"
                       placeholder={loadingProjects ? "Loading..." : "Select Project"}
                       options={projects.map(p => ({
                         value: String(p.projectId || p.ProjectId),
@@ -824,18 +824,18 @@ const KanbanBoard = () => {
               </div>
           </div>
 
-          <div className="card p-5 flex items-center gap-4">
-              <div className="size-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+          <div className="card p-5 flex items-center gap-4 min-w-0 overflow-hidden">
+              <div className="size-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
                 <svg className="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                   <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">Project Milestone</label>
                   <Select
                     value={selectedMilestoneId}
                     onChange={setSelectedMilestoneId}
                     disabled={!selectedProjectId}
                     variant="plain"
-                    className="text-xl font-extrabold text-gray-900"
+                    className="w-full text-xl font-extrabold text-gray-900"
                     placeholder="All Milestone Tasks"
                     options={[
                       { value: '', label: 'All Milestone Tasks' },

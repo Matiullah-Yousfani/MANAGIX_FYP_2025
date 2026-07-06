@@ -27,4 +27,4 @@ if (-not $viteUp) {
 }
 
 Write-Host "Vite is up on 5173. Restarting ngrok..." -ForegroundColor Green
-& (Join-Path $Root "scripts\start-ngrok.ps1")
+& (Join-Path $Root "scripts\start-ngrok-tunnel.ps1")

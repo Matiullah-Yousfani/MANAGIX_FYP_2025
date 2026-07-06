@@ -1,0 +1,71 @@
+%%{init: {'theme':'neutral', 'themeVariables': { 'fontSize':'13px'}}}%%
+flowchart TB
+    classDef component fill:#fff,stroke:#000,stroke-width:2px,color:#000
+    classDef datastore fill:#fff,stroke:#000,stroke-width:2px,stroke-dasharray:5 5,color:#000
+    classDef external fill:#fff,stroke:#000,stroke-width:1px,color:#000
+
+    subgraph presentation["«presentation» Presentation Tier"]
+        UI["«component»<br/>React SPA<br/>────────────<br/>Vite dev server :5173<br/>Pages: Dashboard, CreateProject,<br/>KanbanBoard, QAReview, AdminPortal"]
+    end
+
+    subgraph application["«application» Application Tier — Azure Functions :7005"]
+        direction TB
+        GW["«component»<br/>HTTP API Gateway<br/>────────────<br/>Route prefix /api<br/>JWT + role headers"]
+        subgraph functions["«subsystem» Function Controllers"]
+            F1["«component» AuthFunction"]
+            F2["«component» ProjectFunction"]
+            F3["«component» TaskFunction"]
+            F4["«component» TeamFunction"]
+            F5["«component» MeetingFunction"]
+            F6["«component» TimesheetFunction"]
+            F7["«component» MonitoringFunction"]
+            F8["«component» AiProjectPlannerFunction"]
+            F9["«component» AiAllocationFunction"]
+        end
+        subgraph services["«subsystem» Business Services"]
+            S1["«service» AUTH_SERVICE"]
+            S2["«service» MonitoringService"]
+            S3["«service» AiProjectPlannerService"]
+            S4["«service» AiAllocationService"]
+            S5["«service» WorkloadService"]
+            S6["«service» TimesheetService"]
+            S7["«service» MeetingService"]
+            S8["«service» PayrollService"]
+        end
+        ORM["«component»<br/>ApplicationDbContext<br/>────────────<br/>EF Core UnitOfWork"]
+    end
+
+    subgraph integration["«integration» AI Integration Tier"]
+        P1["«component»<br/>fastapi_app<br/>:8000<br/>POST /parse-resume"]
+        P2["«component»<br/>ai_planner.py<br/>:8001<br/>POST /api/generate-plan"]
+        P3["«component»<br/>ai_allocation_app<br/>:8002<br/>POST /suggest-team"]
+    end
+
+    subgraph persistence["«data» Persistence Tier"]
+        DB[("«database»<br/>SQL Server<br/>FYP_MANAGIX_2026")]
+    end
+
+    GROQ["«external»<br/>Groq LLM API<br/>llama-3.1-8b-instant"]
+
+    UI -->|"HTTPS JSON"| GW
+    GW --> F1 & F2 & F3 & F4 & F5 & F6 & F7 & F8 & F9
+    F1 --> S1
+    F2 --> S2
+    F3 --> S4
+    F4 --> S4
+    F5 --> S7
+    F6 --> S6
+    F7 --> S2
+    F8 --> S3
+    F9 --> S4
+    S1 & S2 & S4 & S5 & S6 & S7 & S8 --> ORM
+    ORM --> DB
+    S3 -->|"HTTP"| P2
+    S4 -->|"HTTP"| P3
+    S1 -->|"HTTP"| P1
+    S7 -->|"HTTP"| P2
+    P2 & P3 --> GROQ
+
+    class UI,GW,F1,F2,F3,F4,F5,F6,F7,F8,F9,S1,S2,S3,S4,S5,S6,S7,S8,ORM,P1,P2,P3 component
+    class DB datastore
+    class GROQ external

@@ -237,7 +237,7 @@ namespace MANAGIX.Services
             var rows = await _uow.DailyTimesheets.GetByUserAsync(userId, limit);
             var list = new List<DailyTimesheetDto>();
             foreach (var r in rows)
-                list.Add(await ToDtoAsync(r, false));
+                list.Add(await ToDtoAsync(r, true));
             return list;
         }
 
@@ -246,7 +246,7 @@ namespace MANAGIX.Services
             var rows = await _uow.DailyTimesheets.GetAllAsync(from, to);
             var list = new List<DailyTimesheetDto>();
             foreach (var r in rows)
-                list.Add(await ToDtoAsync(r, false));
+                list.Add(await ToDtoAsync(r, true));
             return list;
         }
 
@@ -302,10 +302,9 @@ namespace MANAGIX.Services
 
         private async Task<List<TimeEntryDto>> GetEntriesForDayAsync(Guid userId, DateTime day)
         {
-            var end = day.AddDays(1);
-            var all = await _uow.TimeEntries.GetByUserAsync(userId, 100);
-            return all
-                .Where(e => e.StartedAt >= day && e.StartedAt < end)
+            var entries = await _uow.TimeEntries.GetEntriesForUserOnUtcDayAsync(userId, day.Date);
+            return entries
+                .OrderBy(e => e.StartedAt)
                 .Select(e => new TimeEntryDto
                 {
                     TimeEntryId = e.TimeEntryId,

@@ -67,11 +67,13 @@ export interface AdminDashboard {
   employeeWorkload: {
     userId: string;
     fullName: string;
+    role: string;
     currentTasks: number;
     completedTasks: number;
     hoursThisWeek: number;
     workloadStatus: string;
     utilizationPct: number;
+    workloadReason?: string | null;
   }[];
   managerPerformance: {
     managerId: string;
@@ -108,6 +110,8 @@ export interface AdminDashboard {
     aiScoredTasks: number;
     projectsWithTeams: number;
     assignedAiTasks: number;
+    projectsAtDelayRisk: number;
+    avgDelayRiskPct: number;
   };
   pendingApprovals: {
     pendingUsers: number;
@@ -133,6 +137,10 @@ export interface AdminDashboard {
     milestonesCompleted: number;
     milestonesTotal: number;
     methodology?: string | null;
+    delayRiskPct?: number;
+    delayRiskReason?: string | null;
+    budgetAllocated?: number;
+    laborCostEstimate?: number;
   }[];
   taskRows: {
     taskId: string;
@@ -151,7 +159,23 @@ export interface AdminDashboard {
     email: string;
     role: string;
     status: string;
+    statusReason?: string | null;
   }[];
+  budgetOverview: {
+    totalBudget: number;
+    totalLaborCost: number;
+    budgetRemaining: number;
+    activeProjects: number;
+  };
+  workloadHeatmap: {
+    userId: string;
+    fullName: string;
+    role: string;
+    utilizationPct: number;
+    workloadStatus: string;
+    workloadReason?: string | null;
+  }[];
+  projectsAtDelayRisk: number;
 }
 
 function pick<T>(obj: Record<string, unknown> | null | undefined, ...keys: string[]): T | undefined {
@@ -191,9 +215,19 @@ function normalizeUserRows(raw: unknown[]): AdminDashboard['userRows'] {
     fullName: u.fullName ?? u.FullName ?? '',
     email: u.email ?? u.Email ?? '',
     role: u.role ?? u.Role ?? 'Other',
-    status: u.status ?? u.Status ?? 'Active',
+    status: u.status ?? u.Status ?? 'Offline',
+    statusReason: u.statusReason ?? u.StatusReason ?? null,
   }));
 }
+
+function heatColor(pct: number): string {
+  if (pct >= 1) return '#EF4444';
+  if (pct >= 0.85) return '#F59E0B';
+  if (pct >= 0.6) return '#6366F1';
+  return '#10B981';
+}
+
+export { heatColor };
 
 function normalizeProjectRows(raw: unknown[]): AdminDashboard['projectHealthRows'] {
   return (raw ?? []).map((p: any) => ({
@@ -210,6 +244,10 @@ function normalizeProjectRows(raw: unknown[]): AdminDashboard['projectHealthRows
     milestonesCompleted: Number(p.milestonesCompleted ?? p.MilestonesCompleted ?? 0),
     milestonesTotal: Number(p.milestonesTotal ?? p.MilestonesTotal ?? 0),
     methodology: p.methodology ?? p.Methodology ?? null,
+    delayRiskPct: Number(p.delayRiskPct ?? p.DelayRiskPct ?? 0),
+    delayRiskReason: p.delayRiskReason ?? p.DelayRiskReason ?? null,
+    budgetAllocated: Number(p.budgetAllocated ?? p.BudgetAllocated ?? 0),
+    laborCostEstimate: Number(p.laborCostEstimate ?? p.LaborCostEstimate ?? 0),
   }));
 }
 
@@ -235,7 +273,17 @@ export function normalizeAdminDashboard(raw: any): AdminDashboard {
     userDistribution: normalizeRecord(pick(raw, 'userDistribution', 'UserDistribution')),
     projectStatus: normalizeRecord(pick(raw, 'projectStatus', 'ProjectStatus')),
     taskStatus: normalizeRecord(pick(raw, 'taskStatus', 'TaskStatus')),
-    employeeWorkload: pick(raw, 'employeeWorkload', 'EmployeeWorkload') ?? [],
+    employeeWorkload: (pick(raw, 'employeeWorkload', 'EmployeeWorkload') ?? []).map((row: any) => ({
+      userId: String(row.userId ?? row.UserId ?? ''),
+      fullName: row.fullName ?? row.FullName ?? '',
+      role: row.role ?? row.Role ?? 'Employee',
+      currentTasks: Number(row.currentTasks ?? row.CurrentTasks ?? 0),
+      completedTasks: Number(row.completedTasks ?? row.CompletedTasks ?? 0),
+      hoursThisWeek: Number(row.hoursThisWeek ?? row.HoursThisWeek ?? 0),
+      workloadStatus: row.workloadStatus ?? row.WorkloadStatus ?? 'Normal',
+      utilizationPct: Number(row.utilizationPct ?? row.UtilizationPct ?? 0),
+      workloadReason: row.workloadReason ?? row.WorkloadReason ?? null,
+    })),
     managerPerformance: pick(raw, 'managerPerformance', 'ManagerPerformance') ?? [],
     qaPerformance: pick(raw, 'qaPerformance', 'QaPerformance') ?? [],
     meetingAnalytics: pick(raw, 'meetingAnalytics', 'MeetingAnalytics') ?? {
@@ -244,9 +292,17 @@ export function normalizeAdminDashboard(raw: any): AdminDashboard {
     timesheetAnalytics: pick(raw, 'timesheetAnalytics', 'TimesheetAnalytics') ?? {
       clockedInNow: 0, submittedToday: 0, pendingApproval: 0, averageHoursToday: 0, weeklyHours: 0,
     },
-    aiAnalytics: pick(raw, 'aiAnalytics', 'AiAnalytics') ?? {
-      aiAssistedMilestones: 0, aiScoredTasks: 0, projectsWithTeams: 0, assignedAiTasks: 0,
-    },
+    aiAnalytics: (() => {
+      const ai = pick<Record<string, unknown>>(raw, 'aiAnalytics', 'AiAnalytics') ?? {};
+      return {
+        aiAssistedMilestones: Number(ai.aiAssistedMilestones ?? ai.AiAssistedMilestones ?? 0),
+        aiScoredTasks: Number(ai.aiScoredTasks ?? ai.AiScoredTasks ?? 0),
+        projectsWithTeams: Number(ai.projectsWithTeams ?? ai.ProjectsWithTeams ?? 0),
+        assignedAiTasks: Number(ai.assignedAiTasks ?? ai.AssignedAiTasks ?? 0),
+        projectsAtDelayRisk: Number(ai.projectsAtDelayRisk ?? ai.ProjectsAtDelayRisk ?? 0),
+        avgDelayRiskPct: Number(ai.avgDelayRiskPct ?? ai.AvgDelayRiskPct ?? 0),
+      };
+    })(),
     pendingApprovals: {
       pendingUsers: Number(pa.pendingUsers ?? pa.PendingUsers ?? 0),
       pendingTimesheets: Number(pa.pendingTimesheets ?? pa.PendingTimesheets ?? 0),
@@ -260,5 +316,23 @@ export function normalizeAdminDashboard(raw: any): AdminDashboard {
     projectHealthRows: normalizeProjectRows(pick(raw, 'projectHealthRows', 'ProjectHealthRows') ?? []),
     taskRows: normalizeTaskRows(pick(raw, 'taskRows', 'TaskRows') ?? []),
     userRows: normalizeUserRows(pick(raw, 'userRows', 'UserRows') ?? []),
+    budgetOverview: (() => {
+      const b = pick<Record<string, unknown>>(raw, 'budgetOverview', 'BudgetOverview') ?? {};
+      return {
+        totalBudget: Number(b.totalBudget ?? b.TotalBudget ?? 0),
+        totalLaborCost: Number(b.totalLaborCost ?? b.TotalLaborCost ?? 0),
+        budgetRemaining: Number(b.budgetRemaining ?? b.BudgetRemaining ?? 0),
+        activeProjects: Number(b.activeProjects ?? b.ActiveProjects ?? 0),
+      };
+    })(),
+    workloadHeatmap: (pick(raw, 'workloadHeatmap', 'WorkloadHeatmap') ?? []).map((c: any) => ({
+      userId: String(c.userId ?? c.UserId ?? ''),
+      fullName: c.fullName ?? c.FullName ?? '',
+      role: c.role ?? c.Role ?? 'Employee',
+      utilizationPct: Number(c.utilizationPct ?? c.UtilizationPct ?? 0),
+      workloadStatus: c.workloadStatus ?? c.WorkloadStatus ?? 'Normal',
+      workloadReason: c.workloadReason ?? c.WorkloadReason ?? null,
+    })),
+    projectsAtDelayRisk: Number(raw.projectsAtDelayRisk ?? raw.ProjectsAtDelayRisk ?? 0),
   };
 }

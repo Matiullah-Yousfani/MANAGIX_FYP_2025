@@ -1,14 +1,37 @@
 # Ngrok public access for MANAGIX
 
+## Scripts
+
+| Action | Local (no tunnel) | Ngrok (public URL) |
+|--------|-------------------|---------------------|
+| **Start** | `.\scripts\start-local.ps1` | `.\scripts\start-ngrok.ps1` |
+| **Stop** | `.\scripts\stop-local.ps1` | `.\scripts\stop-ngrok.ps1` |
+
+**Local** starts backend + frontend + AI on your machine only.  
+**Ngrok** starts the same stack, then exposes port 5173 with a public URL.
+
+Options:
+```powershell
+.\scripts\start-local.ps1 -SkipAi    # skip Python AI (8000-8002)
+.\scripts\start-ngrok.ps1 -SkipAi   # same, with ngrok
+```
+
 ## How it works (free ngrok plan)
 - **One tunnel** exposes port **5173** (Vite frontend).
 - Vite **proxies** `/api` to `http://127.0.0.1:7005` (Azure Functions backend).
 - AI services **8000 / 8001 / 8002** stay on localhost; the backend calls them directly (no ngrok needed for AI).
 
-## Prerequisites
-1. **Backend:** `func start` in `MANAGIX_BACKEND/MANAGIX_FYP_2025`
-2. **Frontend:** `npm run dev` in `MANAGIX_FRONTEND/managix`
-3. **AI:** `.\scripts\start-ai-services.ps1` from repo root
+## Prerequisites (auto-detected)
+- **func** — Azure Functions Core Tools (PATH, npm global, or `%LOCALAPPDATA%\AzureFunctionsTools\...`)
+- **npm** — Node.js
+- **ngrok** — only for `start-ngrok.ps1`
+
+Install func if missing:
+```powershell
+winget install Microsoft.Azure.FunctionsCoreTools
+# or
+npm install -g azure-functions-core-tools@4 --unsafe-perm true
+```
 
 ## CORS (one-time)
 In `MANAGIX_BACKEND/MANAGIX_FYP_2025/local.settings.json`:
@@ -19,33 +42,27 @@ In `MANAGIX_BACKEND/MANAGIX_FYP_2025/local.settings.json`:
   "LocalHttpPort": 7005
 }
 ```
-Restart `func start` after changing CORS.
+Restart backend after changing CORS.
 
-## Start ngrok
+## After starting ngrok
+1. Open the **printed ngrok URL** in the browser (not only 127.0.0.1:4040).
+2. Click **Visit Site** on the ngrok warning page if shown.
+3. Restart Vite if `.env.development.local` was updated.
+
+## Tunnel only (Vite already running)
 ```powershell
-cd D:\FYP-MANAGIX
-.\scripts\start-ngrok.ps1
-```
-
-The script will print your **public URL** (e.g. `https://xxxx.ngrok-free.dev`).
-
-## After starting
-1. **Restart Vite** if it was already running (`Ctrl+C` then `npm run dev`).
-2. Open the **printed ngrok URL** in the browser (not only 127.0.0.1:4040).
-3. Optional: inspect tunnels at http://127.0.0.1:4040 (local dashboard only).
-
-## Stop ngrok
-```powershell
-Stop-Process -Name ngrok -Force
+.\scripts\start-ngrok-tunnel.ps1
+.\scripts\restart-ngrok.ps1   # fix ERR_NGROK_8012
 ```
 
 ## Troubleshooting
 | Problem | Fix |
 |---------|-----|
-| `127.0.0.1:4040` won't load | ngrok did not start — re-run `.\scripts\start-ngrok.ps1` and read errors |
-| API calls fail on ngrok URL | Restart Vite after script runs; ensure backend on 7005 |
-| Meeting AI fails | Run `.\scripts\start-ai-services.ps1` (planner on **8001**) |
-| Old `ngrok.yml` error | Use `start-ngrok.ps1` only; it uses `ngrok http 5173` |
+| `func not found` | Install Core Tools (see above), then re-run |
+| `127.0.0.1:4040` won't load | ngrok did not start — re-run `start-ngrok.ps1` |
+| API calls fail on ngrok URL | Ensure backend on 7005; restart Vite |
+| `ERR_NGROK_8012` | Restart Vite, then `.\scripts\restart-ngrok.ps1` |
+| Meeting AI fails | AI must be running (don't use `-SkipAi`) |
 
 ## Token
 Stored in gitignored `ngrok.local.env`. Configure once:

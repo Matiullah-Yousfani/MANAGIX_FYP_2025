@@ -1,0 +1,52 @@
+%%{init: {'theme':'neutral'}}%%
+sequenceDiagram
+    autonumber
+    actor M as Manager
+    participant UI as «boundary»<br/>CreateProject.tsx
+    participant API as «control»<br/>AiProjectPlannerFunction
+    participant VAL as «control»<br/>DescriptionQuality
+    participant SVC as «control»<br/>AiProjectPlannerService
+    participant PY as «boundary»<br/>ai_planner.py:8001
+    participant GQ as «external»<br/>Groq API
+    participant DB as «entity»<br/>SQL Server
+
+    M->>UI: enter title, description,<br/>deadline, budget
+    UI->>UI: validateProjectStep1()<br/>200 chars + 35 words
+
+    M->>UI: continue to Step 3
+    UI->>API: POST /api/ai/generate-project-plan
+
+    API->>VAL: Validate(description)
+    alt validation fails
+        VAL-->>API: error message
+        API-->>UI: 400 Bad Request
+        UI-->>M: show validation toast
+    else validation OK
+        VAL-->>API: null
+        API->>DB: SELECT ProjectModels
+        DB-->>API: methodology names
+        API->>SVC: GeneratePlanAsync(dto, names)
+        SVC->>PY: POST /api/generate-plan (JSON)
+
+        PY->>PY: validate_description_quality()
+        PY->>GQ: POST /chat/completions<br/>model=llama-3.1-8b-instant
+        GQ-->>PY: milestones + tasks JSON
+        PY-->>SVC: ProjectPlanResponse
+        SVC-->>API: AiProjectPlanResponseDto
+        API-->>UI: 200 OK + milestones
+        UI-->>M: display editable plan
+    end
+
+    M->>UI: edit milestones / launch
+    UI->>API: POST /api/projects
+    API->>DB: INSERT Project
+    loop each milestone
+        UI->>API: POST /api/milestones
+        API->>DB: INSERT Milestone
+        loop each task
+            UI->>API: POST /api/tasks
+            API->>DB: INSERT TaskItem
+        end
+    end
+    DB-->>UI: success
+    UI-->>M: redirect to project

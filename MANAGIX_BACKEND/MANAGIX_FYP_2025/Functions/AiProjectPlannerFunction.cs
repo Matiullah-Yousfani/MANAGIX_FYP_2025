@@ -7,6 +7,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using MANAGIX.DataAccess.Repositories.IRepositories;
 using MANAGIX.Models.DTO;
 using MANAGIX.Services;
+using MANAGIX.Utility;
 
 namespace MANAGIX_FYP_2025.Functions
 {
@@ -38,11 +39,26 @@ namespace MANAGIX_FYP_2025.Functions
                 if (dto == null
                     || string.IsNullOrWhiteSpace(dto.ProjectName)
                     || string.IsNullOrWhiteSpace(dto.ProjectDescription)
-                    || string.IsNullOrWhiteSpace(dto.Deadline)
-                    || dto.Budget <= 0)
+                    || string.IsNullOrWhiteSpace(dto.Deadline))
                 {
                     var bad = req.CreateResponse(HttpStatusCode.BadRequest);
-                    await bad.WriteAsJsonAsync(new { message = "projectName, projectDescription, deadline, and budget are required." });
+                    await bad.WriteAsJsonAsync(new { message = "projectName, projectDescription, and deadline are required." });
+                    return bad;
+                }
+
+                var descErr = ProjectRules.ValidateDescription(dto.ProjectDescription);
+                if (descErr != null)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = descErr });
+                    return bad;
+                }
+
+                var budgetErr = ProjectRules.ValidateBudget((decimal)dto.Budget);
+                if (budgetErr != null)
+                {
+                    var bad = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await bad.WriteAsJsonAsync(new { message = budgetErr });
                     return bad;
                 }
 
@@ -85,7 +101,7 @@ namespace MANAGIX_FYP_2025.Functions
             catch (HttpRequestException ex)
             {
                 var err = req.CreateResponse(HttpStatusCode.BadGateway);
-                await err.WriteAsJsonAsync(new { message = "Cannot reach AI planner service", detail = ex.Message });
+                await err.WriteAsJsonAsync(new { message = ex.Message, detail = ex.Message });
                 return err;
             }
             catch (Exception ex)

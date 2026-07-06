@@ -11,16 +11,22 @@ type Props = {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  /** 'default' = bordered field; 'plain' = borderless inline (e.g. inside a card). */
   variant?: 'default' | 'plain';
 };
 
-/**
- * Custom, design-system-styled select. Drop-in for a native <select>:
- * pass `value`, `onChange(value)`, and `options`. The dropdown is rendered
- * in a PORTAL with fixed positioning, so it's never clipped and never shows
- * the ugly OS-default option list.
- */
+function getScrollParents(el: HTMLElement | null): Array<HTMLElement | Window> {
+  const parents: Array<HTMLElement | Window> = [window];
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const { overflow, overflowY } = getComputedStyle(node);
+    if (/(auto|scroll|overlay)/.test(overflow + overflowY)) {
+      parents.push(node);
+    }
+    node = node.parentElement;
+  }
+  return parents;
+}
+
 const Select: React.FC<Props> = ({
   value,
   onChange,
@@ -37,27 +43,35 @@ const Select: React.FC<Props> = ({
 
   const selected = options.find((o) => o.value === value);
 
-  const updatePosition = () => {
+  const applyPosition = () => {
     const el = triggerRef.current;
+    const popup = popupRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     const maxH = 288;
     const spaceBelow = window.innerHeight - r.bottom;
-    if (spaceBelow < maxH && r.top > spaceBelow) {
-      setPos({ bottom: window.innerHeight - r.top + 6, left: r.left, width: r.width });
-    } else {
-      setPos({ top: r.bottom + 6, left: r.left, width: r.width });
+    const useTop = !(spaceBelow < maxH && r.top > spaceBelow);
+    const next = useTop
+      ? { top: r.bottom + 6, left: r.left, width: r.width }
+      : { bottom: window.innerHeight - r.top + 6, left: r.left, width: r.width };
+    setPos(next);
+    if (popup) {
+      popup.style.left = `${next.left}px`;
+      popup.style.width = `${next.width}px`;
+      popup.style.top = useTop && next.top != null ? `${next.top}px` : '';
+      popup.style.bottom = !useTop && next.bottom != null ? `${next.bottom}px` : '';
     }
   };
 
   useLayoutEffect(() => {
     if (!open) return;
-    updatePosition();
-    const on = () => updatePosition();
-    window.addEventListener('scroll', on, true);
+    applyPosition();
+    const parents = getScrollParents(triggerRef.current);
+    const on = () => requestAnimationFrame(applyPosition);
+    parents.forEach((p) => p.addEventListener('scroll', on, { passive: true }));
     window.addEventListener('resize', on);
     return () => {
-      window.removeEventListener('scroll', on, true);
+      parents.forEach((p) => p.removeEventListener('scroll', on));
       window.removeEventListener('resize', on);
     };
   }, [open]);
@@ -74,11 +88,11 @@ const Select: React.FC<Props> = ({
 
   const triggerCls =
     variant === 'plain'
-      ? 'w-full flex items-center justify-between gap-2 bg-transparent text-left outline-none disabled:opacity-40 cursor-pointer'
-      : 'w-full flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left outline-none focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed';
+      ? 'w-full min-w-0 flex items-center justify-between gap-2 bg-transparent text-left outline-none disabled:opacity-40 cursor-pointer'
+      : 'w-full min-w-0 flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left outline-none focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative min-w-0 ${className}`}>
       <button
         ref={triggerRef}
         type="button"
@@ -86,18 +100,26 @@ const Select: React.FC<Props> = ({
         onClick={() => setOpen((o) => !o)}
         className={triggerCls}
       >
-        <span className={`truncate ${selected ? '' : 'text-slate-400'}`}>
+        <span className={`truncate min-w-0 flex-1 ${selected ? '' : 'text-slate-400'}`}>
           {selected?.label ?? placeholder}
         </span>
-        <FiChevronDown className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
+        <FiChevronDown className={`shrink-0 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} size={16} />
       </button>
 
       {open &&
         createPortal(
           <div
             ref={popupRef}
-            style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, width: pos.width, zIndex: 9999, maxHeight: 288 }}
-            className="overflow-auto p-1.5 rounded-xl glass animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              bottom: pos.bottom,
+              left: pos.left,
+              width: pos.width,
+              zIndex: 9999,
+              maxHeight: 288,
+            }}
+            className="overflow-auto p-1.5 rounded-xl border border-slate-200/80 bg-white shadow-xl"
           >
             {options.length === 0 && (
               <div className="px-3 py-2 text-sm text-slate-400">No options</div>

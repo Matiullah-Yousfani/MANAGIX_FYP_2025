@@ -38,6 +38,13 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 
 const isQaRole = (role?: string) => /qa|quality/i.test(role || '');
 
+/** Admins see all org projects; managers are scoped to projects they created. */
+const resolveScopedManagerId = (): string | undefined => {
+  const role = (localStorage.getItem('roleName') || localStorage.getItem('userRole') || '').toLowerCase();
+  if (/admin/.test(role)) return undefined;
+  return localStorage.getItem('userId') || undefined;
+};
+
 const splitTeamMembers = (team: TeamSuggestion[]) => ({
   qa: team.find((m) => isQaRole(m.role)),
   devs: team.filter((m) => !isQaRole(m.role)),
@@ -177,7 +184,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
 
   const loadUnassignedProjects = useCallback(async (clearSelectionIfAssigned?: boolean) => {
     try {
-      const managerId = localStorage.getItem('userId');
+      const managerId = resolveScopedManagerId();
       let data: any[];
       if (managerId) {
         data = await projectService.getByManager(managerId);
@@ -196,8 +203,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
       setAllProjects(all);
       setAssignedProjectIds(assignedIds);
 
-      const managerIdForTasks = localStorage.getItem('userId') || undefined;
-      const taskEligible = await aiService.getTaskAllocationProjects(managerIdForTasks);
+      const taskEligible = await aiService.getTaskAllocationProjects(managerId);
       setTaskAllocationProjects(
         taskEligible.map((p) => ({
           ProjectId: p.projectId,
@@ -205,6 +211,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
           Title: p.title,
           title: p.title,
           unassignedTaskCount: p.unassignedTaskCount,
+          hasTeam: p.hasTeam !== false,
         }))
       );
 
@@ -312,6 +319,10 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
 
   const handleSuggestTasks = async () => {
     if (!selectedProject) return;
+    if (selectedProject.hasTeam === false) {
+      showToast('Assign a team to this project before running AI task allocation.', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const pid = selectedProject.ProjectId || selectedProject.projectId;
@@ -498,7 +509,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                     {activeTab === 'team'
                       ? 'All your projects already have a team assigned.'
                       : activeTab === 'tasks'
-                        ? 'No projects with unassigned tasks. Assign a team and create tasks first.'
+                        ? 'No projects with unassigned open tasks. Create tasks or clear assignees first.'
                         : 'No projects found'}
                   </div>
                 ) : (
@@ -506,6 +517,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                     const pid = p.ProjectId || p.projectId;
                     const selId =
                       selectedProject?.ProjectId || selectedProject?.projectId;
+                    const needsTeam = activeTab === 'tasks' && p.hasTeam === false;
                     return (
                       <button
                         key={pid}
@@ -518,12 +530,13 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
                         }`}
                       >
                         <p className="font-semibold text-gray-900 text-sm">
-                          {p.Title || p.title}
+                          {p.Title || p.title || 'Untitled project'}
                         </p>
                         {activeTab === 'tasks' && (p.unassignedTaskCount ?? 0) > 0 && (
                           <p className="text-xs text-amber-700 mt-0.5 font-medium">
                             {p.unassignedTaskCount} unassigned task
                             {p.unassignedTaskCount === 1 ? '' : 's'}
+                            {needsTeam ? ' · assign team first' : ''}
                           </p>
                         )}
                         {activeTab !== 'tasks' && (p.Description || p.description) && (
@@ -717,7 +730,7 @@ const AiAllocation = ({ embedded = false, onTeamApplied, variant = 'full' }: AiA
         </div>
         <button
           onClick={handleSuggestTasks}
-          disabled={!selectedProject || loading}
+          disabled={!selectedProject || loading || selectedProject?.hasTeam === false}
           className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
         >
           <ListTodo size={16} />

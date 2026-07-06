@@ -6,7 +6,7 @@ import {
   FiActivity, FiTrendingUp, FiShield, FiCheckCircle,
   FiChevronRight, FiLayers, FiArrowLeft, FiBell,
 } from 'react-icons/fi';
-import { monitoringService, type AdminDashboard as AdminDashboardData } from '../../api/monitoringService';
+import { monitoringService, type AdminDashboard as AdminDashboardData, heatColor } from '../../api/monitoringService';
 import ProjectGantt from '../ProjectGantt';
 import { adminService } from '../../api/adminService';
 
@@ -314,6 +314,26 @@ const workloadTone = (s: string) => {
   return 'bg-emerald-100 text-emerald-700 border-emerald-200';
 };
 
+const roleBadgeTone = (role: string) => {
+  if (role === 'Manager') return 'bg-violet-100 text-violet-700 border-violet-200';
+  if (role === 'QA') return 'bg-amber-100 text-amber-700 border-amber-200';
+  return 'bg-sky-100 text-sky-700 border-sky-200';
+};
+
+const userStatusTone = (status: string) => {
+  const s = status.toLowerCase();
+  if (s === 'online') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  if (s === 'overloaded') return 'bg-red-100 text-red-700 border-red-200';
+  if (s === 'busy') return 'bg-amber-100 text-amber-700 border-amber-200';
+  return 'bg-gray-100 text-gray-500 border-gray-200';
+};
+
+const activeColumnLabel = (role: string) => {
+  if (role === 'Manager') return 'Active load';
+  if (role === 'QA') return 'Pending reviews';
+  return 'Active tasks';
+};
+
 const projectStatusLabel = (row: AdminDashboardData['projectHealthRows'][0]) => {
   if (row.isClosed) return { text: 'Completed', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
   if (row.isOverdue) return { text: 'Delayed', cls: 'bg-red-100 text-red-700 border-red-200' };
@@ -528,7 +548,7 @@ const AdminDashboard: React.FC = () => {
           <HubCard icon={<FiBriefcase size={22} />} label="Projects" value={data.projectHealthRows.length} hint={`${o.activeProjects} active · ${o.overdueProjects} overdue`} accent={o.overdueProjects > 0 ? 'amber' : 'indigo'} onClick={() => openDetail('projects')} />
           <HubCard icon={<FiClock size={22} />} label="Tasks" value={o.pendingTasks} hint="Charts & task details" onClick={() => openDetail('tasks')} />
           <HubCard icon={<FiBell size={22} />} label="Pending approvals" value={pendingTotal} hint="Users, timesheets, QA, closures" accent={pendingTotal > 0 ? 'amber' : 'indigo'} badge={pendingTotal} onClick={() => openDetail('approvals')} />
-          <HubCard icon={<FiTrendingUp size={22} />} label="Workload" value={o.overloadedEmployees} hint={o.overloadedEmployees > 0 ? 'Employees overloaded' : 'All within capacity'} accent={o.overloadedEmployees > 0 ? 'red' : 'emerald'} onClick={() => openDetail('workload')} />
+          <HubCard icon={<FiTrendingUp size={22} />} label="Workload" value={data.employeeWorkload.length} hint={`${o.overloadedEmployees} overloaded · employees, managers & QA`} accent={o.overloadedEmployees > 0 ? 'red' : 'emerald'} onClick={() => openDetail('workload')} />
           <HubCard icon={<FiShield size={22} />} label="QA queue" value={pa.pendingQaReviews} hint="Awaiting review" accent={pa.pendingQaReviews > 0 ? 'amber' : 'indigo'} onClick={() => openDetail('qa')} />
           <HubCard icon={<FiLayers size={22} />} label="Timelines" value={data.projectHealthRows.length} hint="Gantt per project" onClick={() => openDetail('projects')} />
           <HubCard icon={<FiBarChart2Icon />} label="Analytics" value="→" hint="Trends, hours, managers" onClick={() => openDetail('analytics')} />
@@ -606,9 +626,19 @@ const AdminDashboard: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <p className="font-bold text-gray-900 truncate">{user.fullName}</p>
                             <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            {user.statusReason && (
+                              <p className="text-[11px] text-gray-400 mt-1 line-clamp-2" title={user.statusReason}>
+                                {user.statusReason}
+                              </p>
+                            )}
                           </div>
                           <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full border uppercase bg-indigo-50 text-indigo-700 border-indigo-200">{user.role}</span>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase">{user.status}</span>
+                          <span
+                            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border uppercase ${userStatusTone(user.status)}`}
+                            title={user.statusReason || undefined}
+                          >
+                            {user.status}
+                          </span>
                         </motion.div>
                       ))}
                     </div>
@@ -695,6 +725,9 @@ const AdminDashboard: React.FC = () => {
                               <p className="font-bold text-gray-900 truncate">{row.title}</p>
                               <p className="text-xs text-gray-500">
                                 {row.completedTasks}/{row.totalTasks} tasks · {row.progressPct}%
+                                {(row.delayRiskPct ?? 0) >= 55 && (
+                                  <span className="text-amber-600 font-bold"> · Delay risk {row.delayRiskPct}%</span>
+                                )}
                                 {row.methodology ? ` · ${row.methodology}` : ''}
                                 {row.deadline ? ` · Due ${new Date(row.deadline).toLocaleDateString()}` : ''}
                               </p>
@@ -904,40 +937,78 @@ const AdminDashboard: React.FC = () => {
           </DetailShell>
         )}
 
-        {detailView === 'workload' && (
-          <DetailShell key="workload" title="Employee Workload" subtitle="Capacity and utilization" onBack={goHub}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-[10px] font-extrabold uppercase text-gray-400 border-b">
-                    <th className="text-left py-2">Employee</th>
-                    <th className="text-center py-2">Active</th>
-                    <th className="text-center py-2">Hours</th>
-                    <th className="text-right py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.employeeWorkload.map((row) => (
-                    <tr key={row.userId} className="border-b border-gray-50">
-                      <td className="py-3 font-bold">{row.fullName}</td>
-                      <td className="text-center">{row.currentTasks}</td>
-                      <td className="text-center">{Number(row.hoursThisWeek).toFixed(1)}h</td>
-                      <td className="text-right">
-                        <span className={`text-[10px] font-extrabold px-2 py-1 rounded-full border uppercase ${workloadTone(row.workloadStatus)}`}>{row.workloadStatus}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {detailView === 'workload' && (() => {
+          const roles = ['Employee', 'Manager', 'QA'] as const;
+          const grouped = roles.map((role) => ({
+            role,
+            rows: data.employeeWorkload.filter((r) => (r.role ?? 'Employee') === role),
+          })).filter((g) => g.rows.length > 0);
+
+          return (
+          <DetailShell key="workload" title="Team Workload" subtitle="Employees, managers, and QA capacity" onBack={goHub}>
+            {grouped.length === 0 ? (
+              <p className="text-gray-400 italic">No workload data yet.</p>
+            ) : (
+              <div className="space-y-8">
+                {grouped.map(({ role, rows }) => (
+                  <div key={role}>
+                    <h3 className="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-3">{role}s</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-[10px] font-extrabold uppercase text-gray-400 border-b">
+                            <th className="text-left py-2">Name</th>
+                            <th className="text-center py-2">{activeColumnLabel(role)}</th>
+                            <th className="text-center py-2">{role === 'Manager' ? 'Completed projects' : role === 'QA' ? 'Reviews done' : 'Completed'}</th>
+                            {role !== 'QA' && <th className="text-center py-2">Hours</th>}
+                            <th className="text-right py-2">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row) => (
+                            <tr key={row.userId} className="border-b border-gray-50">
+                              <td className="py-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold">{row.fullName}</span>
+                                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full border uppercase ${roleBadgeTone(role)}`}>{role}</span>
+                                </div>
+                              </td>
+                              <td className="text-center font-semibold">{row.currentTasks}</td>
+                              <td className="text-center text-gray-600">{row.completedTasks}</td>
+                              {role !== 'QA' && (
+                                <td className="text-center">{Number(row.hoursThisWeek).toFixed(1)}h</td>
+                              )}
+                              <td className="text-right">
+                                <span
+                                  className={`text-[10px] font-extrabold px-2 py-1 rounded-full border uppercase ${workloadTone(row.workloadStatus)}`}
+                                  title={row.workloadReason || undefined}
+                                >
+                                  {row.workloadStatus}
+                                </span>
+                                {row.workloadReason && (
+                                  <p className="text-[10px] text-gray-400 mt-1 max-w-[220px] ml-auto line-clamp-2" title={row.workloadReason}>
+                                    {row.workloadReason}
+                                  </p>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <button type="button" onClick={() => navigate('/workload')} className="mt-6 text-sm font-extrabold text-indigo-600 uppercase tracking-widest hover:underline">
               Open workload panel →
             </button>
           </DetailShell>
-        )}
+          );
+        })()}
 
         {detailView === 'qa' && (
-          <DetailShell key="qa" title="QA Performance" subtitle="Review queue and throughput" onBack={goHub}>
+          <DetailShell key="qa" title="QA Performance" subtitle="Per-reviewer queue and throughput (live from API)" onBack={goHub}>
             {data.qaPerformance.length === 0 ? (
               <p className="text-gray-400 italic">No QA reviewers configured.</p>
             ) : (
@@ -945,10 +1016,13 @@ const AdminDashboard: React.FC = () => {
                 {data.qaPerformance.map((q) => (
                   <div key={q.qaId} className="p-4 bg-gray-50 rounded-xl">
                     <p className="font-extrabold mb-2">{q.fullName}</p>
-                    <div className="flex gap-6 text-sm">
-                      <span><strong className="text-amber-600">{q.pendingReviews}</strong> pending</span>
-                      <span><strong className="text-emerald-600">{q.approved}</strong> approved</span>
-                      <span><strong className="text-red-600">{q.rejected}</strong> rejected</span>
+                    <div className="flex flex-wrap gap-6 text-sm">
+                      <span><strong className="text-amber-600">{q.pendingReviews}</strong> pending in scope</span>
+                      <span><strong className="text-emerald-600">{q.approved}</strong> approved by them</span>
+                      <span><strong className="text-red-600">{q.rejected}</strong> rejected by them</span>
+                      {q.averageReviewHours != null && (
+                        <span className="text-gray-500">Avg review: <strong>{q.averageReviewHours.toFixed(1)}h</strong></span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -958,8 +1032,60 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {detailView === 'analytics' && (
-          <DetailShell key="analytics" title="Analytics" subtitle="Trends and operational metrics" onBack={goHub}>
+          <DetailShell key="analytics" title="Analytics" subtitle="Budget, workload, delay prediction, and trends" onBack={goHub}>
             <div className="space-y-10">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                  <p className="text-[10px] font-extrabold uppercase text-indigo-400 mb-1">Total budget</p>
+                  <p className="text-2xl font-black text-indigo-900">${data.budgetOverview.totalBudget.toLocaleString()}</p>
+                  <p className="text-xs text-indigo-600 mt-1">{data.budgetOverview.activeProjects} active projects</p>
+                </div>
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                  <p className="text-[10px] font-extrabold uppercase text-amber-600 mb-1">Labor cost (est.)</p>
+                  <p className="text-2xl font-black text-amber-900">${data.budgetOverview.totalLaborCost.toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                  <p className="text-[10px] font-extrabold uppercase text-emerald-600 mb-1">Budget remaining</p>
+                  <p className="text-2xl font-black text-emerald-900">${data.budgetOverview.budgetRemaining.toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                  <p className="text-[10px] font-extrabold uppercase text-red-500 mb-1">Delay risk</p>
+                  <p className="text-2xl font-black text-red-900">{data.aiAnalytics.projectsAtDelayRisk}</p>
+                  <p className="text-xs text-red-600 mt-1">Avg risk {data.aiAnalytics.avgDelayRiskPct}%</p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-extrabold text-gray-800 mb-4">Workload heatmap</h3>
+                {data.workloadHeatmap.length === 0 ? (
+                  <p className="text-gray-400 italic text-sm">No workload data.</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {data.workloadHeatmap.map((cell) => (
+                      <div
+                        key={cell.userId}
+                        className="p-3 rounded-xl border border-gray-100 text-center"
+                        style={{ backgroundColor: `${heatColor(cell.utilizationPct)}18`, borderColor: `${heatColor(cell.utilizationPct)}44` }}
+                        title={
+                          cell.workloadReason
+                            ? `${cell.fullName} — ${Math.round(cell.utilizationPct * 100)}% (${cell.workloadStatus}): ${cell.workloadReason}`
+                            : `${cell.fullName} — ${Math.round(cell.utilizationPct * 100)}%`
+                        }
+                      >
+                        <p className="text-[10px] font-bold text-gray-800 truncate">{cell.fullName.split(' ')[0]}</p>
+                        <p className="text-lg font-black mt-1" style={{ color: heatColor(cell.utilizationPct) }}>
+                          {Math.round(cell.utilizationPct * 100)}%
+                        </p>
+                        <p className="text-[9px] font-extrabold uppercase text-gray-400">{cell.role}</p>
+                        {cell.workloadReason && (
+                          <p className="text-[8px] text-gray-500 mt-1 line-clamp-2 px-1">{cell.workloadReason}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <h3 className="font-extrabold text-gray-800 mb-4">Tasks approved per week</h3>
                 <BarChart data={data.tasksCompletedPerWeek.map((w) => ({ label: w.weekLabel, value: w.completed }))} color="#10B981" />

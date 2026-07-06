@@ -20,11 +20,115 @@ namespace MANAGIX.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IWorkloadService _workload;
+        private readonly IPayrollService _payroll;
 
-        public MonitoringService(IUnitOfWork unitOfWork, IWorkloadService workload)
+        public MonitoringService(IUnitOfWork unitOfWork, IWorkloadService workload, IPayrollService payroll)
         {
             _unitOfWork = unitOfWork;
             _workload = workload;
+            _payroll = payroll;
+        }
+
+        private static (double RiskPct, string Reason) ComputeDelayRisk(
+            MANAGIX.Models.Models.Project project,
+            List<MANAGIX.Models.Models.TaskItem> tasks,
+            DateTime now)
+        {
+            if (project.IsClosed) return (0, "Completed");
+
+            var total = tasks.Count;
+            var done = tasks.Count(t =>
+            {
+                var n = TaskWorkflow.Normalize(t.Status);
+                return n == TaskWorkflow.Approved || n == TaskWorkflow.Done;
+            });
+            var progress = total > 0 ? (double)done / total : 0;
+            var spanDays = Math.Max(1, (project.Deadline - project.CreatedAt).TotalDays);
+            var elapsed = Math.Max(0, (now - project.CreatedAt).TotalDays);
+            var expected = Math.Min(1.0, elapsed / spanDays);
+
+            if (project.Deadline < now && done < total)
+                return (95, "Past deadline with open work");
+
+            var gap = expected - progress;
+            if (gap > 0.35)
+                return (85, $"Behind schedule ({progress:P0} complete vs {expected:P0} expected)");
+            if ((project.Deadline - now).TotalDays < 14 && progress < 0.75)
+                return (72, "Deadline within 2 weeks");
+            if (gap > 0.2)
+                return (58, "Slightly behind pace");
+            if (progress >= expected)
+                return (12, "On track");
+
+            return (28, "Normal pace");
+        }
+
+        private static string BuildEmployeeWorkloadReason(WorkloadEntryDto load)
+        {
+            if (load.UsesClockedHours)
+                return $"{load.ClockedHoursThisWeek:F1}h clocked this week vs {load.CapacityHours}h capacity · {load.ActiveTaskCount} active task(s)";
+            return $"{load.TotalEstimatedHours:F1}h estimated on {load.ActiveTaskCount} active task(s) vs {load.CapacityHours}h capacity";
+        }
+
+        private static string BuildManagerWorkloadReason(int activeProjects, int openTasks, double util)
+        {
+            var parts = new List<string>();
+            if (activeProjects > 0)
+                parts.Add($"{activeProjects} active project(s) (benchmark: 5)");
+            if (openTasks > 0)
+                parts.Add($"{openTasks} open task(s) on your projects (benchmark: 20)");
+            if (util >= 1.0)
+                parts.Add("Combined load at or above 100%");
+            else if (util >= 0.85)
+                parts.Add("Approaching capacity");
+            return parts.Count > 0 ? string.Join(" · ", parts) : "Light managerial load";
+        }
+
+        private static string BuildQaWorkloadReason(int pendingReviews, double util)
+        {
+            var msg = $"{pendingReviews} pending review(s) (benchmark: 8)";
+            if (util >= 1.0) msg += " · review queue saturated";
+            else if (util >= 0.85) msg += " · queue filling up";
+            return msg;
+        }
+
+        private static decimal SumHoursForWeek(
+            DateTime weekStart,
+            DateTime weekEnd,
+            List<MANAGIX.Models.Models.DailyTimesheet> timesheets,
+            List<MANAGIX.Models.Models.TimeEntry> clockedEntries)
+        {
+            decimal total = 0;
+            for (var day = weekStart.Date; day < weekEnd.Date; day = day.AddDays(1))
+            {
+                var sheetHrs = timesheets
+                    .Where(t => t.WorkDate.Date == day)
+                    .Sum(t => t.TotalHours);
+                var clockedHrs = clockedEntries
+                    .Where(e => e.StartedAt.Date == day)
+                    .Sum(e => e.Hours);
+                total += Math.Max(sheetHrs, clockedHrs);
+            }
+            return total;
+        }
+
+        private static string BuildAiRiskSummary(
+            MANAGIX.Models.Models.Project project,
+            List<MANAGIX.Models.Models.TaskItem> tasks,
+            double delayRisk,
+            string delayReason,
+            double avgUtil,
+            int overloadedMembers)
+        {
+            if (project.IsClosed) return "Project closed.";
+            var pending = tasks.Count(t => TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Todo);
+            var inProg = tasks.Count(t => TaskWorkflow.Normalize(t.Status) == TaskWorkflow.InProgress);
+            var parts = new List<string> { $"Delay risk {delayRisk:F0}% — {delayReason}." };
+            if (pending > 0) parts.Add($"{pending} task(s) still pending.");
+            if (inProg > 0) parts.Add($"{inProg} in progress.");
+            if (overloadedMembers > 0)
+                parts.Add($"{overloadedMembers} team member(s) overloaded (utilisation {avgUtil:P0}).");
+            return string.Join(" ", parts);
         }
 
         public async Task<SystemHealthDto> GetSystemHealthAsync()
@@ -113,6 +217,7 @@ namespace MANAGIX.Services
             var workload = await _workload.GetProjectWorkloadAsync(projectId);
             var overloadedMembers = workload.Members.Count(m => m.UtilizationPct >= 0.9);
             var avgProjUtil = workload.Members.Count == 0 ? 0 : workload.Members.Average(m => m.UtilizationPct);
+            var (delayRisk, delayReason) = ComputeDelayRisk(project, tasks, DateTime.UtcNow);
 
             return new ProjectHealthDto
             {
@@ -130,10 +235,7 @@ namespace MANAGIX.Services
                 MilestonesCompleted = doneMilestones,
                 Deadline = project.Deadline,
                 IsOverdue = !project.IsClosed && project.Deadline < DateTime.UtcNow && completed.Count < tasks.Count,
-                // AI risk summary intentionally null here — populated by an optional Phase-5b
-                // pass when the planner Python service is up. Keeps the panel responsive
-                // even if the AI is offline.
-                AiRiskSummary = null,
+                AiRiskSummary = BuildAiRiskSummary(project, tasks, delayRisk, delayReason, avgProjUtil, overloadedMembers),
             };
         }
 
@@ -150,6 +252,7 @@ namespace MANAGIX.Services
             var submissions = await _unitOfWork.TaskSubmissions.GetReviewHistoryAsync();
             var meetings = await _unitOfWork.Meetings.GetAllAsync();
             var timesheets = await _unitOfWork.DailyTimesheets.GetAllAsync(from: today.AddDays(-60), limit: 500);
+            var clockedEntries = await _unitOfWork.TimeEntries.GetClosedEntriesSinceAsync(today.AddDays(-60));
             var notifications = await _unitOfWork.Notifications.GetRecentOrgAsync(40);
             var pendingUsers = (await _unitOfWork.UserRequests.GetPendingRequestsAsync()).Count();
             var workloadAll = await _workload.GetOverloadedEmployeesAsync(0.0);
@@ -206,32 +309,95 @@ namespace MANAGIX.Services
             if (rejectedSubs > 0) taskStatus["Rejected"] = rejectedSubs;
 
             var employeeWorkload = new List<AdminEmployeeWorkloadDto>();
+
+            static string WorkloadStatusFromUtil(double util) =>
+                util >= 1.0 ? "Overloaded" : util >= 0.85 ? "Busy" : "Normal";
+
             var employeeIds = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(AppRoles.Employee);
-            foreach (var eid in employeeIds.Take(25))
+            foreach (var eid in employeeIds)
             {
                 var load = await _workload.GetEmployeeLoadAsync(eid);
                 var completed = allTasks.Count(t =>
                     t.AssignedEmployeeId == eid &&
                     (TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Approved ||
                      TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Done));
-                var status = load.UtilizationPct >= 1.0 ? "Overloaded"
-                    : load.UtilizationPct >= 0.85 ? "Busy"
-                    : "Normal";
                 employeeWorkload.Add(new AdminEmployeeWorkloadDto
                 {
                     UserId = eid,
                     FullName = load.FullName,
+                    Role = "Employee",
                     CurrentTasks = load.ActiveTaskCount,
                     CompletedTasks = completed,
                     HoursThisWeek = load.ClockedHoursThisWeek > 0 ? load.ClockedHoursThisWeek : load.TotalEstimatedHours,
-                    WorkloadStatus = status,
+                    WorkloadStatus = WorkloadStatusFromUtil(load.UtilizationPct),
                     UtilizationPct = load.UtilizationPct,
+                    WorkloadReason = BuildEmployeeWorkloadReason(load),
                 });
             }
+
+            var managerIds = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(AppRoles.Manager);
+            foreach (var mid in managerIds)
+            {
+                var mgr = users.FirstOrDefault(u => u.UserId == mid);
+                var mgrActiveProjects = projects.Where(p => p.CreatedBy == mid && !p.IsClosed).ToList();
+                var mgrProjectIds = mgrActiveProjects.Select(p => p.ProjectId).ToHashSet();
+                var activeOnProjects = allTasks.Count(t =>
+                    mgrProjectIds.Contains(t.ProjectId) &&
+                    (TaskWorkflow.Normalize(t.Status) == TaskWorkflow.Todo ||
+                     TaskWorkflow.Normalize(t.Status) == TaskWorkflow.InProgress));
+                var completedMgrProjects = projects.Count(p => p.CreatedBy == mid && p.IsClosed);
+                var load = await _workload.GetEmployeeLoadAsync(mid);
+                var util = Math.Min(1.0, (mgrActiveProjects.Count / 5.0) + (activeOnProjects / 20.0));
+                employeeWorkload.Add(new AdminEmployeeWorkloadDto
+                {
+                    UserId = mid,
+                    FullName = mgr?.FullName ?? load.FullName,
+                    Role = "Manager",
+                    CurrentTasks = Math.Max(mgrActiveProjects.Count, activeOnProjects),
+                    CompletedTasks = completedMgrProjects,
+                    HoursThisWeek = load.ClockedHoursThisWeek > 0 ? load.ClockedHoursThisWeek : load.TotalEstimatedHours,
+                    WorkloadStatus = WorkloadStatusFromUtil(util),
+                    UtilizationPct = util,
+                    WorkloadReason = BuildManagerWorkloadReason(mgrActiveProjects.Count, activeOnProjects, util),
+                });
+            }
+
+            var qaIdsForWorkload = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(AppRoles.QualityAssurance);
+            var allAssignments = await _unitOfWork.ProjectTeams.GetAllAssignmentsAsync();
+            foreach (var qid in qaIdsForWorkload)
+            {
+                var qaUser = users.FirstOrDefault(u => u.UserId == qid);
+                var teamIds = await _unitOfWork.TeamEmployees.GetTeamIdsForMemberAsync(qid);
+                var projectIds = allAssignments
+                    .Where(a => teamIds.Contains(a.TeamId))
+                    .Select(a => a.ProjectId)
+                    .ToHashSet();
+                var scopedSubs = projectIds.Count == 0
+                    ? new List<MANAGIX.Models.Models.TaskSubmission>()
+                    : submissions
+                        .Where(s => s.Task != null && projectIds.Contains(s.Task.ProjectId))
+                        .ToList();
+                var pending = scopedSubs.Count(s => s.Status == "Submitted");
+                var reviewedByQa = scopedSubs.Where(s => s.ReviewedBy == qid).ToList();
+                var completedReviews = reviewedByQa.Count(s => s.Status is "Approved" or "Rejected");
+                var util = Math.Min(1.0, pending / 8.0);
+                employeeWorkload.Add(new AdminEmployeeWorkloadDto
+                {
+                    UserId = qid,
+                    FullName = qaUser?.FullName ?? "QA",
+                    Role = "QA",
+                    CurrentTasks = pending,
+                    CompletedTasks = completedReviews,
+                    HoursThisWeek = 0,
+                    WorkloadStatus = WorkloadStatusFromUtil(util),
+                    UtilizationPct = util,
+                    WorkloadReason = BuildQaWorkloadReason(pending, util),
+                });
+            }
+
             employeeWorkload = employeeWorkload.OrderByDescending(e => e.UtilizationPct).ToList();
 
             var managerPerformance = new List<AdminManagerPerformanceDto>();
-            var managerIds = await _unitOfWork.Users.GetUserIdsByRoleNameAsync(AppRoles.Manager);
             foreach (var mid in managerIds)
             {
                 var mgr = users.FirstOrDefault(u => u.UserId == mid);
@@ -272,24 +438,29 @@ namespace MANAGIX.Services
             {
                 var qaUser = users.FirstOrDefault(u => u.UserId == qid);
                 var teamIds = await _unitOfWork.TeamEmployees.GetTeamIdsForMemberAsync(qid);
-                var assignments = await _unitOfWork.ProjectTeams.GetAllAssignmentsAsync();
-                var projectIds = assignments.Where(a => teamIds.Contains(a.TeamId)).Select(a => a.ProjectId).ToHashSet();
+                var projectIds = allAssignments
+                    .Where(a => teamIds.Contains(a.TeamId))
+                    .Select(a => a.ProjectId)
+                    .ToHashSet();
 
-                var qaSubs = submissions.Where(s => s.Task != null && projectIds.Contains(s.Task.ProjectId)).ToList();
-                if (projectIds.Count == 0)
-                    qaSubs = submissions;
+                var qaSubs = submissions
+                    .Where(s => s.Task != null && projectIds.Contains(s.Task.ProjectId))
+                    .ToList();
 
-                var reviewed = qaSubs.Where(s => s.ReviewedAt.HasValue && s.Status is "Approved" or "Rejected").ToList();
+                var reviewedByQa = qaSubs
+                    .Where(s => s.ReviewedBy == qid && s.ReviewedAt.HasValue)
+                    .ToList();
+
                 qaPerformance.Add(new AdminQaPerformanceDto
                 {
                     QaId = qid,
                     FullName = qaUser?.FullName ?? "QA",
                     PendingReviews = qaSubs.Count(s => s.Status == "Submitted"),
-                    Approved = qaSubs.Count(s => s.Status == "Approved"),
-                    Rejected = qaSubs.Count(s => s.Status == "Rejected"),
-                    AverageReviewHours = reviewed.Count == 0
+                    Approved = reviewedByQa.Count(s => s.Status == "Approved"),
+                    Rejected = reviewedByQa.Count(s => s.Status == "Rejected"),
+                    AverageReviewHours = reviewedByQa.Count == 0
                         ? null
-                        : reviewed.Average(s => (s.ReviewedAt!.Value - s.SubmittedAt).TotalHours),
+                        : reviewedByQa.Average(s => (s.ReviewedAt!.Value - s.SubmittedAt).TotalHours),
                 });
             }
 
@@ -312,15 +483,20 @@ namespace MANAGIX.Services
             var todaySheets = timesheets.Where(t => t.WorkDate.Date == today).ToList();
             var weekSheets = timesheets.Where(t => t.WorkDate >= weekStart).ToList();
             var clockedIn = await _unitOfWork.TimeEntries.CountOpenEntriesAsync();
+            var todayClockedHrs = clockedEntries.Where(e => e.StartedAt.Date == today).Sum(e => e.Hours);
+            var todaySheetHrs = todaySheets.Sum(t => t.TotalHours);
+            var weekClockedHrs = SumHoursForWeek(weekStart, weekStart.AddDays(7), timesheets, clockedEntries);
+            var weekSheetHrs = weekSheets.Sum(t => t.TotalHours);
 
             var timesheetAnalytics = new AdminTimesheetAnalyticsDto
             {
                 ClockedInNow = clockedIn,
                 SubmittedToday = todaySheets.Count(t => t.Status == "Submitted"),
                 PendingApproval = timesheets.Count(t => t.Status == "Submitted"),
-                AverageHoursToday = todaySheets.Count == 0 ? 0
-                    : Math.Round(todaySheets.Average(t => t.TotalHours), 1),
-                WeeklyHours = weekSheets.Sum(t => t.TotalHours),
+                AverageHoursToday = todaySheets.Count == 0 && todayClockedHrs <= 0
+                    ? 0
+                    : Math.Round((decimal)Math.Max((double)todaySheetHrs, (double)todayClockedHrs), 1),
+                WeeklyHours = Math.Max(weekSheetHrs, weekClockedHrs),
             };
 
             var projectTeams = await _unitOfWork.ProjectTeams.GetAllAssignmentsAsync();
@@ -328,7 +504,6 @@ namespace MANAGIX.Services
             {
                 AiAssistedMilestones = projects.Sum(p =>
                 {
-                    // count milestones per project lazily — use task milestone ids as proxy
                     return allTasks.Where(t => t.ProjectId == p.ProjectId && t.MilestoneId.HasValue)
                         .Select(t => t.MilestoneId!.Value).Distinct().Count();
                 }),
@@ -390,9 +565,7 @@ namespace MANAGIX.Services
             {
                 var ws = today.AddDays(-7 * i - (int)today.DayOfWeek);
                 var we = ws.AddDays(7);
-                var hrs = timesheets
-                    .Where(t => t.WorkDate >= ws && t.WorkDate < we)
-                    .Sum(t => t.TotalHours);
+                var hrs = SumHoursForWeek(ws, we, timesheets, clockedEntries);
                 hoursPerWeek.Add(new AdminWeeklyHoursDto
                 {
                     WeekLabel = ws.ToString("MMM d"),
@@ -417,13 +590,29 @@ namespace MANAGIX.Services
                 .Select(u =>
                 {
                     var rn = u.UserRoles?.FirstOrDefault()?.Role?.RoleName;
+                    var profile = u.Profile;
+                    var lastActive = profile?.LastActiveAt;
+                    var isOnline = lastActive.HasValue && (now - lastActive.Value).TotalMinutes <= 15;
+                    var workloadRow = employeeWorkload.FirstOrDefault(w => w.UserId == u.UserId);
+                    var status = isOnline
+                        ? "Online"
+                        : workloadRow?.WorkloadStatus == "Overloaded"
+                            ? "Overloaded"
+                            : workloadRow?.WorkloadStatus == "Busy"
+                                ? "Busy"
+                                : "Offline";
+                    string? statusReason = isOnline
+                        ? "Active in the last 15 minutes"
+                        : workloadRow?.WorkloadReason
+                            ?? (status == "Offline" ? "Not active recently" : null);
                     return new AdminUserRowDto
                     {
                         UserId = u.UserId,
                         FullName = u.FullName ?? u.Email ?? "Unknown",
                         Email = u.Email ?? string.Empty,
                         Role = BucketRole(rn),
-                        Status = "Active",
+                        Status = status,
+                        StatusReason = statusReason,
                     };
                 })
                 .ToList();
@@ -476,6 +665,11 @@ namespace MANAGIX.Services
                     ? 0
                     : Math.Round(100.0 * completed / tasks.Count, 1);
                 var isOverdue = !p.IsClosed && p.Deadline < now && completed < tasks.Count;
+                var (delayRisk, delayReason) = ComputeDelayRisk(p, tasks, now);
+
+                var laborEst = tasks
+                    .Where(t => t.AssignedEmployeeId.HasValue && t.AssignedEmployeeId.Value != Guid.Empty)
+                    .Sum(t => (t.EstimatedHours ?? 4m) * 25m);
 
                 projectHealthRows.Add(new AdminProjectHealthRowDto
                 {
@@ -492,8 +686,48 @@ namespace MANAGIX.Services
                     MilestonesCompleted = milesDone,
                     MilestonesTotal = miles.Count,
                     Methodology = p.ProjectModel?.Methodology ?? p.ProjectModel?.ModelName,
+                    DelayRiskPct = delayRisk,
+                    DelayRiskReason = delayReason,
+                    BudgetAllocated = p.Budget,
+                    LaborCostEstimate = laborEst,
                 });
             }
+
+            var projectsAtRisk = projectHealthRows.Count(r => !r.IsClosed && r.DelayRiskPct >= 55);
+            var avgDelayRisk = projectHealthRows.Where(r => !r.IsClosed).Select(r => r.DelayRiskPct).DefaultIfEmpty(0).Average();
+
+            PayrollSummaryDto? orgPayroll = null;
+            try { orgPayroll = await _payroll.GetOrganizationPayrollAsync(); }
+            catch { /* ignore */ }
+
+            var budgetOverview = new AdminBudgetOverviewDto
+            {
+                TotalBudget = activeProjects.Sum(p => p.Budget),
+                TotalLaborCost = orgPayroll?.TotalEstimatedLaborCost ?? 0,
+                BudgetRemaining = activeProjects.Sum(p => p.Budget) - (orgPayroll?.TotalEstimatedLaborCost ?? 0),
+                ActiveProjects = activeProjects.Count,
+            };
+
+            var workloadHeatmap = employeeWorkload.Select(w => new AdminWorkloadHeatmapCellDto
+            {
+                UserId = w.UserId,
+                FullName = w.FullName,
+                Role = w.Role,
+                UtilizationPct = w.UtilizationPct,
+                WorkloadStatus = w.WorkloadStatus,
+                WorkloadReason = w.WorkloadReason,
+            }).ToList();
+
+            aiAnalytics.ProjectsAtDelayRisk = projectsAtRisk;
+            aiAnalytics.AvgDelayRiskPct = Math.Round(avgDelayRisk, 1);
+
+            if (projectsAtRisk > 0)
+                alerts.Insert(0, new AdminAlertDto
+                {
+                    Severity = "warning",
+                    Message = $"{projectsAtRisk} project(s) at elevated delay risk",
+                    ActionLink = "/dashboard?view=projects",
+                });
 
             return new AdminDashboardDto
             {
@@ -533,6 +767,9 @@ namespace MANAGIX.Services
                 ProjectHealthRows = projectHealthRows,
                 TaskRows = taskRows,
                 UserRows = userRows,
+                BudgetOverview = budgetOverview,
+                WorkloadHeatmap = workloadHeatmap,
+                ProjectsAtDelayRisk = projectsAtRisk,
             };
         }
     }

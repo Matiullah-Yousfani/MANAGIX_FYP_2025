@@ -16,7 +16,7 @@ namespace MANAGIX.DataAccess.Repository
 
         public async Task<IEnumerable<ProjectModel>> GetAllAsync()
         {
-            return await _db.ProjectModels.ToListAsync();
+            return await _db.ProjectModels.OrderBy(m => m.ModelName).ToListAsync();
         }
 
         public async Task<ProjectModel?> GetByIdAsync(Guid modelId) =>

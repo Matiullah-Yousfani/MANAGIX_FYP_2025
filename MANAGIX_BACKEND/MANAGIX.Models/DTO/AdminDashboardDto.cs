@@ -26,6 +26,9 @@ namespace MANAGIX.Models.DTO
         public List<AdminTaskRowDto> TaskRows { get; set; } = new();
         /// <summary>Org users for people drill-down.</summary>
         public List<AdminUserRowDto> UserRows { get; set; } = new();
+        public AdminBudgetOverviewDto BudgetOverview { get; set; } = new();
+        public List<AdminWorkloadHeatmapCellDto> WorkloadHeatmap { get; set; } = new();
+        public int ProjectsAtDelayRisk { get; set; }
     }
 
     public class AdminUserRowDto
@@ -35,6 +38,8 @@ namespace MANAGIX.Models.DTO
         public string Email { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        /// <summary>Why this status was assigned (e.g. overload drivers).</summary>
+        public string? StatusReason { get; set; }
     }
 
     public class AdminTaskRowDto
@@ -66,6 +71,29 @@ namespace MANAGIX.Models.DTO
         public int MilestonesCompleted { get; set; }
         public int MilestonesTotal { get; set; }
         public string? Methodology { get; set; }
+        /// <summary>0-100 predicted delay risk from schedule heuristics.</summary>
+        public double DelayRiskPct { get; set; }
+        public string? DelayRiskReason { get; set; }
+        public decimal BudgetAllocated { get; set; }
+        public decimal LaborCostEstimate { get; set; }
+    }
+
+    public class AdminBudgetOverviewDto
+    {
+        public decimal TotalBudget { get; set; }
+        public decimal TotalLaborCost { get; set; }
+        public decimal BudgetRemaining { get; set; }
+        public int ActiveProjects { get; set; }
+    }
+
+    public class AdminWorkloadHeatmapCellDto
+    {
+        public Guid UserId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public double UtilizationPct { get; set; }
+        public string WorkloadStatus { get; set; } = "Normal";
+        public string? WorkloadReason { get; set; }
     }
 
     public class AdminOverviewDto
@@ -88,11 +116,15 @@ namespace MANAGIX.Models.DTO
     {
         public Guid UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
+        /// <summary>Employee, Manager, or QA</summary>
+        public string Role { get; set; } = "Employee";
         public int CurrentTasks { get; set; }
         public int CompletedTasks { get; set; }
         public decimal HoursThisWeek { get; set; }
         public string WorkloadStatus { get; set; } = "Normal";
         public double UtilizationPct { get; set; }
+        /// <summary>Human-readable explanation of utilization (shown in tooltips).</summary>
+        public string? WorkloadReason { get; set; }
     }
 
     public class AdminManagerPerformanceDto
@@ -139,6 +171,8 @@ namespace MANAGIX.Models.DTO
         public int AiScoredTasks { get; set; }
         public int ProjectsWithTeams { get; set; }
         public int AssignedAiTasks { get; set; }
+        public int ProjectsAtDelayRisk { get; set; }
+        public double AvgDelayRiskPct { get; set; }
     }
 
     public class AdminPendingApprovalsDto

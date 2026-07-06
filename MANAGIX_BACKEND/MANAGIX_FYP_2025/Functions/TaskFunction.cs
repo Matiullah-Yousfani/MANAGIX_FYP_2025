@@ -482,6 +482,7 @@ namespace MANAGIX_FYP_2025.Functions
             submission.Status = submissionStatus;
             submission.QAComment = dto.QAComment?.Trim();
             submission.ReviewedAt = DateTime.UtcNow;
+            submission.ReviewedBy = ResolveCallerUserId(req);
 
             task.Status = taskStatus;
             _unitOfWork.Tasks.Update(task);
@@ -747,8 +748,37 @@ namespace MANAGIX_FYP_2025.Functions
                 // anonymous — return unfiltered (legacy)
             }
 
+            var assigneeIds = tasks
+                .Where(t => t.AssignedEmployeeId.HasValue)
+                .Select(t => t.AssignedEmployeeId!.Value)
+                .Distinct();
+            var assigneeNames = new Dictionary<Guid, string>();
+            foreach (var aid in assigneeIds)
+            {
+                var u = await _unitOfWork.Users.GetByIdAsync(aid);
+                if (u != null) assigneeNames[aid] = u.FullName;
+            }
+
+            var payload = tasks.Select(t => new
+            {
+                t.TaskId,
+                t.Title,
+                t.Description,
+                t.Status,
+                t.Priority,
+                t.ProjectId,
+                t.MilestoneId,
+                t.AssignedEmployeeId,
+                AssignedEmployeeName = t.AssignedEmployeeId.HasValue && assigneeNames.TryGetValue(t.AssignedEmployeeId.Value, out var nm)
+                    ? nm
+                    : null,
+                t.EstimatedHours,
+                t.Deadline,
+                t.CreatedAt,
+            }).ToList();
+
             var resp = req.CreateResponse(HttpStatusCode.OK);
-            await resp.WriteAsJsonAsync(tasks);
+            await resp.WriteAsJsonAsync(payload);
             return resp;
         }
 

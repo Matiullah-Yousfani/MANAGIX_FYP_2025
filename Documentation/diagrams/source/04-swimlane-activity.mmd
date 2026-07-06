@@ -1,0 +1,68 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TB
+    subgraph lane_admin["|Admin|"]
+        direction TB
+        ad1([Approve UserRequest])
+        ad2([Open Control Center])
+        ad3([Manage users / roles / payroll])
+        ad4([View org monitoring dashboard])
+        ad1 --> ad2
+    end
+
+    subgraph lane_mgr["|Manager|"]
+        direction TB
+        mg1([Create Project — Step 1–2])
+        mg2([Trigger AI Plan Step 3])
+        mg3([Create Team + assign to project])
+        mg4([Run AI task allocation])
+        mg5([Schedule meeting])
+        mg6([Review employee timesheets])
+        mg7([Close project])
+        mg1 --> mg2 --> mg3 --> mg4
+        mg5
+        mg6
+        mg7
+    end
+
+    subgraph lane_emp["|Employee|"]
+        direction TB
+        em1([Open Task Hub / Kanban])
+        em2([Update task InProgress])
+        em3([Submit deliverable])
+        em4([Clock in / clock out])
+        em5([Submit daily timesheet])
+        em1 --> em2 --> em3
+        em4 --> em5
+    end
+
+    subgraph lane_qa["|Quality Assurance|"]
+        direction TB
+        qa1([Open pending review queue])
+        qa2{Approve or reject?}
+        qa3([Mark task Approved])
+        qa4([Return task to InProgress])
+        qa1 --> qa2
+        qa2 -->|Approve| qa3
+        qa2 -->|Reject| qa4
+    end
+
+    subgraph lane_sys["|System / AI Services|"]
+        direction TB
+        sy1[[ai_planner :8001]]
+        sy2[[ai_allocation :8002]]
+        sy3[[MonitoringService]]
+        sy4[[NotificationService]]
+        sy5[[WorkloadService]]
+    end
+
+    ad1 -.->|creates User| mg1
+    mg2 --> sy1
+    mg3 --> sy2
+    mg4 --> sy2
+    mg4 -.->|assigns tasks| em1
+    em3 -.->|TaskSubmission| qa1
+    qa3 -.->|notifies| sy4
+    em5 -.->|pending review| mg6
+    mg5 -.->|transcript| sy1
+    ad4 --> sy3
+    sy3 --> sy5

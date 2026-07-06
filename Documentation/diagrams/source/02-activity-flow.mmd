@@ -1,0 +1,40 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    classDef startend fill:#fff,stroke:#000,stroke-width:2px
+    classDef process fill:#fff,stroke:#000,stroke-width:1px
+    classDef decision fill:#fff,stroke:#000,stroke-width:1px
+    classDef datastore fill:#fff,stroke:#000,stroke-dasharray:4 4
+
+    START((●)) --> A1["Register account<br/>POST /auth/register"]
+    A1 --> A2[("Store UserRequest<br/>status = Pending")]
+    A2 --> A3{"Admin<br/>approves?"}
+    A3 -->|No| A4["Reject request"]
+    A3 -->|Yes| A5["Create User, UserRole,<br/>UserProfile"]
+    A5 --> B1["Manager: Create Project<br/>Step 1–2 form"]
+    B1 --> B2{"Description<br/>valid?"}
+    B2 -->|No| B1
+    B2 -->|Yes| B3["POST /ai/generate-project-plan"]
+    B3 --> B4["ai_planner :8001<br/>Groq LLM"]
+    B4 --> B5["Return milestones + tasks"]
+    B5 --> B6["Manager edits plan"]
+    B6 --> B7[("INSERT Project,<br/>Milestone, TaskItem")]
+    B7 --> C1["Team Setup<br/>POST /teams"]
+    C1 --> C2["POST /ai/suggest-team-options"]
+    C2 --> C3["Assign ProjectTeam"]
+    C3 --> C4["POST /ai/suggest-task-allocation"]
+    C4 --> C5[("UPDATE TaskItem<br/>AssignedEmployeeId")]
+    C5 --> D1["Employee: Kanban<br/>status = InProgress"]
+    D1 --> D2["POST /tasks/id/submit"]
+    D2 --> D3[("TaskSubmission<br/>status = Submitted")]
+    D3 --> D4{"QA<br/>decision"}
+    D4 -->|Reject| D1
+    D4 -->|Approve| D5[("Task status = Approved<br/>ReviewedBy = QA")]
+    D5 --> E1["Employee clock-in<br/>TimeEntry"]
+    E1 --> E2["Submit DailyTimesheet"]
+    E2 --> E3["Manager review timesheet"]
+    E3 --> END((◎))
+
+    class START,END startend
+    class A1,B1,B3,B4,B5,B6,C1,C2,C3,C4,D1,D2,E1,E2,E3,A4,A5 process
+    class A3,B2,D4 decision
+    class A2,B7,C5,D3,D5 datastore

@@ -14,9 +14,14 @@ import os
 import requests
 import json
 import re
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Always load .env from this script's folder (cwd may differ when started via script).
+_ENV_FILE = Path(__file__).resolve().parent / ".env"
+load_dotenv(_ENV_FILE, override=False)
+# Fallback: allocation service may share key via parent .env
+load_dotenv(Path(__file__).resolve().parent.parent / "ai_allocation" / ".env", override=False)
 
 app = FastAPI(title="AI Project Planner API", version="1.0.0")
 
@@ -30,6 +35,34 @@ app.add_middleware(
 )
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+MIN_DESCRIPTION_CHARS = 200
+MIN_BUDGET_USD = 50.0
+MIN_DISTINCT_WORDS = 35
+
+def validate_description_quality(description: str) -> None:
+    """Reject filler / low-quality descriptions before calling the LLM."""
+    desc = (description or "").strip()
+    if len(desc) < MIN_DESCRIPTION_CHARS:
+        raise ValueError(f"Project description must be at least {MIN_DESCRIPTION_CHARS} characters.")
+    lower = desc.lower()
+    if re.search(r"lorem\s+ipsum|asdf{3,}|test\s+test\s+test|xxxx+|aaaa+|qwerty|keyboard\s+test", lower):
+        raise ValueError("Description looks like placeholder or filler text.")
+    words = [w for w in re.split(r"\W+", desc) if len(w) > 2]
+    if len(words) < MIN_DISTINCT_WORDS:
+        raise ValueError(f"Description needs at least {MIN_DISTINCT_WORDS} meaningful words.")
+    distinct = len(set(w.lower() for w in words))
+    if distinct < MIN_DISTINCT_WORDS:
+        raise ValueError(f"Use at least {MIN_DISTINCT_WORDS} distinct words (found {distinct}).")
+    counts: dict = {}
+    for w in words:
+        k = w.lower()
+        counts[k] = counts.get(k, 0) + 1
+    top_word = max(counts, key=counts.get)
+    if counts[top_word] > max(8, int(len(words) * 0.12)):
+        raise ValueError(f'Word "{top_word}" is repeated too often.')
+    if not re.search(r"[.!?]", desc):
+        raise ValueError("Write full sentences with goals, stakeholders, scope, and outcomes.")
 
 # ===================== Pydantic Models =====================
 
@@ -84,8 +117,8 @@ You MUST include top-level keys "suggestedMethodology" and "methodologyRationale
 If the list is empty, omit suggestedMethodology and methodologyRationale or set them to empty strings.
 """
 
-    return f"""You are a software project planning assistant.
-Based on the following project information, generate a structured project plan.
+    return f"""You are a professional project planning assistant for ANY domain (software, construction, marketing, events, research, healthcare, education, manufacturing, etc.).
+Based on the following project information, generate a structured project plan that matches the ACTUAL domain described.
 
 Project Name:
 {project_name}
@@ -99,26 +132,35 @@ Project Deadline:
 Project Budget (USD):
 {budget}
 {meth_section}
+IMPORTANT — Domain and quality rules:
+- Infer the true domain from the description. If it is NOT a software/IT project, do NOT use programming tasks (APIs, databases, React, deployment pipelines) unless explicitly required.
+- Use domain-appropriate deliverables (e.g. site surveys for construction, campaigns for marketing, lesson plans for education).
+- Descriptions may be concise or detailed; extract all explicit requirements.
+- Do NOT invent unrelated technical scope. Do NOT produce a software plan for a non-software project.
+- If the description is incoherent or not a real project brief, return JSON with "valid": false and "rejectionReason" explaining why — and an empty milestones array.
+
 Break the project into logical milestones that fit THIS project's scope, description, and budget.
 For each milestone provide:
 - title
 - description
 - deadlineOffsetDays (relative timeline in days from project start, must be cumulative and ascending)
 - budgetPercentage (percentage of project budget, all milestones must sum to exactly 100)
-- tasks (each task should have title and description)
+- tasks (each task must have title and description — at least 2 tasks per milestone)
 
 Rules:
 1. Scale scope to the budget: if budget is under $5,000 use 3-4 milestones with 2-4 tasks each; $5k-$20k use 4-5 milestones with 3-5 tasks; above $20k use 5-6 milestones with 4-6 tasks.
-2. Milestone and task titles MUST reference the project domain from the description (e.g. e-commerce, hospital, mobile app) — never generic-only names like "Heavy Task" or "Phase 1 Work".
-3. budgetPercentage values across all milestones must sum to exactly 100. Allocate more % to milestones that need more effort per the description.
+2. Milestone and task titles MUST reference the project domain — never generic-only names like "Phase 1 Work".
+3. budgetPercentage values across all milestones must sum to exactly 100.
 4. deadlineOffsetDays must be cumulative and fit within the total project timeline before the deadline.
-5. Tasks must be small, deliverable engineering/QA items sized for the budget (avoid enterprise-scale scope on small budgets).
-6. Every task title should start with an action verb (Design, Implement, Create, Develop, Test, Deploy, Configure, Build, Write, Review, etc.)
-7. Task descriptions must mention concrete deliverables tied to the project description in 1-2 sentences.
-8. Do NOT invent technologies or features not implied by the project description unless they are standard for that domain.
+5. Tasks must be concrete, deliverable items sized for the budget.
+6. Every task title should start with a domain-appropriate action verb.
+7. Task descriptions must mention concrete deliverables in 1-2 sentences.
+8. Choose suggestedMethodology based on project nature — do NOT default to Agile for non-iterative projects (e.g. Waterfall for construction, Kanban for ongoing ops).
 
-Return ONLY valid JSON in this exact structure. Do not include any text, explanation, or markdown outside the JSON:
+Return ONLY valid JSON in this exact structure:
 {{
+  "valid": true,
+  "rejectionReason": "",
   "suggestedMethodology": "Exact name from methodology list or empty string",
   "methodologyRationale": "Short explanation or empty string",
   "milestones": [
@@ -272,20 +314,26 @@ def validate_and_normalize_plan(plan: dict, methodology_options: Optional[List[s
         methodology_options = []
 
     if "suggestedMethodology" not in plan or not str(plan.get("suggestedMethodology", "")).strip():
-        plan["suggestedMethodology"] = methodology_options[0] if methodology_options else ""
+        plan["suggestedMethodology"] = ""
     if "methodologyRationale" not in plan or plan["methodologyRationale"] is None:
         plan["methodologyRationale"] = ""
+
+    if plan.get("valid") is False:
+        reason = str(plan.get("rejectionReason") or "Description is not a valid project brief.")
+        raise ValueError(reason)
 
     if methodology_options and plan.get("suggestedMethodology"):
         sm = str(plan["suggestedMethodology"]).strip()
         if not any(sm == m or sm.lower() == m.lower() for m in methodology_options):
-            # pick best simple fuzzy: first option containing suggested text or vice versa
             found = None
             for m in methodology_options:
                 if sm.lower() in m.lower() or m.lower() in sm.lower():
                     found = m
                     break
-            plan["suggestedMethodology"] = found or methodology_options[0]
+            if found:
+                plan["suggestedMethodology"] = found
+            else:
+                plan["suggestedMethodology"] = ""
         else:
             for m in methodology_options:
                 if sm.lower() == m.lower():
@@ -321,15 +369,19 @@ def validate_and_normalize_plan(plan: dict, methodology_options: Optional[List[s
         if not isinstance(ms.get("tasks"), list):
             ms["tasks"] = []
         
-        # Clean tasks
-        for j, task in enumerate(ms["tasks"]):
+        # Clean tasks — require at least one real task per milestone
+        cleaned_tasks = []
+        for j, task in enumerate(ms.get("tasks") or []):
             if not isinstance(task, dict):
-                ms["tasks"][j] = {"title": str(task), "description": ""}
-            else:
-                if not task.get("title"):
-                    task["title"] = f"Task {j + 1}"
-                if not task.get("description"):
-                    task["description"] = ""
+                task = {"title": str(task), "description": ""}
+            title = str(task.get("title") or "").strip()
+            desc = str(task.get("description") or "").strip()
+            if not title:
+                continue
+            cleaned_tasks.append({"title": title, "description": desc or title})
+        if len(cleaned_tasks) == 0:
+            raise ValueError(f"Milestone '{ms.get('title', i + 1)}' must include at least one task.")
+        ms["tasks"] = cleaned_tasks
     
     # Normalize budget percentages to sum to exactly 100
     total_budget = sum(float(ms.get("budgetPercentage", 0.0)) for ms in milestones)
@@ -388,7 +440,7 @@ def call_groq_for_plan(
         'messages': [
             {
                 'role': 'system', 
-                'content': 'You are a software project planning assistant. You ALWAYS return ONLY valid JSON. Never include explanations or text outside the JSON object.'
+                'content': 'You are a domain-aware project planning assistant. You ALWAYS return ONLY valid JSON. Reject incoherent descriptions with valid:false. Never include explanations outside the JSON object.'
             },
             {
                 'role': 'user', 
@@ -455,7 +507,8 @@ def health_check():
     return {
         "service": "AI Project Planner",
         "status": "running",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "groqConfigured": bool(GROQ_API_KEY),
     }
 
 
@@ -481,10 +534,22 @@ async def generate_plan(request: ProjectPlanRequest):
             raise HTTPException(status_code=400, detail="Project name is required")
         if not request.projectDescription.strip():
             raise HTTPException(status_code=400, detail="Project description is required")
+        if len(request.projectDescription.strip()) < MIN_DESCRIPTION_CHARS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Project description must be at least {MIN_DESCRIPTION_CHARS} characters.",
+            )
+        try:
+            validate_description_quality(request.projectDescription.strip())
+        except ValueError as qe:
+            raise HTTPException(status_code=400, detail=str(qe))
         if not request.deadline.strip():
             raise HTTPException(status_code=400, detail="Project deadline is required")
-        if request.budget <= 0:
-            raise HTTPException(status_code=400, detail="Project budget must be greater than 0")
+        if request.budget < MIN_BUDGET_USD:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Project budget must be at least ${MIN_BUDGET_USD:.0f}.",
+            )
         
         # Call Groq to generate the plan
         opts = request.methodologyOptions if request.methodologyOptions else []
@@ -892,4 +957,4 @@ async def extract_tasks_from_meeting(request: ExtractTasksRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

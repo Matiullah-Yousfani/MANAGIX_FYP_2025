@@ -1,0 +1,149 @@
+%%{init: {'theme':'neutral'}}%%
+erDiagram
+    ROLE ||--o{ USER_ROLE : "1:N"
+    USER ||--o{ USER_ROLE : "1:N"
+    USER ||--|| USER_PROFILE : "1:1"
+    USER ||--o{ USER_REQUEST : "1:N submits"
+    USER ||--o{ TIME_ENTRY : "1:N logs"
+    USER ||--o{ DAILY_TIMESHEET : "1:N submits"
+    USER ||--o{ OVERTIME_REQUEST : "1:N"
+    USER ||--o{ NOTIFICATION : "1:N receives"
+    USER ||--o{ RESUME_SKILL : "1:N"
+    USER ||--o{ RESUME_EXPERIENCE : "1:N"
+    USER ||--o{ RESUME_EDUCATION : "1:N"
+
+    USER ||--o{ PROJECT : "1:N creates (CreatedBy)"
+    PROJECT_MODEL ||--o{ PROJECT : "1:N"
+    PROJECT ||--|| PROJECT_TEAM : "1:1"
+    PROJECT_TEAM }o--|| TEAM : "N:1"
+    TEAM ||--o{ TEAM_EMPLOYEE : "1:N"
+    USER ||--o{ TEAM_EMPLOYEE : "1:N member"
+
+    PROJECT ||--o{ MILESTONE : "1:N"
+    PROJECT ||--o{ TASK_ITEM : "1:N"
+    MILESTONE ||--o{ TASK_ITEM : "1:N optional"
+    USER ||--o{ TASK_ITEM : "0:N assigned (AssignedEmployeeId)"
+    TASK_ITEM ||--o{ TASK_SUBMISSION : "1:N"
+    USER ||--o{ TASK_SUBMISSION : "1:N submits (SubmittedBy)"
+    USER ||--o{ TASK_SUBMISSION : "0:N reviews (ReviewedBy)"
+
+    PROJECT ||--o{ MEETING : "1:N"
+    MEETING ||--o{ MEETING_PARTICIPANT : "1:N"
+    USER ||--o{ MEETING_PARTICIPANT : "1:N attends"
+    MEETING ||--o{ MEETING_PARTICIPANT_TRANSCRIPT : "1:N"
+    USER ||--o{ MEETING_PARTICIPANT_TRANSCRIPT : "1:N"
+
+    PROJECT ||--o{ EMPLOYEE_PERFORMANCE : "1:N"
+    USER ||--o{ EMPLOYEE_PERFORMANCE : "1:N"
+    PROJECT ||--o{ MONITORING_SNAPSHOT : "1:N"
+
+    ROLE {
+        uniqueidentifier RoleId PK
+        nvarchar RoleName UK
+    }
+    USER {
+        uniqueidentifier UserId PK
+        nvarchar Email UK
+        nvarchar FullName
+        nvarchar PasswordHash
+        datetime CreatedAt
+    }
+    USER_PROFILE {
+        uniqueidentifier ProfileId PK
+        uniqueidentifier UserId FK
+        decimal WeeklyCapacityHours
+        decimal HourlyRate
+        decimal MonthlySalary
+        datetime LastActiveAt
+    }
+    USER_ROLE {
+        uniqueidentifier UserRoleId PK
+        uniqueidentifier UserId FK
+        uniqueidentifier RoleId FK
+    }
+    USER_REQUEST {
+        uniqueidentifier RequestId PK
+        nvarchar Email
+        nvarchar Status
+        uniqueidentifier ApprovedRoleId FK
+    }
+    PROJECT {
+        uniqueidentifier ProjectId PK
+        nvarchar Title
+        uniqueidentifier CreatedBy FK
+        uniqueidentifier ModelId FK
+        decimal Budget
+        datetime Deadline
+        bit IsClosed
+        nvarchar Status
+    }
+    PROJECT_MODEL {
+        uniqueidentifier ModelId PK
+        nvarchar ModelName
+        nvarchar Methodology
+    }
+    TEAM {
+        uniqueidentifier TeamId PK
+        nvarchar TeamName
+        uniqueidentifier ManagerId FK
+    }
+    TEAM_EMPLOYEE {
+        uniqueidentifier Id PK
+        uniqueidentifier TeamId FK
+        uniqueidentifier EmployeeId FK
+        bit IsActive
+    }
+    PROJECT_TEAM {
+        uniqueidentifier Id PK
+        uniqueidentifier ProjectId FK UK
+        uniqueidentifier TeamId FK
+    }
+    MILESTONE {
+        uniqueidentifier MilestoneId PK
+        uniqueidentifier ProjectId FK
+        nvarchar Title
+        datetime Deadline
+        nvarchar Status
+        decimal BudgetAllocated
+    }
+    TASK_ITEM {
+        uniqueidentifier TaskId PK
+        uniqueidentifier ProjectId FK
+        uniqueidentifier MilestoneId FK
+        uniqueidentifier AssignedEmployeeId FK
+        nvarchar Title
+        nvarchar Status
+        decimal EstimatedHours
+        datetime Deadline
+    }
+    TASK_SUBMISSION {
+        uniqueidentifier SubmissionId PK
+        uniqueidentifier TaskId FK
+        uniqueidentifier SubmittedBy FK
+        uniqueidentifier ReviewedBy FK
+        nvarchar Status
+        datetime SubmittedAt
+        datetime ReviewedAt
+    }
+    MEETING {
+        uniqueidentifier MeetingId PK
+        uniqueidentifier ProjectId FK
+        datetime ScheduledAt
+        nvarchar Status
+        nvarchar JoinCode
+    }
+    TIME_ENTRY {
+        uniqueidentifier TimeEntryId PK
+        uniqueidentifier UserId FK
+        uniqueidentifier ProjectId FK
+        datetime StartedAt
+        datetime EndedAt
+        decimal Hours
+    }
+    DAILY_TIMESHEET {
+        uniqueidentifier DailyTimesheetId PK
+        uniqueidentifier UserId FK
+        date WorkDate UK
+        decimal TotalHours
+        nvarchar Status
+    }

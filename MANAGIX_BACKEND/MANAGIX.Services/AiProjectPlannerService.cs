@@ -61,12 +61,34 @@ namespace MANAGIX.Services
 
             var body = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
-                throw new HttpRequestException($"AI planner returned {(int)response.StatusCode}: {body}");
+            {
+                var detail = TryExtractPlannerError(body)
+                    ?? $"AI planner returned {(int)response.StatusCode}";
+                throw new HttpRequestException(detail);
+            }
 
             var parsed = JsonSerializer.Deserialize<AiProjectPlanResponseDto>(body, JsonOptions)
                          ?? new AiProjectPlanResponseDto();
 
             return parsed;
+        }
+
+        private static string? TryExtractPlannerError(string body)
+        {
+            if (string.IsNullOrWhiteSpace(body)) return null;
+            try
+            {
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("detail", out var detail))
+                    return detail.GetString();
+                if (doc.RootElement.TryGetProperty("message", out var message))
+                    return message.GetString();
+            }
+            catch
+            {
+                // plain text body
+            }
+            return body.Length > 300 ? body[..300] : body;
         }
     }
 }

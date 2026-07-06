@@ -126,11 +126,6 @@ const fetchProjectData = async () => {
             </button>
           )}
         </div>
-        <div className="mt-6 flex gap-4">
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
-            Status: {project.status || project.Status || 'Active'}
-          </span>
-        </div>
       </div>
 
       {projectId && (

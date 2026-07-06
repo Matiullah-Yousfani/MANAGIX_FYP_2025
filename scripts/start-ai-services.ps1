@@ -25,18 +25,40 @@ function Get-Python([string]$dir) {
 $pyResume = Get-Python $resumeRoot
 $pyAlloc = Get-Python $allocRoot
 
+# Share GROQ_API_KEY from resume_parser/.env with all AI windows (allocation folder may lack .env).
+$envFile = Join-Path $resumeRoot ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#=]+)=(.*)$') {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim().Trim('"').Trim("'")
+            if ($name -and $value) {
+                Set-Item -Path "env:$name" -Value $value
+            }
+        }
+    }
+    if ($env:GROQ_API_KEY) {
+        Write-Host "Loaded GROQ_API_KEY from resume_parser/.env" -ForegroundColor DarkGray
+    }
+}
+
 if (-not $Foreground -and $StopFirst) {
     & "$PSScriptRoot\stop-ai-services.ps1"
     Start-Sleep -Seconds 1
 }
 
 function Start-AiWindow([string]$title, [string]$workDir, [string]$command) {
+    $envPrefix = ""
+    if ($env:GROQ_API_KEY) {
+        $escaped = $env:GROQ_API_KEY.Replace("'", "''")
+        $envPrefix = "`$env:GROQ_API_KEY='$escaped'; "
+    }
     if ($Foreground) {
         Set-Location $workDir
         Write-Host "`n=== $title ===" -ForegroundColor Cyan
         Invoke-Expression $command
     } else {
-        $c = "Set-Location `"$workDir`"; Write-Host `"$title`" -ForegroundColor Cyan; $command"
+        $c = "Set-Location `"$workDir`"; Write-Host `"$title`" -ForegroundColor Cyan; ${envPrefix}$command"
         Start-Process powershell -ArgumentList "-NoExit", "-Command", $c
     }
 }

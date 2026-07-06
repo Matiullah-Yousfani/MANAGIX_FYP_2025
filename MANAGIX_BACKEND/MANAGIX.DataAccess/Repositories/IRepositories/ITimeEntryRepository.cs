@@ -19,5 +19,6 @@ namespace MANAGIX.DataAccess.Repositories.IRepositories
         Task<int> SumClosedSecondsByUserForUtcDayAsync(Guid userId, DateTime utcDay);
         Task<decimal> SumHoursByProjectAsync(Guid projectId);
         Task<int> CountOpenEntriesAsync();
+        Task<List<TimeEntry>> GetClosedEntriesSinceAsync(DateTime sinceUtc);
     }
 }
